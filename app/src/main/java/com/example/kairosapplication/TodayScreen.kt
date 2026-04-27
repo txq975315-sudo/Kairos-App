@@ -47,10 +47,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -58,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
-import androidx.compose.ui.draw.shadow
 
 // 紧急程度颜色
 val UrgencyColors = listOf(
@@ -68,12 +65,12 @@ val UrgencyColors = listOf(
     Color(0xFF9E9E9E)   // 中性灰 - 低
 )
 
-// 时间块背景颜色（透明度 80%）
+// 时间块背景颜色
 val TimeBlockColors = mapOf(
-    "ANYTIME" to Color(0xEFE9E6),
-    "MORNING" to Color(0xFFF4DC),
-    "AFTERNOON" to Color(0xFBE1D6),
-    "EVENING" to Color(0xECE7FF)
+    "ANYTIME" to Color(0xFFF2EEE6),
+    "MORNING" to Color(0xFFFFF8E6),
+    "AFTERNOON" to Color(0xFFFED7C7),
+    "EVENING" to Color(0xFFE0DBFF)
 )
 
 data class Task(
@@ -90,9 +87,13 @@ fun TodayScreen() {
     var afternoonExpanded by remember { mutableStateOf(true) }
     var eveningExpanded by remember { mutableStateOf(true) }
 
-    // 示例任务数据
+    // ==========================================
+    // 🌟 修改位置1：重新组织任务数据
+    // ==========================================
     val tasks = remember {
         mapOf(
+            "anytime" to emptyList(),
+            "morning" to emptyList(),
             "afternoon" to listOf(
                 Task(1, "Learn Figma", 0),
                 Task(2, "Write a PRD", 1),
@@ -122,7 +123,7 @@ fun TodayScreen() {
         TopBar()
         DateSection()
         QuoteSection()
-        Spacer(Modifier.height(10.dp))  // 新加：QuoteSection下面加10dp间距
+        Spacer(Modifier.height(10.dp))
 
         // 任务区域（可以滑动）
         Column(
@@ -131,32 +132,38 @@ fun TodayScreen() {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ANYTIME 时间块
+            // ==========================================
+            // 🌟 修改位置2：ANYTIME 时间块
+            // ==========================================
             TimeBlock(
                 label = "ANYTIME",
-                count = 0,
+                count = tasks["anytime"]?.size ?: 0,  // 动态获取数量
                 backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
                 icon = Icons.Default.AccessTime,
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
-                tasks = emptyList()
+                tasks = tasks["anytime"] ?: emptyList()
             )
 
-            // MORNING 时间块
+            // ==========================================
+            // 🌟 修改位置3：MORNING 时间块
+            // ==========================================
             TimeBlock(
                 label = "MORNING",
-                count = 0,
+                count = tasks["morning"]?.size ?: 0,  // 动态获取数量
                 backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
                 icon = Icons.Default.WbTwilight,
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
-                tasks = emptyList()
+                tasks = tasks["morning"] ?: emptyList()
             )
 
-            // AFTERNOON 时间块
+            // ==========================================
+            // 🌟 修改位置4：AFTERNOON 时间块
+            // ==========================================
             TimeBlock(
                 label = "AFTERNOON",
-                count = 3,
+                count = tasks["afternoon"]?.size ?: 0,  // 动态获取数量
                 backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
                 icon = Icons.Default.WbSunny,
                 expanded = afternoonExpanded,
@@ -164,10 +171,12 @@ fun TodayScreen() {
                 tasks = tasks["afternoon"] ?: emptyList()
             )
 
-            // EVENING 时间块
+            // ==========================================
+            // 🌟 修改位置5：EVENING 时间块
+            // ==========================================
             TimeBlock(
                 label = "EVENING",
-                count = 2,
+                count = tasks["evening"]?.size ?: 0,  // 动态获取数量
                 backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
                 icon = Icons.Default.DarkMode,
                 expanded = eveningExpanded,
@@ -215,7 +224,7 @@ private fun TopBar() {
 
         Box(
             modifier = Modifier
-                .size(36.dp)  // 减少1/3（从44dp变为36dp）
+                .size(36.dp)
                 .clip(CircleShape)
                 .background(Color.Black.copy(alpha = 0.05f)),
             contentAlignment = Alignment.Center
@@ -224,7 +233,7 @@ private fun TopBar() {
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add task",
                 tint = Color.Black.copy(alpha = 0.18f),
-                modifier = Modifier.size(18.dp)  // 图标也相应缩小
+                modifier = Modifier.size(18.dp)
             )
         }
 
@@ -232,7 +241,7 @@ private fun TopBar() {
 
         Box(
             modifier = Modifier
-                .size(36.dp)  // 减少1/3
+                .size(36.dp)
                 .clip(CircleShape)
                 .background(Color.White),
             contentAlignment = Alignment.Center
@@ -257,8 +266,8 @@ private fun DateSection() {
         Icon(
             imageVector = Icons.Default.KeyboardArrowLeft,
             contentDescription = "Previous day",
-            tint = PrimaryTextColor,
-            modifier = Modifier.size(32.dp)  // 稍微缩小
+            tint = PrimaryTextColor.copy(alpha = 0.5f),
+            modifier = Modifier.size(32.dp)
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -277,7 +286,7 @@ private fun DateSection() {
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = "Next day",
-            tint = PrimaryTextColor,
+            tint = PrimaryTextColor.copy(alpha = 0.5f),
             modifier = Modifier.size(32.dp)
         )
     }
@@ -287,7 +296,7 @@ private fun DateSection() {
 private fun QuoteSection() {
     Column {
         HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
-        Spacer(Modifier.height(8.dp))  // 减少间距
+        Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -305,7 +314,7 @@ private fun QuoteSection() {
                 color = SecondaryTextColor
             )
         }
-        Spacer(Modifier.height(8.dp))  // 减少间距
+        Spacer(Modifier.height(8.dp))
         HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
     }
 }
@@ -321,17 +330,12 @@ private fun TimeBlock(
     tasks: List<Task>
 ) {
     val hasTasks = count > 0
-    val buttonSize = 24.dp  // 创建按钮大小
-    val buttonPadding = 16.dp  // 右侧padding，与空白待办卡片一致
 
     Column {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = buttonPadding),  // 与空白待办卡片右侧padding一致
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 时间块头部卡片（缩短长度）
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.8f)),
@@ -372,14 +376,12 @@ private fun TimeBlock(
                 }
             }
 
-            // 填充空白，使创建按钮与下方按钮对齐
             Spacer(Modifier.weight(1f))
 
-            // 有任务时，创建按钮外置
             if (hasTasks) {
                 Box(
                     modifier = Modifier
-                        .size(buttonSize)
+                        .size(24.dp)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.05f)),
                     contentAlignment = Alignment.Center
@@ -394,18 +396,14 @@ private fun TimeBlock(
             }
         }
 
-        // 展开的内容
         AnimatedVisibility(visible = expanded) {
             Column(
                 modifier = Modifier.padding(top = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // 无任务时：显示添加卡片
                 if (!hasTasks) {
                     EmptyTaskCard(label = label)
                 }
-
-                // 有任务时：只显示任务列表
                 tasks.forEach { task ->
                     TaskItemCard(task = task)
                 }
@@ -435,20 +433,11 @@ private fun EmptyTaskCard(label: String) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .drawBehind {
-                    drawRoundRect(
-                        color = Color(0xC1C1C1).copy(alpha = 0.5f),
-                        size = size,
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx()),
-                        style = Stroke(
-                            width = 2.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(7.dp.toPx(), 4.dp.toPx()),
-                                0f
-                            )
-                        )
-                    )
-                }
+                .border(
+                    width = 2.dp,
+                    color = Color(0xC1C1C1).copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(12.dp)
+                )
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -507,7 +496,6 @@ private fun TaskItemCard(task: Task) {
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 紧急程度圆圈
             Box(
                 modifier = Modifier
                     .size(22.dp)
