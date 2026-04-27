@@ -330,12 +330,21 @@ private fun TimeBlock(
     tasks: List<Task>
 ) {
     val hasTasks = count > 0
+    // 先按完成状态排序（未完成的在前），再按紧急程度，最后按id
+    val sortedTasks = tasks.sortedWith(
+        compareBy(
+            { it.completed },  // 未完成的在前
+            { it.urgency },    // 再按紧急程度
+            { it.id }          // 最后按id
+        )
+    )
 
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 时间块头部卡片（缩短长度）
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.8f)),
@@ -404,7 +413,8 @@ private fun TimeBlock(
                 if (!hasTasks) {
                     EmptyTaskCard(label = label)
                 }
-                tasks.forEach { task ->
+
+                sortedTasks.forEach { task ->
                     TaskItemCard(task = task)
                 }
             }
