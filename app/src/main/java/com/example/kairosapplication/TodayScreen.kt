@@ -47,7 +47,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -55,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
+import androidx.compose.ui.draw.shadow
 
 // 紧急程度颜色
 val UrgencyColors = listOf(
@@ -92,11 +96,16 @@ fun TodayScreen() {
             "afternoon" to listOf(
                 Task(1, "Learn Figma", 0),
                 Task(2, "Write a PRD", 1),
-                Task(3, "Learn SQL", 2, completed = true)
+                Task(3, "Learn SQL", 2, completed = true),
+                Task(4, "Design UI", 1),
+                Task(5, "Review code", 0),
+                Task(6, "Team meeting", 3)
             ),
             "evening" to listOf(
-                Task(4, "Reading", 1),
-                Task(5, "Practice Kotlin", 3)
+                Task(7, "Reading", 1),
+                Task(8, "Practice Kotlin", 3),
+                Task(9, "Watch tutorial", 2),
+                Task(10, "Write notes", 1)
             )
         )
     }
@@ -107,59 +116,67 @@ fun TodayScreen() {
             .background(Color(0xFFF9F9F9))
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // 顶部固定区域（不滑动）
         Spacer(Modifier.height(8.dp))
         TopBar()
         DateSection()
         QuoteSection()
+        Spacer(Modifier.height(10.dp))  // 新加：QuoteSection下面加10dp间距
 
-        // ANYTIME 时间块
-        TimeBlock(
-            label = "ANYTIME",
-            count = 0,
-            backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xEFE9E6),
-            icon = Icons.Default.AccessTime,
-            expanded = anytimeExpanded,
-            onToggle = { anytimeExpanded = !anytimeExpanded },
-            tasks = emptyList()
-        )
+        // 任务区域（可以滑动）
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // ANYTIME 时间块
+            TimeBlock(
+                label = "ANYTIME",
+                count = 0,
+                backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
+                icon = Icons.Default.AccessTime,
+                expanded = anytimeExpanded,
+                onToggle = { anytimeExpanded = !anytimeExpanded },
+                tasks = emptyList()
+            )
 
-        // MORNING 时间块
-        TimeBlock(
-            label = "MORNING",
-            count = 0,
-            backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFF4DC),
-            icon = Icons.Default.WbTwilight,
-            expanded = morningExpanded,
-            onToggle = { morningExpanded = !morningExpanded },
-            tasks = emptyList()
-        )
+            // MORNING 时间块
+            TimeBlock(
+                label = "MORNING",
+                count = 0,
+                backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
+                icon = Icons.Default.WbTwilight,
+                expanded = morningExpanded,
+                onToggle = { morningExpanded = !morningExpanded },
+                tasks = emptyList()
+            )
 
-        // AFTERNOON 时间块
-        TimeBlock(
-            label = "AFTERNOON",
-            count = 3,
-            backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFBE1D6),
-            icon = Icons.Default.WbSunny,
-            expanded = afternoonExpanded,
-            onToggle = { afternoonExpanded = !afternoonExpanded },
-            tasks = tasks["afternoon"] ?: emptyList()
-        )
+            // AFTERNOON 时间块
+            TimeBlock(
+                label = "AFTERNOON",
+                count = 3,
+                backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
+                icon = Icons.Default.WbSunny,
+                expanded = afternoonExpanded,
+                onToggle = { afternoonExpanded = !afternoonExpanded },
+                tasks = tasks["afternoon"] ?: emptyList()
+            )
 
-        // EVENING 时间块
-        TimeBlock(
-            label = "EVENING",
-            count = 2,
-            backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xECE7FF),
-            icon = Icons.Default.DarkMode,
-            expanded = eveningExpanded,
-            onToggle = { eveningExpanded = !eveningExpanded },
-            tasks = tasks["evening"] ?: emptyList()
-        )
+            // EVENING 时间块
+            TimeBlock(
+                label = "EVENING",
+                count = 2,
+                backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
+                icon = Icons.Default.DarkMode,
+                expanded = eveningExpanded,
+                onToggle = { eveningExpanded = !eveningExpanded },
+                tasks = tasks["evening"] ?: emptyList()
+            )
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
+        }
     }
 }
 
@@ -402,46 +419,63 @@ private fun EmptyTaskCard(label: String) {
     val hintText = when (label) {
         "ANYTIME" -> "Anytime today works"
         "MORNING" -> "Morning today works"
+        "AFTERNOON" -> "Afternoon today works"
+        "EVENING" -> "Evening today works"
         else -> "Add a task"
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .border(
-                    width = 1.dp,
-                    color = Color(0xC1C1C1).copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .padding(horizontal = 16.dp),  // 与时间卡片行的右侧padding一致
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .fillMaxSize()
+                .drawBehind {
+                    drawRoundRect(
+                        color = Color(0xC1C1C1).copy(alpha = 0.5f),
+                        size = size,
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx()),
+                        style = Stroke(
+                            width = 2.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(7.dp.toPx(), 4.dp.toPx()),
+                                0f
+                            )
+                        )
+                    )
+                }
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = hintText,
-                fontSize = 14.sp,
-                color = Color(0x999999).copy(alpha = 0.6f)
-            )
-            Box(
-                modifier = Modifier
-                    .size(24.dp)  // 与时间卡片行的按钮大小一致
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.05f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add task",
-                    tint = Color.Black.copy(alpha = 0.18f),
-                    modifier = Modifier.size(27.dp)
+                Text(
+                    text = hintText,
+                    fontSize = 14.sp,
+                    color = Color(0x999999).copy(alpha = 0.6f)
                 )
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.05f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add task",
+                        tint = Color.Black.copy(alpha = 0.18f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -455,7 +489,13 @@ private fun TaskItemCard(task: Task) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp),  // 固定任务卡片高度
+            .height(48.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(12.dp),
+                ambientColor = Color.Black.copy(alpha = 0.2f),
+                spotColor = Color.Black.copy(alpha = 0.2f)
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
