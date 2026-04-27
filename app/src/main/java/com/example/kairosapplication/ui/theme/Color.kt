@@ -2,6 +2,14 @@ package com.example.kairosapplication.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val BackgroundColor = Color(0xFFF9F9F9)
+val PrimaryTextColor = Color(0xFF333333)
+val SecondaryTextColor = Color(0xFF666666)
+val AnytimeBackground = Color(0xFFF2EEE6)
+val MorningBackground = Color(0xFFFFF8E6)
+val AfternoonBackground = Color(0xFFFED7C7)
+val EveningBackground = Color(0xFFE0DBFF)
+
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)
