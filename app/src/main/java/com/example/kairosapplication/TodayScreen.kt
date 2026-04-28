@@ -1,5 +1,7 @@
 package com.example.kairosapplication
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -7,11 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,17 +36,18 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Label
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,7 +72,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -75,15 +84,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import java.time.LocalDate
+import android.widget.Toast
+import android.widget.ImageView
+import kotlinx.coroutines.delay
 
 // 紧急程度颜色
 val UrgencyColors = listOf(
     Color(0xFFFF4444),  // 红色 - 紧急
     Color(0xFFFF9800),  // 橙色 - 高
-    Color(0xFFFFEB3B),  // 黄色 - 中
+    Color(0xFFFFFC3A),  // 黄色 - 中
     Color(0xFF9E9E9E)   // 中性灰 - 低
 )
 
@@ -106,6 +121,11 @@ val TimeBlockTitleColors = mapOf(
 data class Task(
     val id: Int,
     val title: String,
+    val description: String = "",
+    val timeBlock: String = "ANYTIME",
+    val label: String? = null,
+    val emojiImage: String? = null,
+    val localImageUri: String? = null,
     val urgency: Int,  // 0-3 表示紧急程度
     var completed: Boolean = false
 )
@@ -115,6 +135,17 @@ private data class CreateSheetConfig(
     val backgroundColor: Color,
     val titleColor: Color
 )
+
+private data class CreateTaskMeta(
+    val urgency: Int,
+    val label: String?,
+    val emojiImage: String?,
+    val localImageUri: String?
+)
+
+private enum class IconSheetType {
+    TIME, URGENCY, LABEL, ATTACH, ATTACH_LOCAL
+}
 
 @Composable
 fun TodayScreen(
@@ -129,45 +160,56 @@ fun TodayScreen(
     var currentDate by remember { mutableStateOf(LocalDate.now()) }
     val isToday = currentDate == LocalDate.now()
 
+    val anytimeTasks = remember {
+        mutableStateListOf<Task>()
+    }
+
+    val morningTasks = remember {
+        mutableStateListOf<Task>()
+    }
+
     val afternoonTasks = remember {
         mutableStateListOf(
-            Task(1, "Learn Figma", 0),
-            Task(2, "Write a PRD", 1),
-            Task(3, "Learn SQL", 2, completed = true)
+            Task(1, "Learn Figma", description = "", timeBlock = "AFTERNOON", urgency = 0),
+            Task(2, "Write a PRD", description = "", timeBlock = "AFTERNOON", urgency = 1),
+            Task(3, "Learn SQL", description = "", timeBlock = "AFTERNOON", urgency = 2, completed = true)
         )
     }
 
     val eveningTasks = remember {
         mutableStateListOf(
-            Task(4, "Reading", 1),
-            Task(5, "Practice Kotlin", 3)
+            Task(4, "Reading", description = "", timeBlock = "EVENING", urgency = 1),
+            Task(5, "Practice Kotlin", description = "", timeBlock = "EVENING", urgency = 3)
         )
     }
-
-    // derivedStateOf 追踪 SnapshotStateList 内容变化，item 修改时自动重算排序
-    val sortedAfternoonTasks by remember {
-        derivedStateOf {
-            afternoonTasks.sortedWith(compareBy({ it.completed }, { it.urgency }, { it.id }))
-        }
-    }
-
-    val sortedEveningTasks by remember {
-        derivedStateOf {
-            eveningTasks.sortedWith(compareBy({ it.completed }, { it.urgency }, { it.id }))
-        }
-    }
+    var nextTaskId by remember { mutableStateOf(6) }
 
     // TopBar 汇总数据：实时追踪所有任务列表的完成状态（非今天显示 0）
     val totalCount by remember {
-        derivedStateOf { if (currentDate == LocalDate.now()) afternoonTasks.size + eveningTasks.size else 0 }
+        derivedStateOf {
+            if (currentDate == LocalDate.now()) {
+                anytimeTasks.size + morningTasks.size + afternoonTasks.size + eveningTasks.size
+            } else 0
+        }
     }
     val completedCount by remember {
-        derivedStateOf { if (currentDate == LocalDate.now()) afternoonTasks.count { it.completed } + eveningTasks.count { it.completed } else 0 }
+        derivedStateOf {
+            if (currentDate == LocalDate.now()) {
+                anytimeTasks.count { it.completed } +
+                    morningTasks.count { it.completed } +
+                    afternoonTasks.count { it.completed } +
+                    eveningTasks.count { it.completed }
+            } else 0
+        }
     }
     var createSheetConfig by remember { mutableStateOf<CreateSheetConfig?>(null) }
     // 弹窗输入内容上提：关闭弹窗时不清空，保留用户已输入文本
     var createTitle by remember { mutableStateOf("") }
     var createDescription by remember { mutableStateOf("") }
+    var createUrgency by remember { mutableStateOf(3) }
+    var createLabel by remember { mutableStateOf<String?>(null) }
+    var createEmojiImage by remember { mutableStateOf<String?>(null) }
+    var createLocalImageUri by remember { mutableStateOf<String?>(null) }
 
     // 统一时间块创建入口：按点击块动态切换弹窗标题与配色
     val showCreateSheet: (String) -> Unit = { timeBlock ->
@@ -211,25 +253,35 @@ fun TodayScreen(
 
             TimeBlock(
                 label = "ANYTIME",
-                count = 0,
+                count = if (isToday) anytimeTasks.size else 0,
                 backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
                 icon = Icons.Default.AccessTime,
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
-                tasks = emptyList(),
-                onToggleComplete = {},
+                tasks = if (isToday) anytimeTasks else emptyList(),
+                onToggleComplete = { task ->
+                    val index = anytimeTasks.indexOfFirst { it.id == task.id }
+                    if (index != -1) {
+                        anytimeTasks[index] = anytimeTasks[index].copy(completed = !anytimeTasks[index].completed)
+                    }
+                },
                 onCreateClick = { showCreateSheet("ANYTIME") }
             )
 
             TimeBlock(
                 label = "MORNING",
-                count = 0,
+                count = if (isToday) morningTasks.size else 0,
                 backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
                 icon = Icons.Default.WbTwilight,
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
-                tasks = emptyList(),
-                onToggleComplete = {},
+                tasks = if (isToday) morningTasks else emptyList(),
+                onToggleComplete = { task ->
+                    val index = morningTasks.indexOfFirst { it.id == task.id }
+                    if (index != -1) {
+                        morningTasks[index] = morningTasks[index].copy(completed = !morningTasks[index].completed)
+                    }
+                },
                 onCreateClick = { showCreateSheet("MORNING") }
             )
 
@@ -240,7 +292,7 @@ fun TodayScreen(
                 icon = Icons.Default.WbSunny,
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
-                tasks = if (isToday) sortedAfternoonTasks else emptyList(),
+                tasks = if (isToday) afternoonTasks else emptyList(),
                 onToggleComplete = { task ->
                     val index = afternoonTasks.indexOfFirst { it.id == task.id }
                     if (index != -1) {
@@ -257,7 +309,7 @@ fun TodayScreen(
                 icon = Icons.Default.DarkMode,
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
-                tasks = if (isToday) sortedEveningTasks else emptyList(),
+                tasks = if (isToday) eveningTasks else emptyList(),
                 onToggleComplete = { task ->
                     val index = eveningTasks.indexOfFirst { it.id == task.id }
                     if (index != -1) {
@@ -279,8 +331,49 @@ fun TodayScreen(
             onTitleChange = { createTitle = it },
             description = createDescription,
             onDescriptionChange = { createDescription = it },
-            onCreateTask = { _, _, _ ->
-                // 预留创建任务回调，后续接入真实存储逻辑
+            meta = CreateTaskMeta(
+                urgency = createUrgency,
+                label = createLabel,
+                emojiImage = createEmojiImage,
+                localImageUri = createLocalImageUri
+            ),
+            onMetaChange = { meta ->
+                createUrgency = meta.urgency
+                createLabel = meta.label
+                createEmojiImage = meta.emojiImage
+                createLocalImageUri = meta.localImageUri
+            },
+            onTimeBlockChange = { newTimeBlock ->
+                createSheetConfig = createSheetConfig?.copy(
+                    timeBlock = newTimeBlock,
+                    backgroundColor = TimeBlockColors[newTimeBlock] ?: Color(0xFFF2EEE6),
+                    titleColor = TimeBlockTitleColors[newTimeBlock] ?: PrimaryTextColor
+                )
+            },
+            onCreateTask = { title, description, timeBlock, meta ->
+                val trimmedTitle = title.trim()
+                val trimmedDescription = description.trim()
+                if (trimmedTitle.isEmpty()) {
+                    false
+                } else {
+                    val newTask = Task(
+                        id = nextTaskId++,
+                        title = trimmedTitle,
+                        description = trimmedDescription,
+                        timeBlock = timeBlock,
+                        label = meta.label,
+                        emojiImage = meta.emojiImage,
+                        localImageUri = meta.localImageUri,
+                        urgency = meta.urgency
+                    )
+                    when (timeBlock) {
+                        "ANYTIME" -> anytimeTasks.add(newTask)
+                        "MORNING" -> morningTasks.add(newTask)
+                        "AFTERNOON" -> afternoonTasks.add(newTask)
+                        "EVENING" -> eveningTasks.add(newTask)
+                    }
+                    true
+                }
             }
         )
     }
@@ -641,12 +734,71 @@ private fun CreateTaskBottomSheet(
     onTitleChange: (String) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
-    onCreateTask: (title: String, description: String, timeBlock: String) -> Unit
+    meta: CreateTaskMeta,
+    onMetaChange: (CreateTaskMeta) -> Unit,
+    onTimeBlockChange: (String) -> Unit,
+    onCreateTask: (title: String, description: String, timeBlock: String, meta: CreateTaskMeta) -> Boolean
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    val density = LocalDensity.current
     val titleFocusRequester = remember { FocusRequester() }
+    var iconSheetType by remember { mutableStateOf<IconSheetType?>(null) }
+    var customLabelInput by remember { mutableStateOf("") }
+    var labelOptions by remember {
+        mutableStateOf(
+            mutableListOf("None", "Work", "Habit", "Study", "Life", "Exercise", "Travel", "Create New")
+        )
+    }
+    var isRecording by remember { mutableStateOf(false) }
+    var hasSelectedTime by remember { mutableStateOf(false) }
+    var hasSelectedUrgency by remember { mutableStateOf(false) }
+    var keyboardHeightDp by remember { mutableStateOf(280.dp) }
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+
+    LaunchedEffect(imeBottomPx) {
+        if (imeBottomPx > 0) {
+            keyboardHeightDp = with(density) { imeBottomPx.toDp() }
+        }
+    }
+
+    val showIconSheet: (IconSheetType) -> Unit = { type ->
+        keyboardController?.hide()
+        iconSheetType = type
+    }
+
+    val closeIconSheetAndRestoreKeyboard: () -> Unit = {
+        iconSheetType = null
+        titleFocusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        isRecording = false
+        val matches = result.data?.getStringArrayListExtra("android.speech.extra.RESULTS")
+        val text = matches?.firstOrNull()?.trim().orEmpty()
+        if (text.isNotEmpty()) {
+            onTitleChange(text)
+        } else {
+            Toast.makeText(context, "未识别到语音", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            onMetaChange(meta.copy(emojiImage = null, localImageUri = uri.toString()))
+            iconSheetType = null
+            titleFocusRequester.requestFocus()
+            keyboardController?.show()
+        } else {
+            // 用户取消本地图片选择时，恢复到主输入状态，避免停留在附件选择态
+            iconSheetType = null
+            titleFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     // 弹窗出现时自动聚焦主输入框并拉起系统键盘
     LaunchedEffect(Unit) {
@@ -697,9 +849,16 @@ private fun CreateTaskBottomSheet(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        keyboardController?.hide()
-                        focusManager.clearFocus(force = true)
-                        onDismiss()
+                        val success = onCreateTask(title, description, config.timeBlock, meta)
+                        if (success) {
+                            keyboardController?.hide()
+                            focusManager.clearFocus(force = true)
+                            onDismiss()
+                        } else {
+                            Toast.makeText(context, "请输入任务标题", Toast.LENGTH_SHORT).show()
+                            titleFocusRequester.requestFocus()
+                            keyboardController?.show()
+                        }
                     }
                 ),
                 decorationBox = { innerTextField ->
@@ -743,19 +902,291 @@ private fun CreateTaskBottomSheet(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(imageVector = Icons.Default.AccessTime, contentDescription = "Time icon", tint = Color(0xFF6F6F6F))
-                Icon(imageVector = Icons.Default.Flag, contentDescription = "Flag icon", tint = Color(0xFF6F6F6F))
-                Icon(imageVector = Icons.Default.Label, contentDescription = "Label icon", tint = Color(0xFF6F6F6F))
-                Icon(imageVector = Icons.Default.AttachFile, contentDescription = "Attach icon", tint = Color(0xFF6F6F6F))
-                Icon(imageVector = Icons.Default.Mic, contentDescription = "Mic icon", tint = Color(0xFF6F6F6F))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = "Time icon",
+                        tint = if (hasSelectedTime) (TimeBlockTitleColors[config.timeBlock] ?: Color(0xFF9E9E9E)) else Color(0xFF9E9E9E),
+                        modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Flag,
+                        contentDescription = "Flag icon",
+                        tint = if (hasSelectedUrgency) UrgencyColors[meta.urgency] else Color(0xFF9E9E9E),
+                        modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(UrgencyColors[meta.urgency])
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Label,
+                        contentDescription = "Label icon",
+                        tint = Color(0xFF9E9E9E),
+                        modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
+                    )
+                    if (!meta.label.isNullOrBlank()) {
+                        Spacer(Modifier.width(4.dp))
+                        Text(text = "# ${meta.label}", fontSize = 12.sp, color = config.titleColor)
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Default.AttachFile,
+                    contentDescription = "Attach icon",
+                    tint = Color(0xFF9E9E9E),
+                    modifier = Modifier.clickable { showIconSheet(IconSheetType.ATTACH) }
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = "Mic icon",
+                        tint = Color(0xFF9E9E9E),
+                        modifier = Modifier.clickable {
+                            isRecording = true
+                            val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
+                                putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
+                                putExtra("android.speech.extra.PROMPT", "请说出任务标题")
+                            }
+                            try {
+                                speechLauncher.launch(intent)
+                            } catch (_: Exception) {
+                                isRecording = false
+                                Toast.makeText(context, "当前设备不支持语音识别", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                    if (isRecording) {
+                        Text(text = "录音中", fontSize = 12.sp, color = Color(0xFFFF4444))
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (iconSheetType == null) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            iconSheetType?.let { type ->
+                // 图标选项区域替代键盘显示，保持主弹窗尺寸不变
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(keyboardHeightDp)
+                        .clip(RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp))
+                        .background(config.backgroundColor)
+                        .padding(top = 8.dp)
+                ) {
+                    when (type) {
+                        IconSheetType.TIME -> {
+                            listOf("ANYTIME", "MORNING", "AFTERNOON", "EVENING").forEach { option ->
+                                OptionRow(
+                                    text = option,
+                                    leadingIcon = when (option) {
+                                        "ANYTIME" -> "🕒"
+                                        "MORNING" -> "🌅"
+                                        "AFTERNOON" -> "☀️"
+                                        "EVENING" -> "🌙"
+                                        else -> "•"
+                                    },
+                                    selected = config.timeBlock == option,
+                                    onClick = {
+                                        hasSelectedTime = true
+                                        onTimeBlockChange(option)
+                                        closeIconSheetAndRestoreKeyboard()
+                                    }
+                                )
+                            }
+                        }
+                        IconSheetType.URGENCY -> {
+                            val options = listOf("紧急", "重要", "普通", "低优先级")
+                            options.forEachIndexed { index, option ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            hasSelectedUrgency = true
+                                            onMetaChange(meta.copy(urgency = index))
+                                            closeIconSheetAndRestoreKeyboard()
+                                        }
+                                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .clip(CircleShape)
+                                            .background(UrgencyColors[index])
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = option,
+                                        fontSize = 15.sp,
+                                        color = if (meta.urgency == index) PrimaryTextColor else SecondaryTextColor
+                                    )
+                                }
+                            }
+                        }
+                        IconSheetType.LABEL -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                labelOptions.forEach { option ->
+                                    OptionRow(
+                                        text = option,
+                                        leadingIcon = when (option) {
+                                            "None" -> "⚪"
+                                            "Work" -> "💼"
+                                            "Habit" -> "🔄"
+                                            "Study" -> "📚"
+                                            "Life" -> "🏡"
+                                            "Exercise" -> "🏃"
+                                            "Travel" -> "✈️"
+                                            "Create New" -> "➕"
+                                            else -> "🏷️"
+                                        },
+                                        selected = (option != "None" && option == meta.label) || (option == "None" && meta.label == null),
+                                        onClick = {
+                                            when (option) {
+                                                "None" -> {
+                                                    onMetaChange(meta.copy(label = null))
+                                                    closeIconSheetAndRestoreKeyboard()
+                                                }
+                                                "Create New" -> {
+                                                    if (customLabelInput.isNotBlank()) {
+                                                        val custom = customLabelInput.trim()
+                                                        if (!labelOptions.contains(custom)) {
+                                                            labelOptions.add(labelOptions.size - 1, custom)
+                                                        }
+                                                        onMetaChange(meta.copy(label = custom))
+                                                        customLabelInput = ""
+                                                        closeIconSheetAndRestoreKeyboard()
+                                                    }
+                                                }
+                                                else -> {
+                                                    onMetaChange(meta.copy(label = option))
+                                                    closeIconSheetAndRestoreKeyboard()
+                                                }
+                                            }
+                                        }
+                                    )
+                                    if (option == "Create New") {
+                                        BasicTextField(
+                                            value = customLabelInput,
+                                            onValueChange = { customLabelInput = it },
+                                            textStyle = TextStyle(fontSize = 15.sp, color = PrimaryTextColor),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                                            decorationBox = { inner ->
+                                                if (customLabelInput.isBlank()) {
+                                                    Text("Input custom label", fontSize = 15.sp, color = SecondaryTextColor)
+                                                }
+                                                inner()
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        IconSheetType.ATTACH -> {
+                            OptionRow(text = "选择 emoji 图片", selected = meta.emojiImage != null, onClick = {})
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                listOf("📅", "💼", "📚").forEach { emoji ->
+                                    Text(
+                                        text = emoji,
+                                        fontSize = 24.sp,
+                                        modifier = Modifier.clickable {
+                                            onMetaChange(meta.copy(emojiImage = emoji, localImageUri = null))
+                                            closeIconSheetAndRestoreKeyboard()
+                                        }
+                                    )
+                                }
+                            }
+                            OptionRow(
+                                text = "选择本地图片",
+                                selected = meta.localImageUri != null,
+                                onClick = { iconSheetType = IconSheetType.ATTACH_LOCAL }
+                            )
+                        }
+                        IconSheetType.ATTACH_LOCAL -> {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = Color(0xFF9E9E9E),
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clickable { closeIconSheetAndRestoreKeyboard() }
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "Local Image",
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF9E9E9E),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            OptionRow(
+                                text = "Open local image picker",
+                                selected = false,
+                                leadingIcon = "🖼️",
+                                onClick = { imagePickerLauncher.launch("image/*") }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
+}
 
-    @Suppress("UNUSED_VARIABLE")
-    val reservedCreateCallback = onCreateTask
+@Composable
+private fun OptionRow(
+    text: String,
+    leadingIcon: String? = null,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val textColor = if (selected) PrimaryTextColor else SecondaryTextColor
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (leadingIcon != null) {
+            Text(
+                text = leadingIcon,
+                fontSize = 16.sp,
+                color = textColor
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(
+            text = text,
+            fontSize = 15.sp,
+            color = textColor,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
 }
 
 @Composable
@@ -764,11 +1195,23 @@ private fun TaskItemCard(
     onToggleComplete: () -> Unit
 ) {
     val urgencyColor = UrgencyColors[task.urgency]
+    val hasDescription = task.description.isNotBlank()
+    val hasLabel = !task.label.isNullOrBlank()
+    val hasImage = !task.emojiImage.isNullOrBlank() || !task.localImageUri.isNullOrBlank()
+    val baseCardHeight = 48.dp
+    val maxCardHeight = if (hasImage && (hasDescription || hasLabel)) 96.dp else baseCardHeight
+    val imageSize = if (hasImage) maxCardHeight else 0.dp
+    var showFiltering by remember { mutableStateOf(false) }
+    if (showFiltering) {
+        LaunchedEffect(Unit) {
+            delay(2000)
+            showFiltering = false
+        }
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
             .shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(12.dp),
@@ -781,10 +1224,11 @@ private fun TaskItemCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .heightIn(min = baseCardHeight, max = maxCardHeight)
                 .clickable { onToggleComplete() }
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.Top
         ) {
             Box(
                 modifier = Modifier
@@ -810,13 +1254,68 @@ private fun TaskItemCard(
 
             Spacer(Modifier.width(12.dp))
 
-            Text(
-                text = task.title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = if (task.completed) Color(0xFF9E9E9E) else PrimaryTextColor,
-                textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
-            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = task.title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (task.completed) Color(0xFF9E9E9E) else PrimaryTextColor,
+                    textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
+                )
+                if (task.description.isNotBlank()) {
+                    Text(
+                        text = task.description,
+                        fontSize = 13.sp,
+                        color = Color(0xFF8A8A8A),
+                        textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
+                    )
+                }
+                if (!task.label.isNullOrBlank()) {
+                    Text(
+                        text = "# ${task.label}",
+                        fontSize = 12.sp,
+                        color = TimeBlockTitleColors[task.timeBlock] ?: SecondaryTextColor,
+                        modifier = Modifier.clickable { showFiltering = true }
+                    )
+                }
+                if (showFiltering) {
+                    Text(
+                        text = "筛选中",
+                        fontSize = 12.sp,
+                        color = SecondaryTextColor
+                    )
+                }
+            }
+
+            if (hasImage) {
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(imageSize)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF0F0F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!task.emojiImage.isNullOrBlank()) {
+                        Text(text = task.emojiImage, fontSize = 34.sp)
+                    } else if (!task.localImageUri.isNullOrBlank()) {
+                        AndroidView(
+                            factory = { ctx ->
+                                ImageView(ctx).apply {
+                                    scaleType = ImageView.ScaleType.CENTER_CROP
+                                }
+                            },
+                            update = { view ->
+                                view.setImageURI(Uri.parse(task.localImageUri))
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
         }
     }
 }
