@@ -192,6 +192,27 @@ fun TodayScreen(
     }
     var nextTaskId by remember { mutableStateOf(6) }
 
+    val sortTaskList: (MutableList<Task>) -> Unit = { taskList -> // ✨ 新增
+        val sorted = taskList.sortedWith(compareBy<Task> { it.completed }.thenBy { it.urgency }.thenBy { it.id }) // ✨ 新增
+        taskList.clear() // ✨ 新增
+        taskList.addAll(sorted) // ✨ 新增
+    } // ✨ 新增
+
+    val onTaskCompleteToggle: (Task, MutableList<Task>) -> Unit = { task, taskList -> // ✨ 新增
+        val index = taskList.indexOfFirst { it.id == task.id } // ✨ 新增
+        if (index != -1) { // ✨ 新增
+            taskList[index] = taskList[index].copy(completed = !taskList[index].completed) // ✨ 新增
+            sortTaskList(taskList) // ✨ 新增
+        } // ✨ 新增
+    } // ✨ 新增
+
+    LaunchedEffect(Unit) { // ✨ 新增
+        sortTaskList(anytimeTasks) // ✨ 新增
+        sortTaskList(morningTasks) // ✨ 新增
+        sortTaskList(afternoonTasks) // ✨ 新增
+        sortTaskList(eveningTasks) // ✨ 新增
+    } // ✨ 新增
+
     // TopBar 汇总数据：实时追踪所有任务列表的完成状态（非今天显示 0）
     val totalCount by remember {
         derivedStateOf {
@@ -267,12 +288,7 @@ fun TodayScreen(
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
                 tasks = if (isToday) anytimeTasks else emptyList(),
-                onToggleComplete = { task ->
-                    val index = anytimeTasks.indexOfFirst { it.id == task.id }
-                    if (index != -1) {
-                        anytimeTasks[index] = anytimeTasks[index].copy(completed = !anytimeTasks[index].completed)
-                    }
-                },
+                onToggleComplete = { task -> onTaskCompleteToggle(task, anytimeTasks) }, // ✨ 修改
                 onCreateClick = { showCreateSheet("ANYTIME") }
             )
 
@@ -284,12 +300,7 @@ fun TodayScreen(
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
                 tasks = if (isToday) morningTasks else emptyList(),
-                onToggleComplete = { task ->
-                    val index = morningTasks.indexOfFirst { it.id == task.id }
-                    if (index != -1) {
-                        morningTasks[index] = morningTasks[index].copy(completed = !morningTasks[index].completed)
-                    }
-                },
+                onToggleComplete = { task -> onTaskCompleteToggle(task, morningTasks) }, // ✨ 修改
                 onCreateClick = { showCreateSheet("MORNING") }
             )
 
@@ -301,12 +312,7 @@ fun TodayScreen(
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
                 tasks = if (isToday) afternoonTasks else emptyList(),
-                onToggleComplete = { task ->
-                    val index = afternoonTasks.indexOfFirst { it.id == task.id }
-                    if (index != -1) {
-                        afternoonTasks[index] = afternoonTasks[index].copy(completed = !afternoonTasks[index].completed)
-                    }
-                },
+                onToggleComplete = { task -> onTaskCompleteToggle(task, afternoonTasks) }, // ✨ 修改
                 onCreateClick = { showCreateSheet("AFTERNOON") }
             )
 
@@ -318,12 +324,7 @@ fun TodayScreen(
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
                 tasks = if (isToday) eveningTasks else emptyList(),
-                onToggleComplete = { task ->
-                    val index = eveningTasks.indexOfFirst { it.id == task.id }
-                    if (index != -1) {
-                        eveningTasks[index] = eveningTasks[index].copy(completed = !eveningTasks[index].completed)
-                    }
-                },
+                onToggleComplete = { task -> onTaskCompleteToggle(task, eveningTasks) }, // ✨ 修改
                 onCreateClick = { showCreateSheet("EVENING") }
             )
 
@@ -375,10 +376,22 @@ fun TodayScreen(
                         urgency = meta.urgency
                     )
                     when (timeBlock) {
-                        "ANYTIME" -> anytimeTasks.add(newTask)
-                        "MORNING" -> morningTasks.add(newTask)
-                        "AFTERNOON" -> afternoonTasks.add(newTask)
-                        "EVENING" -> eveningTasks.add(newTask)
+                        "ANYTIME" -> { // ✨ 修改
+                            anytimeTasks.add(newTask) // ✨ 修改
+                            sortTaskList(anytimeTasks) // ✨ 新增
+                        }
+                        "MORNING" -> { // ✨ 修改
+                            morningTasks.add(newTask) // ✨ 修改
+                            sortTaskList(morningTasks) // ✨ 新增
+                        }
+                        "AFTERNOON" -> { // ✨ 修改
+                            afternoonTasks.add(newTask) // ✨ 修改
+                            sortTaskList(afternoonTasks) // ✨ 新增
+                        }
+                        "EVENING" -> { // ✨ 修改
+                            eveningTasks.add(newTask) // ✨ 修改
+                            sortTaskList(eveningTasks) // ✨ 新增
+                        }
                     }
                     true
                 }
