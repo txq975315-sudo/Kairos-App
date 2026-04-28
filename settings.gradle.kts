@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "KairosApplication"
 include(":app")
+include(":task-model")

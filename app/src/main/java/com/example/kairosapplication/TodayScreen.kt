@@ -39,13 +39,13 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -89,53 +89,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.viewinterop.AndroidView
+import com.example.kairosapplication.core.text.rememberTaskTextProvider
+import com.example.kairosapplication.ui.TaskDetailBottomSheet
+import com.example.kairosapplication.ui.TaskItemCard
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppInteraction
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSize
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.AppTypography
+import com.example.taskmodel.constants.TaskConstants
+import com.example.taskmodel.model.CreateTaskParam
+import com.example.taskmodel.model.Task
+import com.example.taskmodel.store.TaskCreationBus
+import com.example.taskmodel.util.TaskUtils
 import java.time.LocalDate
 import android.widget.Toast
-import android.widget.ImageView
-import kotlinx.coroutines.delay
-
-// 紧急程度颜色
-val UrgencyColors = listOf(
-    AppColors.Urgent,  // 红色 - 紧急
-    AppColors.High,  // 橙色 - 高
-    AppColors.Normal,  // 黄色 - 中
-    AppColors.Low   // 中性灰 - 低
-)
-
-// 时间块背景颜色
-val TimeBlockColors = mapOf(
-    "ANYTIME" to AppColors.AnytimeBackground,
-    "MORNING" to AppColors.MorningBackground,
-    "AFTERNOON" to AppColors.AfternoonBackground,
-    "EVENING" to AppColors.EveningBackground
-)
-
-// 弹窗标题深色文字
-val TimeBlockTitleColors = mapOf(
-    "ANYTIME" to AppColors.AnytimeTitle,
-    "MORNING" to AppColors.MorningTitle,
-    "AFTERNOON" to AppColors.AfternoonTitle,
-    "EVENING" to AppColors.EveningTitle
-)
-
-data class Task(
-    val id: Int,
-    val title: String,
-    val description: String = "",
-    val timeBlock: String = "ANYTIME",
-    val label: String? = null,
-    val emojiImage: String? = null,
-    val localImageUri: String? = null,
-    val urgency: Int,  // 0-3 表示紧急程度
-    var completed: Boolean = false
-)
 
 private data class CreateSheetConfig(
     val timeBlock: String,
@@ -166,69 +135,81 @@ fun TodayScreen(
     var eveningExpanded by remember { mutableStateOf(true) }
 
     var currentDate by remember { mutableStateOf(LocalDate.now()) }
-    val isToday = currentDate == LocalDate.now()
 
-    val anytimeTasks = remember {
-        mutableStateListOf<Task>()
-    }
-
-    val morningTasks = remember {
-        mutableStateListOf<Task>()
-    }
-
-    val afternoonTasks = remember {
+    val allTasks = remember {
         mutableStateListOf(
-            Task(1, "Learn Figma", description = "", timeBlock = "AFTERNOON", urgency = 0),
-            Task(2, "Write a PRD", description = "", timeBlock = "AFTERNOON", urgency = 1),
-            Task(3, "Learn SQL", description = "", timeBlock = "AFTERNOON", urgency = 2, completed = true)
+            Task(1, "Learn Figma", description = "", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = 0, taskDate = LocalDate.now()),
+            Task(2, "Write a PRD", description = "", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = 1, taskDate = LocalDate.now()),
+            Task(3, "Learn SQL", description = "", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = 2, isCompleted = true, taskDate = LocalDate.now()),
+            Task(4, "Reading", description = "", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = 1, taskDate = LocalDate.now()),
+            Task(5, "Practice Kotlin", description = "", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = 3, taskDate = LocalDate.now())
         )
     }
-
-    val eveningTasks = remember {
-        mutableStateListOf(
-            Task(4, "Reading", description = "", timeBlock = "EVENING", urgency = 1),
-            Task(5, "Practice Kotlin", description = "", timeBlock = "EVENING", urgency = 3)
-        )
+    val anytimeTasks by remember(currentDate, allTasks.size) {
+        derivedStateOf {
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
+                }
+            )
+        }
+    }
+    val morningTasks by remember(currentDate, allTasks.size) {
+        derivedStateOf {
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
+                }
+            )
+        }
+    }
+    val afternoonTasks by remember(currentDate, allTasks.size) {
+        derivedStateOf {
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
+                }
+            )
+        }
+    }
+    val eveningTasks by remember(currentDate, allTasks.size) {
+        derivedStateOf {
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
+                }
+            )
+        }
     }
     var nextTaskId by remember { mutableStateOf(6) }
 
-    val sortTaskList: (MutableList<Task>) -> Unit = { taskList -> // ✨ 新增
-        val sorted = taskList.sortedWith(compareBy<Task> { it.completed }.thenBy { it.urgency }.thenBy { it.id }) // ✨ 新增
-        taskList.clear() // ✨ 新增
-        taskList.addAll(sorted) // ✨ 新增
-    } // ✨ 新增
+    val onTaskCompleteToggle: (Task) -> Unit = { task ->
+        val index = allTasks.indexOfFirst { it.id == task.id }
+        if (index != -1) {
+            val current = allTasks[index]
+            allTasks[index] = current.copy(isCompleted = !current.isCompleted)
+        }
+    }
 
-    val onTaskCompleteToggle: (Task, MutableList<Task>) -> Unit = { task, taskList -> // ✨ 新增
-        val index = taskList.indexOfFirst { it.id == task.id } // ✨ 新增
-        if (index != -1) { // ✨ 新增
-            taskList[index] = taskList[index].copy(completed = !taskList[index].completed) // ✨ 新增
-            sortTaskList(taskList) // ✨ 新增
-        } // ✨ 新增
-    } // ✨ 新增
-
-    LaunchedEffect(Unit) { // ✨ 新增
-        sortTaskList(anytimeTasks) // ✨ 新增
-        sortTaskList(morningTasks) // ✨ 新增
-        sortTaskList(afternoonTasks) // ✨ 新增
-        sortTaskList(eveningTasks) // ✨ 新增
-    } // ✨ 新增
+    LaunchedEffect(Unit) {
+        val incoming = TaskCreationBus.consumeAll()
+        if (incoming.isNotEmpty()) {
+            allTasks.addAll(incoming)
+        }
+    }
 
     // TopBar 汇总数据：实时追踪所有任务列表的完成状态（非今天显示 0）
     val totalCount by remember {
         derivedStateOf {
-            if (currentDate == LocalDate.now()) {
-                anytimeTasks.size + morningTasks.size + afternoonTasks.size + eveningTasks.size
-            } else 0
+            anytimeTasks.size + morningTasks.size + afternoonTasks.size + eveningTasks.size
         }
     }
     val completedCount by remember {
         derivedStateOf {
-            if (currentDate == LocalDate.now()) {
-                anytimeTasks.count { it.completed } +
-                    morningTasks.count { it.completed } +
-                    afternoonTasks.count { it.completed } +
-                    eveningTasks.count { it.completed }
-            } else 0
+            anytimeTasks.count { it.isCompleted } +
+                morningTasks.count { it.isCompleted } +
+                afternoonTasks.count { it.isCompleted } +
+                eveningTasks.count { it.isCompleted }
         }
     }
     var createSheetConfig by remember { mutableStateOf<CreateSheetConfig?>(null) }
@@ -239,14 +220,21 @@ fun TodayScreen(
     var createLabel by remember { mutableStateOf<String?>(null) }
     var createEmojiImage by remember { mutableStateOf<String?>(null) }
     var createLocalImageUri by remember { mutableStateOf<String?>(null) }
+    var detailTask by remember { mutableStateOf<Task?>(null) }
 
     // 统一时间块创建入口：按点击块动态切换弹窗标题与配色
     val showCreateSheet: (String) -> Unit = { timeBlock ->
         createSheetConfig = CreateSheetConfig(
             timeBlock = timeBlock,
-            backgroundColor = TimeBlockColors[timeBlock] ?: AppColors.AnytimeBackground,
-            titleColor = TimeBlockTitleColors[timeBlock] ?: AppColors.PrimaryText
+            backgroundColor = TaskUtils.getTimeBlockColor(timeBlock),
+            titleColor = TaskUtils.getTimeBlockTitleColor(timeBlock)
         )
+    }
+
+    val applyToAllTaskLists: ((List<Task>) -> List<Task>) -> Unit = { updater ->
+        val updated = updater(allTasks.toList())
+        allTasks.clear()
+        allTasks.addAll(updated)
     }
 
     Column(
@@ -281,51 +269,55 @@ fun TodayScreen(
         ) {
 
             TimeBlock(
-                label = "ANYTIME",
-                count = if (isToday) anytimeTasks.size else 0,
-                backgroundColor = TimeBlockColors["ANYTIME"] ?: AppColors.AnytimeBackground,
+                label = TaskConstants.TIME_BLOCK_ANYTIME,
+                count = anytimeTasks.size,
+                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_ANYTIME),
                 icon = Icons.Default.AccessTime,
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
-                tasks = if (isToday) anytimeTasks else emptyList(),
-                onToggleComplete = { task -> onTaskCompleteToggle(task, anytimeTasks) }, // ✨ 修改
-                onCreateClick = { showCreateSheet("ANYTIME") }
+                tasks = anytimeTasks,
+                onToggleComplete = { task -> onTaskCompleteToggle(task) },
+                onOpenDetail = { task -> detailTask = task },
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME) }
             )
 
             TimeBlock(
-                label = "MORNING",
-                count = if (isToday) morningTasks.size else 0,
-                backgroundColor = TimeBlockColors["MORNING"] ?: AppColors.MorningBackground,
+                label = TaskConstants.TIME_BLOCK_MORNING,
+                count = morningTasks.size,
+                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_MORNING),
                 icon = Icons.Default.WbTwilight,
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
-                tasks = if (isToday) morningTasks else emptyList(),
-                onToggleComplete = { task -> onTaskCompleteToggle(task, morningTasks) }, // ✨ 修改
-                onCreateClick = { showCreateSheet("MORNING") }
+                tasks = morningTasks,
+                onToggleComplete = { task -> onTaskCompleteToggle(task) },
+                onOpenDetail = { task -> detailTask = task },
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_MORNING) }
             )
 
             TimeBlock(
-                label = "AFTERNOON",
-                count = if (isToday) afternoonTasks.size else 0,
-                backgroundColor = TimeBlockColors["AFTERNOON"] ?: AppColors.AfternoonBackground,
+                label = TaskConstants.TIME_BLOCK_AFTERNOON,
+                count = afternoonTasks.size,
+                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_AFTERNOON),
                 icon = Icons.Default.WbSunny,
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
-                tasks = if (isToday) afternoonTasks else emptyList(),
-                onToggleComplete = { task -> onTaskCompleteToggle(task, afternoonTasks) }, // ✨ 修改
-                onCreateClick = { showCreateSheet("AFTERNOON") }
+                tasks = afternoonTasks,
+                onToggleComplete = { task -> onTaskCompleteToggle(task) },
+                onOpenDetail = { task -> detailTask = task },
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_AFTERNOON) }
             )
 
             TimeBlock(
-                label = "EVENING",
-                count = if (isToday) eveningTasks.size else 0,
-                backgroundColor = TimeBlockColors["EVENING"] ?: AppColors.EveningBackground,
+                label = TaskConstants.TIME_BLOCK_EVENING,
+                count = eveningTasks.size,
+                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_EVENING),
                 icon = Icons.Default.DarkMode,
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
-                tasks = if (isToday) eveningTasks else emptyList(),
-                onToggleComplete = { task -> onTaskCompleteToggle(task, eveningTasks) }, // ✨ 修改
-                onCreateClick = { showCreateSheet("EVENING") }
+                tasks = eveningTasks,
+                onToggleComplete = { task -> onTaskCompleteToggle(task) },
+                onOpenDetail = { task -> detailTask = task },
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_EVENING) }
             )
 
             Spacer(Modifier.height(AppSpacing.SectionXLarge))
@@ -355,8 +347,8 @@ fun TodayScreen(
             onTimeBlockChange = { newTimeBlock ->
                 createSheetConfig = createSheetConfig?.copy(
                     timeBlock = newTimeBlock,
-                    backgroundColor = TimeBlockColors[newTimeBlock] ?: AppColors.AnytimeBackground,
-                    titleColor = TimeBlockTitleColors[newTimeBlock] ?: AppColors.PrimaryText
+                    backgroundColor = TaskUtils.getTimeBlockColor(newTimeBlock),
+                    titleColor = TaskUtils.getTimeBlockTitleColor(newTimeBlock)
                 )
             },
             onCreateTask = { title, description, timeBlock, meta ->
@@ -365,36 +357,38 @@ fun TodayScreen(
                 if (trimmedTitle.isEmpty()) {
                     false
                 } else {
-                    val newTask = Task(
-                        id = nextTaskId++,
+                    val newTask = CreateTaskParam(
                         title = trimmedTitle,
                         description = trimmedDescription,
                         timeBlock = timeBlock,
+                        urgency = meta.urgency,
                         label = meta.label,
                         emojiImage = meta.emojiImage,
                         localImageUri = meta.localImageUri,
-                        urgency = meta.urgency
-                    )
-                    when (timeBlock) {
-                        "ANYTIME" -> { // ✨ 修改
-                            anytimeTasks.add(newTask) // ✨ 修改
-                            sortTaskList(anytimeTasks) // ✨ 新增
-                        }
-                        "MORNING" -> { // ✨ 修改
-                            morningTasks.add(newTask) // ✨ 修改
-                            sortTaskList(morningTasks) // ✨ 新增
-                        }
-                        "AFTERNOON" -> { // ✨ 修改
-                            afternoonTasks.add(newTask) // ✨ 修改
-                            sortTaskList(afternoonTasks) // ✨ 新增
-                        }
-                        "EVENING" -> { // ✨ 修改
-                            eveningTasks.add(newTask) // ✨ 修改
-                            sortTaskList(eveningTasks) // ✨ 新增
-                        }
-                    }
+                        taskDate = currentDate
+                    ).toTask(id = nextTaskId++)
+                    allTasks.add(newTask)
                     true
                 }
+            }
+        )
+    }
+
+    detailTask?.let { task ->
+        TaskDetailBottomSheet(
+            task = task,
+            onDismiss = { detailTask = null },
+            onCompleteToday = {
+                applyToAllTaskLists { taskList -> TaskUtils.completeToday(taskList, task) }
+                detailTask = null
+            },
+            onCloseAll = {
+                applyToAllTaskLists { taskList -> TaskUtils.closeAllOccurrences(taskList, task) }
+                detailTask = null
+            },
+            onStopRepeat = {
+                applyToAllTaskLists { taskList -> TaskUtils.stopRepeat(taskList, task) }
+                detailTask = task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE)
             }
         )
     }
@@ -407,6 +401,7 @@ private fun TopBar(
     onCreateClick: () -> Unit,
     onDailyReviewClick: () -> Unit
 ) {
+    val taskText = rememberTaskTextProvider()
     // 统一阴影参数：Blur≈8, Y偏移≈2, Black 5%
     val shadowElevation = 4.dp
     val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
@@ -466,7 +461,7 @@ private fun TopBar(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Add task",
+                contentDescription = taskText.contentDescAddTask,
                 tint = Color.Black,
                 modifier = Modifier.size(18.dp)
             )
@@ -523,7 +518,7 @@ private fun DateSection(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Icon(
-            imageVector = Icons.Default.KeyboardArrowLeft,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
             contentDescription = "Previous day",
             tint = AppColors.PrimaryText,
             modifier = Modifier.size(32.dp).clickable { onPrevious() }
@@ -543,7 +538,7 @@ private fun DateSection(
             )
         }
         Icon(
-            imageVector = Icons.Default.KeyboardArrowRight,
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "Next day",
             tint = AppColors.PrimaryText,
             modifier = Modifier.size(32.dp).clickable { onNext() }
@@ -601,8 +596,10 @@ private fun TimeBlock(
     onToggle: () -> Unit,
     tasks: List<Task>,
     onToggleComplete: (Task) -> Unit,
+    onOpenDetail: (Task) -> Unit,
     onCreateClick: () -> Unit
 ) {
+    val taskText = rememberTaskTextProvider()
     val hasTasks = count > 0
 
     Column {
@@ -676,7 +673,7 @@ private fun TimeBlock(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Add task",
+                                contentDescription = taskText.contentDescAddTask,
                                 tint = Color.Black.copy(alpha = 0.18f),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -698,7 +695,8 @@ private fun TimeBlock(
                 tasks.forEach { task ->
                     TaskItemCard(
                         task = task,
-                        onToggleComplete = { onToggleComplete(task) }
+                        onToggleComplete = { onToggleComplete(task) },
+                        onOpenDetail = { onOpenDetail(task) }
                     )
                 }
             }
@@ -711,13 +709,8 @@ private fun EmptyTaskCard(
     label: String,
     onCreateClick: () -> Unit
 ) {
-    val hintText = when (label) {
-        "ANYTIME" -> "Anytime today works"
-        "MORNING" -> "Morning today works"
-        "AFTERNOON" -> "Afternoon today works"
-        "EVENING" -> "Evening today works"
-        else -> "Add a task"
-    }
+    val taskText = rememberTaskTextProvider()
+    val hintText = taskText.timeBlockHint(label)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -753,7 +746,7 @@ private fun EmptyTaskCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add task",
+                    contentDescription = taskText.contentDescAddTask,
                     tint = Color.Black.copy(alpha = 0.18f),
                     modifier = Modifier.size(27.dp)
                 )
@@ -776,6 +769,7 @@ private fun CreateTaskBottomSheet(
     onTimeBlockChange: (String) -> Unit,
     onCreateTask: (title: String, description: String, timeBlock: String, meta: CreateTaskMeta) -> Boolean
 ) {
+    val taskText = rememberTaskTextProvider()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -786,7 +780,7 @@ private fun CreateTaskBottomSheet(
     var customLabelInput by remember { mutableStateOf("") }
     var labelOptions by remember {
         mutableStateOf(
-            mutableListOf("None", "Work", "Habit", "Study", "Life", "Exercise", "Travel", "Create New")
+            TaskConstants.LABEL_OPTIONS.toMutableList()
         )
     }
     var isRecording by remember { mutableStateOf(false) }
@@ -819,7 +813,7 @@ private fun CreateTaskBottomSheet(
         if (text.isNotEmpty()) {
             onTitleChange(text)
         } else {
-            Toast.makeText(context, "未识别到语音", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, taskText.toastNoSpeech, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -892,7 +886,7 @@ private fun CreateTaskBottomSheet(
                             focusManager.clearFocus(force = true)
                             onDismiss()
                         } else {
-                            Toast.makeText(context, "请输入任务标题", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, taskText.toastEmptyTitle, Toast.LENGTH_SHORT).show()
                             titleFocusRequester.requestFocus()
                             keyboardController?.show()
                         }
@@ -901,7 +895,7 @@ private fun CreateTaskBottomSheet(
                 decorationBox = { innerTextField ->
                     if (title.isEmpty()) {
                         Text(
-                            text = "What are you doing?",
+                            text = taskText.titlePlaceholder,
                             fontSize = 22.sp,
                             color = AppColors.SecondaryText.copy(alpha = 0.7f)
                         )
@@ -923,7 +917,7 @@ private fun CreateTaskBottomSheet(
                 decorationBox = { innerTextField ->
                     if (description.isEmpty()) {
                         Text(
-                            text = "Describe it",
+                            text = taskText.descriptionPlaceholder,
                             fontSize = 15.sp,
                             color = AppColors.HintText
                         )
@@ -942,16 +936,16 @@ private fun CreateTaskBottomSheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.AccessTime,
-                        contentDescription = "Time icon",
-                        tint = if (hasSelectedTime) (TimeBlockTitleColors[config.timeBlock] ?: AppColors.IconNeutral) else AppColors.IconNeutral,
+                        contentDescription = taskText.contentDescTimeIcon,
+                        tint = if (hasSelectedTime) TaskUtils.getTimeBlockTitleColor(config.timeBlock) else AppColors.IconNeutral,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.Flag,
-                        contentDescription = "Flag icon",
-                        tint = if (hasSelectedUrgency) UrgencyColors[meta.urgency] else AppColors.IconNeutral,
+                        contentDescription = taskText.contentDescFlagIcon,
+                        tint = if (hasSelectedUrgency) TaskUtils.getUrgencyColor(meta.urgency) else AppColors.IconNeutral,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
                     )
                     Spacer(Modifier.width(4.dp))
@@ -959,13 +953,13 @@ private fun CreateTaskBottomSheet(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(UrgencyColors[meta.urgency])
+                            .background(TaskUtils.getUrgencyColor(meta.urgency))
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.Label,
-                        contentDescription = "Label icon",
+                        contentDescription = taskText.contentDescLabelIcon,
                         tint = AppColors.IconNeutral,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
                     )
@@ -976,31 +970,31 @@ private fun CreateTaskBottomSheet(
                 }
                 Icon(
                     imageVector = Icons.Default.AttachFile,
-                    contentDescription = "Attach icon",
+                    contentDescription = taskText.contentDescAttachIcon,
                     tint = AppColors.IconNeutral,
                     modifier = Modifier.clickable { showIconSheet(IconSheetType.ATTACH) }
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         imageVector = Icons.Default.Mic,
-                        contentDescription = "Mic icon",
+                        contentDescription = taskText.contentDescMicIcon,
                         tint = AppColors.IconNeutral,
                         modifier = Modifier.clickable {
                             isRecording = true
                             val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
                                 putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
-                                putExtra("android.speech.extra.PROMPT", "请说出任务标题")
+                                putExtra("android.speech.extra.PROMPT", taskText.voicePrompt)
                             }
                             try {
                                 speechLauncher.launch(intent)
                             } catch (_: Exception) {
                                 isRecording = false
-                                Toast.makeText(context, "当前设备不支持语音识别", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, taskText.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
                     if (isRecording) {
-                        Text(text = "录音中", fontSize = AppTypography.Caption, color = AppColors.Urgent)
+                        Text(text = taskText.recording, fontSize = AppTypography.Caption, color = AppColors.Urgent)
                     }
                 }
             }
@@ -1021,16 +1015,10 @@ private fun CreateTaskBottomSheet(
                 ) {
                     when (type) {
                         IconSheetType.TIME -> {
-                            listOf("ANYTIME", "MORNING", "AFTERNOON", "EVENING").forEach { option ->
+                            TaskConstants.TIME_BLOCKS.forEach { option ->
                                 OptionRow(
                                     text = option,
-                                    leadingIcon = when (option) {
-                                        "ANYTIME" -> "🕒"
-                                        "MORNING" -> "🌅"
-                                        "AFTERNOON" -> "☀️"
-                                        "EVENING" -> "🌙"
-                                        else -> "•"
-                                    },
+                                    leadingIcon = taskText.timeBlockIcons[option] ?: "•",
                                     selected = config.timeBlock == option,
                                     onClick = {
                                         hasSelectedTime = true
@@ -1041,14 +1029,14 @@ private fun CreateTaskBottomSheet(
                             }
                         }
                         IconSheetType.URGENCY -> {
-                            val options = listOf("紧急", "重要", "普通", "低优先级")
-                            options.forEachIndexed { index, option ->
+                            val options = TaskConstants.URGENCY_LEVELS
+                            options.entries.forEach { entry ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
                                             hasSelectedUrgency = true
-                                            onMetaChange(meta.copy(urgency = index))
+                                            onMetaChange(meta.copy(urgency = entry.key))
                                             closeIconSheetAndRestoreKeyboard()
                                         }
                                         .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -1058,13 +1046,13 @@ private fun CreateTaskBottomSheet(
                                         modifier = Modifier
                                             .size(12.dp)
                                             .clip(CircleShape)
-                                            .background(UrgencyColors[index])
+                                            .background(TaskUtils.getUrgencyColor(entry.key))
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        text = option,
+                                        text = entry.value,
                                         fontSize = 15.sp,
-                                        color = if (meta.urgency == index) AppColors.PrimaryText else AppColors.SecondaryText
+                                        color = if (meta.urgency == entry.key) AppColors.PrimaryText else AppColors.SecondaryText
                                     )
                                 }
                             }
@@ -1079,25 +1067,16 @@ private fun CreateTaskBottomSheet(
                                 labelOptions.forEach { option ->
                                     OptionRow(
                                         text = option,
-                                        leadingIcon = when (option) {
-                                            "None" -> "⚪"
-                                            "Work" -> "💼"
-                                            "Habit" -> "🔄"
-                                            "Study" -> "📚"
-                                            "Life" -> "🏡"
-                                            "Exercise" -> "🏃"
-                                            "Travel" -> "✈️"
-                                            "Create New" -> "➕"
-                                            else -> "🏷️"
-                                        },
-                                        selected = (option != "None" && option == meta.label) || (option == "None" && meta.label == null),
+                                        leadingIcon = TaskConstants.LABEL_ICONS[option] ?: taskText.labelFallbackIcon,
+                                        selected = (option != TaskConstants.LABEL_NONE && option == meta.label) ||
+                                            (option == TaskConstants.LABEL_NONE && meta.label == null),
                                         onClick = {
                                             when (option) {
-                                                "None" -> {
+                                                TaskConstants.LABEL_NONE -> {
                                                     onMetaChange(meta.copy(label = null))
                                                     closeIconSheetAndRestoreKeyboard()
                                                 }
-                                                "Create New" -> {
+                                                TaskConstants.LABEL_CREATE_NEW -> {
                                                     if (customLabelInput.isNotBlank()) {
                                                         val custom = customLabelInput.trim()
                                                         if (!labelOptions.contains(custom)) {
@@ -1115,7 +1094,7 @@ private fun CreateTaskBottomSheet(
                                             }
                                         }
                                     )
-                                    if (option == "Create New") {
+                                    if (option == TaskConstants.LABEL_CREATE_NEW) {
                                         BasicTextField(
                                             value = customLabelInput,
                                             onValueChange = { customLabelInput = it },
@@ -1125,7 +1104,7 @@ private fun CreateTaskBottomSheet(
                                                 .padding(horizontal = 20.dp, vertical = 8.dp),
                                             decorationBox = { inner ->
                                                 if (customLabelInput.isBlank()) {
-                                                    Text("Input custom label", fontSize = 15.sp, color = AppColors.SecondaryText)
+                                                    Text(taskText.customLabelPlaceholder, fontSize = 15.sp, color = AppColors.SecondaryText)
                                                 }
                                                 inner()
                                             }
@@ -1135,12 +1114,12 @@ private fun CreateTaskBottomSheet(
                             }
                         }
                         IconSheetType.ATTACH -> {
-                            OptionRow(text = "选择 emoji 图片", selected = meta.emojiImage != null, onClick = {})
+                            OptionRow(text = taskText.attachEmojiOption, selected = meta.emojiImage != null, onClick = {})
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                listOf("📅", "💼", "📚").forEach { emoji ->
+                                taskText.attachEmojis.forEach { emoji ->
                                     Text(
                                         text = emoji,
                                         fontSize = 24.sp,
@@ -1152,7 +1131,7 @@ private fun CreateTaskBottomSheet(
                                 }
                             }
                             OptionRow(
-                                text = "选择本地图片",
+                                text = taskText.attachLocalOption,
                                 selected = meta.localImageUri != null,
                                 onClick = { iconSheetType = IconSheetType.ATTACH_LOCAL }
                             )
@@ -1166,7 +1145,7 @@ private fun CreateTaskBottomSheet(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
+                                    contentDescription = taskText.contentDescBack,
                                     tint = AppColors.IconNeutral,
                                     modifier = Modifier
                                         .size(24.dp)
@@ -1174,17 +1153,17 @@ private fun CreateTaskBottomSheet(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "Local Image",
+                                    text = taskText.localImageTitle,
                                     fontSize = 15.sp,
                                     color = AppColors.IconNeutral,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
                             OptionRow(
-                                text = "Open local image picker",
+                                text = taskText.openLocalImagePicker,
                                 selected = false,
-                                leadingIcon = "🖼️",
-                                onClick = { imagePickerLauncher.launch("image/*") }
+                                leadingIcon = taskText.localPickerIcon,
+                                onClick = { imagePickerLauncher.launch(taskText.imagePickerMime) }
                             )
                         }
                     }
@@ -1223,136 +1202,5 @@ private fun OptionRow(
             color = textColor,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
-    }
-}
-
-@Composable
-private fun TaskItemCard(
-    task: Task,
-    onToggleComplete: () -> Unit
-) {
-    val urgencyColor = UrgencyColors[task.urgency]
-    val hasDescription = task.description.isNotBlank()
-    val hasLabel = !task.label.isNullOrBlank()
-    val hasImage = !task.emojiImage.isNullOrBlank() || !task.localImageUri.isNullOrBlank()
-    val baseCardHeight = 48.dp
-    val maxCardHeight = if (hasImage && (hasDescription || hasLabel)) 96.dp else baseCardHeight
-    val imageSize = if (hasImage) maxCardHeight else 0.dp
-    var showFiltering by remember { mutableStateOf(false) }
-    if (showFiltering) {
-        LaunchedEffect(Unit) {
-            delay(2000)
-            showFiltering = false
-        }
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(12.dp),
-                ambientColor = Color.Black.copy(alpha = 0.2f),
-                spotColor = Color.Black.copy(alpha = 0.2f)
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = baseCardHeight, max = maxCardHeight)
-                .clickable { onToggleComplete() }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(if (task.completed) AppColors.Divider else Color.Transparent)
-                    .border(
-                        width = 2.dp,
-                        color = if (task.completed) AppColors.Divider else urgencyColor,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (task.completed) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Completed",
-                        tint = AppColors.IconNeutral,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = task.title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (task.completed) AppColors.IconNeutral else AppColors.PrimaryText,
-                    textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
-                )
-                if (task.description.isNotBlank()) {
-                    Text(
-                        text = task.description,
-                        fontSize = 13.sp,
-                        color = AppColors.SecondaryText.copy(alpha = 0.8f),
-                        textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
-                    )
-                }
-                if (!task.label.isNullOrBlank()) {
-                    Text(
-                        text = "# ${task.label}",
-                        fontSize = 12.sp,
-                        color = TimeBlockTitleColors[task.timeBlock] ?: AppColors.SecondaryText,
-                        modifier = Modifier.clickable { showFiltering = true }
-                    )
-                }
-                if (showFiltering) {
-                    Text(
-                        text = "筛选中",
-                        fontSize = 12.sp,
-                        color = AppColors.SecondaryText
-                    )
-                }
-            }
-
-            if (hasImage) {
-                Spacer(Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(imageSize)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(AppColors.Divider.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!task.emojiImage.isNullOrBlank()) {
-                        Text(text = task.emojiImage, fontSize = 34.sp)
-                    } else if (!task.localImageUri.isNullOrBlank()) {
-                        AndroidView(
-                            factory = { ctx ->
-                                ImageView(ctx).apply {
-                                    scaleType = ImageView.ScaleType.CENTER_CROP
-                                }
-                            },
-                            update = { view ->
-                                view.setImageURI(Uri.parse(task.localImageUri))
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-            }
-        }
     }
 }

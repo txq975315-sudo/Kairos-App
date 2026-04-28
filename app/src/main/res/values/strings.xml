@@ -1,3 +1,37 @@
 <resources>
     <string name="app_name">Kairos  Application</string>
+    <string name="task_content_desc_add_task">Add task</string>
+    <string name="task_content_desc_time_icon">Time icon</string>
+    <string name="task_content_desc_flag_icon">Flag icon</string>
+    <string name="task_content_desc_label_icon">Label icon</string>
+    <string name="task_content_desc_attach_icon">Attach icon</string>
+    <string name="task_content_desc_mic_icon">Mic icon</string>
+    <string name="task_content_desc_completed">Completed</string>
+    <string name="task_content_desc_back">Back</string>
+
+    <string name="task_toast_no_speech">未识别到语音</string>
+    <string name="task_toast_empty_title">请输入任务标题</string>
+    <string name="task_toast_voice_not_supported">当前设备不支持语音识别</string>
+    <string name="task_voice_prompt">请说出任务标题</string>
+    <string name="task_recording">录音中</string>
+
+    <string name="task_title_placeholder">What are you doing?</string>
+    <string name="task_description_placeholder">Describe it</string>
+    <string name="task_custom_label_placeholder">Input custom label</string>
+
+    <string name="task_attach_emoji_option">选择 emoji 图片</string>
+    <string name="task_attach_local_option">选择本地图片</string>
+    <string name="task_local_image_title">Local Image</string>
+    <string name="task_open_local_image_picker">Open local image picker</string>
+    <string name="task_filtering">筛选中</string>
+
+    <string name="task_label_fallback_icon">🏷️</string>
+    <string name="task_local_picker_icon">🖼️</string>
+    <string name="task_image_picker_mime">image/*</string>
+
+    <string name="task_hint_anytime">Anytime today works</string>
+    <string name="task_hint_morning">Morning today works</string>
+    <string name="task_hint_afternoon">Afternoon today works</string>
+    <string name="task_hint_evening">Evening today works</string>
+    <string name="task_hint_default">Add a task</string>
 </resources>
