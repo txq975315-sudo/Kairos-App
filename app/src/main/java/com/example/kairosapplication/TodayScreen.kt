@@ -123,69 +123,78 @@ fun TodayScreen() {
             .background(Color(0xFFF9F9F9))
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // 固定头部区域（不随内容滚动）
         Spacer(Modifier.height(8.dp))
         TopBar()
         DateSection()
         QuoteSection()
+        Spacer(Modifier.height(10.dp))
 
-        TimeBlock(
-            label = "ANYTIME",
-            count = 0,
-            backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
-            icon = Icons.Default.AccessTime,
-            expanded = anytimeExpanded,
-            onToggle = { anytimeExpanded = !anytimeExpanded },
-            tasks = emptyList(),
-            onToggleComplete = {}
-        )
+        // 任务区域独立滚动
+        Column(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
 
-        TimeBlock(
-            label = "MORNING",
-            count = 0,
-            backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
-            icon = Icons.Default.WbTwilight,
-            expanded = morningExpanded,
-            onToggle = { morningExpanded = !morningExpanded },
-            tasks = emptyList(),
-            onToggleComplete = {}
-        )
+            TimeBlock(
+                label = "ANYTIME",
+                count = 0,
+                backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
+                icon = Icons.Default.AccessTime,
+                expanded = anytimeExpanded,
+                onToggle = { anytimeExpanded = !anytimeExpanded },
+                tasks = emptyList(),
+                onToggleComplete = {}
+            )
 
-        TimeBlock(
-            label = "AFTERNOON",
-            count = afternoonTasks.size,
-            backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
-            icon = Icons.Default.WbSunny,
-            expanded = afternoonExpanded,
-            onToggle = { afternoonExpanded = !afternoonExpanded },
-            tasks = sortedAfternoonTasks,
-            onToggleComplete = { task ->
-                val index = afternoonTasks.indexOfFirst { it.id == task.id }
-                if (index != -1) {
-                    afternoonTasks[index] = afternoonTasks[index].copy(completed = !afternoonTasks[index].completed)
+            TimeBlock(
+                label = "MORNING",
+                count = 0,
+                backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
+                icon = Icons.Default.WbTwilight,
+                expanded = morningExpanded,
+                onToggle = { morningExpanded = !morningExpanded },
+                tasks = emptyList(),
+                onToggleComplete = {}
+            )
+
+            TimeBlock(
+                label = "AFTERNOON",
+                count = afternoonTasks.size,
+                backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
+                icon = Icons.Default.WbSunny,
+                expanded = afternoonExpanded,
+                onToggle = { afternoonExpanded = !afternoonExpanded },
+                tasks = sortedAfternoonTasks,
+                onToggleComplete = { task ->
+                    val index = afternoonTasks.indexOfFirst { it.id == task.id }
+                    if (index != -1) {
+                        afternoonTasks[index] = afternoonTasks[index].copy(completed = !afternoonTasks[index].completed)
+                    }
                 }
-            }
-        )
+            )
 
-        TimeBlock(
-            label = "EVENING",
-            count = eveningTasks.size,
-            backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
-            icon = Icons.Default.DarkMode,
-            expanded = eveningExpanded,
-            onToggle = { eveningExpanded = !eveningExpanded },
-            tasks = sortedEveningTasks,
-            onToggleComplete = { task ->
-                val index = eveningTasks.indexOfFirst { it.id == task.id }
-                if (index != -1) {
-                    eveningTasks[index] = eveningTasks[index].copy(completed = !eveningTasks[index].completed)
+            TimeBlock(
+                label = "EVENING",
+                count = eveningTasks.size,
+                backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
+                icon = Icons.Default.DarkMode,
+                expanded = eveningExpanded,
+                onToggle = { eveningExpanded = !eveningExpanded },
+                tasks = sortedEveningTasks,
+                onToggleComplete = { task ->
+                    val index = eveningTasks.indexOfFirst { it.id == task.id }
+                    if (index != -1) {
+                        eveningTasks[index] = eveningTasks[index].copy(completed = !eveningTasks[index].completed)
+                    }
                 }
-            }
-        )
+            )
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
+        }
     }
 }
 
