@@ -12,10 +12,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,36 +27,51 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,8 +91,16 @@ val UrgencyColors = listOf(
 val TimeBlockColors = mapOf(
     "ANYTIME" to Color(0xFFF2EEE6),
     "MORNING" to Color(0xFFFFF8E6),
-    "AFTERNOON" to Color(0xFFFED7C7),
-    "EVENING" to Color(0xFFE0DBFF)
+    "AFTERNOON" to Color(0xFFFBE1D6),
+    "EVENING" to Color(0xFFECE7FF)
+)
+
+// 弹窗标题深色文字
+val TimeBlockTitleColors = mapOf(
+    "ANYTIME" to Color(0xFF6C5C4A),
+    "MORNING" to Color(0xFF8A6E2F),
+    "AFTERNOON" to Color(0xFF9B5A40),
+    "EVENING" to Color(0xFF5C4F96)
 )
 
 data class Task(
@@ -81,6 +108,12 @@ data class Task(
     val title: String,
     val urgency: Int,  // 0-3 表示紧急程度
     var completed: Boolean = false
+)
+
+private data class CreateSheetConfig(
+    val timeBlock: String,
+    val backgroundColor: Color,
+    val titleColor: Color
 )
 
 @Composable
@@ -131,6 +164,19 @@ fun TodayScreen(
     val completedCount by remember {
         derivedStateOf { if (currentDate == LocalDate.now()) afternoonTasks.count { it.completed } + eveningTasks.count { it.completed } else 0 }
     }
+    var createSheetConfig by remember { mutableStateOf<CreateSheetConfig?>(null) }
+    // 弹窗输入内容上提：关闭弹窗时不清空，保留用户已输入文本
+    var createTitle by remember { mutableStateOf("") }
+    var createDescription by remember { mutableStateOf("") }
+
+    // 统一时间块创建入口：按点击块动态切换弹窗标题与配色
+    val showCreateSheet: (String) -> Unit = { timeBlock ->
+        createSheetConfig = CreateSheetConfig(
+            timeBlock = timeBlock,
+            backgroundColor = TimeBlockColors[timeBlock] ?: Color(0xFFF2EEE6),
+            titleColor = TimeBlockTitleColors[timeBlock] ?: PrimaryTextColor
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -171,7 +217,8 @@ fun TodayScreen(
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
                 tasks = emptyList(),
-                onToggleComplete = {}
+                onToggleComplete = {},
+                onCreateClick = { showCreateSheet("ANYTIME") }
             )
 
             TimeBlock(
@@ -182,7 +229,8 @@ fun TodayScreen(
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
                 tasks = emptyList(),
-                onToggleComplete = {}
+                onToggleComplete = {},
+                onCreateClick = { showCreateSheet("MORNING") }
             )
 
             TimeBlock(
@@ -198,7 +246,8 @@ fun TodayScreen(
                     if (index != -1) {
                         afternoonTasks[index] = afternoonTasks[index].copy(completed = !afternoonTasks[index].completed)
                     }
-                }
+                },
+                onCreateClick = { showCreateSheet("AFTERNOON") }
             )
 
             TimeBlock(
@@ -214,11 +263,26 @@ fun TodayScreen(
                     if (index != -1) {
                         eveningTasks[index] = eveningTasks[index].copy(completed = !eveningTasks[index].completed)
                     }
-                }
+                },
+                onCreateClick = { showCreateSheet("EVENING") }
             )
 
             Spacer(Modifier.height(16.dp))
         }
+    }
+
+    createSheetConfig?.let { config ->
+        CreateTaskBottomSheet(
+            config = config,
+            onDismiss = { createSheetConfig = null },
+            title = createTitle,
+            onTitleChange = { createTitle = it },
+            description = createDescription,
+            onDescriptionChange = { createDescription = it },
+            onCreateTask = { _, _, _ ->
+                // 预留创建任务回调，后续接入真实存储逻辑
+            }
+        )
     }
 }
 
@@ -409,7 +473,8 @@ private fun TimeBlock(
     expanded: Boolean,
     onToggle: () -> Unit,
     tasks: List<Task>,
-    onToggleComplete: (Task) -> Unit
+    onToggleComplete: (Task) -> Unit,
+    onCreateClick: () -> Unit
 ) {
     val hasTasks = count > 0
 
@@ -464,26 +529,28 @@ private fun TimeBlock(
 
                 Spacer(Modifier.weight(1f))
 
-                // 创建按钮 - 用固定的右边距
-                if (hasTasks) {
+                // 每个时间块都提供创建入口
+                Box(
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .clip(CircleShape)
+                        .clickable { onCreateClick() }
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
-                        modifier = Modifier.padding(end = 16.dp), // 这里设置右边距
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.05f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.05f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add task",
-                                tint = Color.Black.copy(alpha = 0.18f),
-                                modifier = Modifier.size(27.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add task",
+                            tint = Color.Black.copy(alpha = 0.18f),
+                            modifier = Modifier.size(27.dp)
+                        )
                     }
                 }
             }
@@ -495,7 +562,7 @@ private fun TimeBlock(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (!hasTasks) {
-                    EmptyTaskCard(label = label)
+                    EmptyTaskCard(label = label, onCreateClick = onCreateClick)
                 }
 
                 tasks.forEach { task ->
@@ -510,7 +577,10 @@ private fun TimeBlock(
 }
 
 @Composable
-private fun EmptyTaskCard(label: String) {
+private fun EmptyTaskCard(
+    label: String,
+    onCreateClick: () -> Unit
+) {
     val hintText = when (label) {
         "ANYTIME" -> "Anytime today works"
         "MORNING" -> "Morning today works"
@@ -547,7 +617,8 @@ private fun EmptyTaskCard(label: String) {
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.05f)),
+                    .background(Color.Black.copy(alpha = 0.05f))
+                    .clickable { onCreateClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -559,6 +630,132 @@ private fun EmptyTaskCard(label: String) {
             }
         }
     }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun CreateTaskBottomSheet(
+    config: CreateSheetConfig,
+    onDismiss: () -> Unit,
+    title: String,
+    onTitleChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    onCreateTask: (title: String, description: String, timeBlock: String) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val titleFocusRequester = remember { FocusRequester() }
+
+    // 弹窗出现时自动聚焦主输入框并拉起系统键盘
+    LaunchedEffect(Unit) {
+        titleFocusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = {
+            keyboardController?.hide()
+            focusManager.clearFocus(force = true)
+            onDismiss()
+        },
+        sheetState = sheetState,
+        containerColor = config.backgroundColor,
+        contentColor = Color.Black,
+        dragHandle = null,
+        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = config.timeBlock,
+                modifier = Modifier.fillMaxWidth(),
+                color = config.titleColor,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            BasicTextField(
+                value = title,
+                onValueChange = onTitleChange,
+                textStyle = TextStyle(
+                    fontSize = 22.sp,
+                    color = Color(0xFF666666),
+                    fontWeight = FontWeight.Normal
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(titleFocusRequester),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus(force = true)
+                        onDismiss()
+                    }
+                ),
+                decorationBox = { innerTextField ->
+                    if (title.isEmpty()) {
+                        Text(
+                            text = "What are you doing?",
+                            fontSize = 22.sp,
+                            color = Color(0xFF666666).copy(alpha = 0.7f)
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            BasicTextField(
+                value = description,
+                onValueChange = onDescriptionChange,
+                textStyle = TextStyle(
+                    fontSize = 15.sp,
+                    color = Color(0xFF666666)
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                decorationBox = { innerTextField ->
+                    if (description.isEmpty()) {
+                        Text(
+                            text = "Describe it",
+                            fontSize = 15.sp,
+                            color = Color(0xFF9A9A9A)
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Default.AccessTime, contentDescription = "Time icon", tint = Color(0xFF6F6F6F))
+                Icon(imageVector = Icons.Default.Flag, contentDescription = "Flag icon", tint = Color(0xFF6F6F6F))
+                Icon(imageVector = Icons.Default.Label, contentDescription = "Label icon", tint = Color(0xFF6F6F6F))
+                Icon(imageVector = Icons.Default.AttachFile, contentDescription = "Attach icon", tint = Color(0xFF6F6F6F))
+                Icon(imageVector = Icons.Default.Mic, contentDescription = "Mic icon", tint = Color(0xFF6F6F6F))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+
+    @Suppress("UNUSED_VARIABLE")
+    val reservedCreateCallback = onCreateTask
 }
 
 @Composable
