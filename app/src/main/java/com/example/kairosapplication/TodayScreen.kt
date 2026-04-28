@@ -90,8 +90,12 @@ import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.kairosapplication.ui.theme.PrimaryTextColor
-import com.example.kairosapplication.ui.theme.SecondaryTextColor
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppInteraction
+import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppSize
+import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.AppTypography
 import java.time.LocalDate
 import android.widget.Toast
 import android.widget.ImageView
@@ -99,26 +103,26 @@ import kotlinx.coroutines.delay
 
 // 紧急程度颜色
 val UrgencyColors = listOf(
-    Color(0xFFFF4444),  // 红色 - 紧急
-    Color(0xFFFF9800),  // 橙色 - 高
-    Color(0xFFFFFC3A),  // 黄色 - 中
-    Color(0xFF9E9E9E)   // 中性灰 - 低
+    AppColors.Urgent,  // 红色 - 紧急
+    AppColors.High,  // 橙色 - 高
+    AppColors.Normal,  // 黄色 - 中
+    AppColors.Low   // 中性灰 - 低
 )
 
 // 时间块背景颜色
 val TimeBlockColors = mapOf(
-    "ANYTIME" to Color(0xFFF2EEE6),
-    "MORNING" to Color(0xFFFFF8E6),
-    "AFTERNOON" to Color(0xFFFBE1D6),
-    "EVENING" to Color(0xFFECE7FF)
+    "ANYTIME" to AppColors.AnytimeBackground,
+    "MORNING" to AppColors.MorningBackground,
+    "AFTERNOON" to AppColors.AfternoonBackground,
+    "EVENING" to AppColors.EveningBackground
 )
 
 // 弹窗标题深色文字
 val TimeBlockTitleColors = mapOf(
-    "ANYTIME" to Color(0xFF6C5C4A),
-    "MORNING" to Color(0xFF8A6E2F),
-    "AFTERNOON" to Color(0xFF9B5A40),
-    "EVENING" to Color(0xFF5C4F96)
+    "ANYTIME" to AppColors.AnytimeTitle,
+    "MORNING" to AppColors.MorningTitle,
+    "AFTERNOON" to AppColors.AfternoonTitle,
+    "EVENING" to AppColors.EveningTitle
 )
 
 data class Task(
@@ -219,20 +223,20 @@ fun TodayScreen(
     val showCreateSheet: (String) -> Unit = { timeBlock ->
         createSheetConfig = CreateSheetConfig(
             timeBlock = timeBlock,
-            backgroundColor = TimeBlockColors[timeBlock] ?: Color(0xFFF2EEE6),
-            titleColor = TimeBlockTitleColors[timeBlock] ?: PrimaryTextColor
+            backgroundColor = TimeBlockColors[timeBlock] ?: AppColors.AnytimeBackground,
+            titleColor = TimeBlockTitleColors[timeBlock] ?: AppColors.PrimaryText
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9F9F9))
+            .background(AppColors.ScreenBackground)
             .statusBarsPadding()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = AppSpacing.PageHorizontal)
     ) {
         // 固定头部区域（不随内容滚动）
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(AppSpacing.SectionSmall))
         TopBar(
             completed = completedCount,
             total = totalCount,
@@ -245,20 +249,20 @@ fun TodayScreen(
             onNext = { currentDate = currentDate.plusDays(1) }
         )
         QuoteSection(onClick = onQuoteClick)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(AppSpacing.SectionMedium))
 
         // 任务区域独立滚动
         Column(
             modifier = Modifier
                 .weight(1f, fill = false)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
         ) {
 
             TimeBlock(
                 label = "ANYTIME",
                 count = if (isToday) anytimeTasks.size else 0,
-                backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
+                backgroundColor = TimeBlockColors["ANYTIME"] ?: AppColors.AnytimeBackground,
                 icon = Icons.Default.AccessTime,
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
@@ -275,7 +279,7 @@ fun TodayScreen(
             TimeBlock(
                 label = "MORNING",
                 count = if (isToday) morningTasks.size else 0,
-                backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
+                backgroundColor = TimeBlockColors["MORNING"] ?: AppColors.MorningBackground,
                 icon = Icons.Default.WbTwilight,
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
@@ -292,7 +296,7 @@ fun TodayScreen(
             TimeBlock(
                 label = "AFTERNOON",
                 count = if (isToday) afternoonTasks.size else 0,
-                backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
+                backgroundColor = TimeBlockColors["AFTERNOON"] ?: AppColors.AfternoonBackground,
                 icon = Icons.Default.WbSunny,
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
@@ -309,7 +313,7 @@ fun TodayScreen(
             TimeBlock(
                 label = "EVENING",
                 count = if (isToday) eveningTasks.size else 0,
-                backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
+                backgroundColor = TimeBlockColors["EVENING"] ?: AppColors.EveningBackground,
                 icon = Icons.Default.DarkMode,
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
@@ -323,7 +327,7 @@ fun TodayScreen(
                 onCreateClick = { showCreateSheet("EVENING") }
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(AppSpacing.SectionXLarge))
         }
     }
 
@@ -350,8 +354,8 @@ fun TodayScreen(
             onTimeBlockChange = { newTimeBlock ->
                 createSheetConfig = createSheetConfig?.copy(
                     timeBlock = newTimeBlock,
-                    backgroundColor = TimeBlockColors[newTimeBlock] ?: Color(0xFFF2EEE6),
-                    titleColor = TimeBlockTitleColors[newTimeBlock] ?: PrimaryTextColor
+                    backgroundColor = TimeBlockColors[newTimeBlock] ?: AppColors.AnytimeBackground,
+                    titleColor = TimeBlockTitleColors[newTimeBlock] ?: AppColors.PrimaryText
                 )
             },
             onCreateTask = { title, description, timeBlock, meta ->
@@ -392,7 +396,7 @@ private fun TopBar(
 ) {
     // 统一阴影参数：Blur≈8, Y偏移≈2, Black 5%
     val shadowElevation = 4.dp
-    val shadowColor = Color.Black.copy(alpha = 0.05f)
+    val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -417,13 +421,13 @@ private fun TopBar(
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = SecondaryTextColor,
+                    tint = AppColors.SecondaryText,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "$completed / $total",
-                    color = PrimaryTextColor,
+                    color = AppColors.PrimaryText,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -475,7 +479,7 @@ private fun TopBar(
             Icon(
                 imageVector = Icons.Default.MoreHoriz,
                 contentDescription = "Daily Review",
-                tint = PrimaryTextColor,
+                tint = AppColors.PrimaryText,
                 modifier = Modifier.size(26.dp)
             )
         }
@@ -508,7 +512,7 @@ private fun DateSection(
         Icon(
             imageVector = Icons.Default.KeyboardArrowLeft,
             contentDescription = "Previous day",
-            tint = PrimaryTextColor,
+            tint = AppColors.PrimaryText,
             modifier = Modifier.size(32.dp).clickable { onPrevious() }
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -516,19 +520,19 @@ private fun DateSection(
                 text = dayOfWeek,
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryTextColor,
+                color = AppColors.PrimaryText,
                 lineHeight = 48.sp
             )
             Text(
                 text = "$month $dayWithSuffix, $year",
                 fontSize = 16.sp,
-                color = SecondaryTextColor
+                color = AppColors.SecondaryText
             )
         }
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = "Next day",
-            tint = PrimaryTextColor,
+            tint = AppColors.PrimaryText,
             modifier = Modifier.size(32.dp).clickable { onNext() }
         )
     }
@@ -550,7 +554,7 @@ private fun QuoteSection(onClick: () -> Unit) {
             .padding(horizontal = 2.dp)
             .alpha(if (isPressed) 0.8f else 1f)
     ) {
-        HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+        HorizontalDivider(color = AppColors.Divider, thickness = 1.dp)
         Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -559,18 +563,18 @@ private fun QuoteSection(onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.FormatQuote,
                 contentDescription = null,
-                tint = SecondaryTextColor,
+                tint = AppColors.SecondaryText,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(6.dp))
             Text(
                 text = "纵有疾风起，人生不言弃",
                 fontSize = 14.sp,
-                color = SecondaryTextColor
+                color = AppColors.SecondaryText
             )
         }
         Spacer(Modifier.height(8.dp))
-        HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+        HorizontalDivider(color = AppColors.Divider, thickness = 1.dp)
     }
 }
 
@@ -612,7 +616,7 @@ private fun TimeBlock(
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = SecondaryTextColor,
+                            tint = AppColors.SecondaryText,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(Modifier.width(4.dp))
@@ -620,19 +624,19 @@ private fun TimeBlock(
                             text = label,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = PrimaryTextColor
+                            color = AppColors.PrimaryText
                         )
                         Spacer(Modifier.width(2.dp))
                         Text(
                             text = "($count)",
                             fontSize = 14.sp,
-                            color = SecondaryTextColor
+                            color = AppColors.SecondaryText
                         )
                         Spacer(Modifier.width(2.dp))
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                             contentDescription = if (expanded) "Collapse" else "Expand",
-                            tint = SecondaryTextColor,
+                            tint = AppColors.SecondaryText,
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -714,7 +718,7 @@ private fun EmptyTaskCard(
                 .height(48.dp)
                 .border(
                     width = 1.dp,
-                    color = Color(0xC1C1C1).copy(alpha = 0.5f),
+                    color = AppColors.SecondaryText.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(horizontal = 16.dp), // 左右padding统一
@@ -724,7 +728,7 @@ private fun EmptyTaskCard(
             Text(
                 text = hintText,
                 fontSize = 14.sp,
-                color = Color(0x999999).copy(alpha = 0.6f)
+                color = AppColors.HintText.copy(alpha = 0.6f)
             )
             Box(
                 modifier = Modifier
@@ -860,7 +864,7 @@ private fun CreateTaskBottomSheet(
                 onValueChange = onTitleChange,
                 textStyle = TextStyle(
                     fontSize = 22.sp,
-                    color = Color(0xFF666666),
+                    color = AppColors.SecondaryText,
                     fontWeight = FontWeight.Normal
                 ),
                 modifier = Modifier
@@ -886,7 +890,7 @@ private fun CreateTaskBottomSheet(
                         Text(
                             text = "What are you doing?",
                             fontSize = 22.sp,
-                            color = Color(0xFF666666).copy(alpha = 0.7f)
+                            color = AppColors.SecondaryText.copy(alpha = 0.7f)
                         )
                     }
                     innerTextField()
@@ -900,7 +904,7 @@ private fun CreateTaskBottomSheet(
                 onValueChange = onDescriptionChange,
                 textStyle = TextStyle(
                     fontSize = 15.sp,
-                    color = Color(0xFF666666)
+                    color = AppColors.SecondaryText
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 decorationBox = { innerTextField ->
@@ -908,7 +912,7 @@ private fun CreateTaskBottomSheet(
                         Text(
                             text = "Describe it",
                             fontSize = 15.sp,
-                            color = Color(0xFF9A9A9A)
+                            color = AppColors.HintText
                         )
                     }
                     innerTextField()
@@ -926,7 +930,7 @@ private fun CreateTaskBottomSheet(
                     Icon(
                         imageVector = Icons.Default.AccessTime,
                         contentDescription = "Time icon",
-                        tint = if (hasSelectedTime) (TimeBlockTitleColors[config.timeBlock] ?: Color(0xFF9E9E9E)) else Color(0xFF9E9E9E),
+                        tint = if (hasSelectedTime) (TimeBlockTitleColors[config.timeBlock] ?: AppColors.IconNeutral) else AppColors.IconNeutral,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
                     )
                 }
@@ -934,7 +938,7 @@ private fun CreateTaskBottomSheet(
                     Icon(
                         imageVector = Icons.Outlined.Flag,
                         contentDescription = "Flag icon",
-                        tint = if (hasSelectedUrgency) UrgencyColors[meta.urgency] else Color(0xFF9E9E9E),
+                        tint = if (hasSelectedUrgency) UrgencyColors[meta.urgency] else AppColors.IconNeutral,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
                     )
                     Spacer(Modifier.width(4.dp))
@@ -949,7 +953,7 @@ private fun CreateTaskBottomSheet(
                     Icon(
                         imageVector = Icons.Outlined.Label,
                         contentDescription = "Label icon",
-                        tint = Color(0xFF9E9E9E),
+                        tint = AppColors.IconNeutral,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
                     )
                     if (!meta.label.isNullOrBlank()) {
@@ -960,14 +964,14 @@ private fun CreateTaskBottomSheet(
                 Icon(
                     imageVector = Icons.Default.AttachFile,
                     contentDescription = "Attach icon",
-                    tint = Color(0xFF9E9E9E),
+                    tint = AppColors.IconNeutral,
                     modifier = Modifier.clickable { showIconSheet(IconSheetType.ATTACH) }
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         imageVector = Icons.Default.Mic,
                         contentDescription = "Mic icon",
-                        tint = Color(0xFF9E9E9E),
+                        tint = AppColors.IconNeutral,
                         modifier = Modifier.clickable {
                             isRecording = true
                             val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
@@ -983,7 +987,7 @@ private fun CreateTaskBottomSheet(
                         }
                     )
                     if (isRecording) {
-                        Text(text = "录音中", fontSize = 12.sp, color = Color(0xFFFF4444))
+                        Text(text = "录音中", fontSize = AppTypography.Caption, color = AppColors.Urgent)
                     }
                 }
             }
@@ -1047,7 +1051,7 @@ private fun CreateTaskBottomSheet(
                                     Text(
                                         text = option,
                                         fontSize = 15.sp,
-                                        color = if (meta.urgency == index) PrimaryTextColor else SecondaryTextColor
+                                        color = if (meta.urgency == index) AppColors.PrimaryText else AppColors.SecondaryText
                                     )
                                 }
                             }
@@ -1102,13 +1106,13 @@ private fun CreateTaskBottomSheet(
                                         BasicTextField(
                                             value = customLabelInput,
                                             onValueChange = { customLabelInput = it },
-                                            textStyle = TextStyle(fontSize = 15.sp, color = PrimaryTextColor),
+                                            textStyle = TextStyle(fontSize = 15.sp, color = AppColors.PrimaryText),
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(horizontal = 20.dp, vertical = 8.dp),
                                             decorationBox = { inner ->
                                                 if (customLabelInput.isBlank()) {
-                                                    Text("Input custom label", fontSize = 15.sp, color = SecondaryTextColor)
+                                                    Text("Input custom label", fontSize = 15.sp, color = AppColors.SecondaryText)
                                                 }
                                                 inner()
                                             }
@@ -1150,7 +1154,7 @@ private fun CreateTaskBottomSheet(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Back",
-                                    tint = Color(0xFF9E9E9E),
+                                    tint = AppColors.IconNeutral,
                                     modifier = Modifier
                                         .size(24.dp)
                                         .clickable { closeIconSheetAndRestoreKeyboard() }
@@ -1159,7 +1163,7 @@ private fun CreateTaskBottomSheet(
                                 Text(
                                     text = "Local Image",
                                     fontSize = 15.sp,
-                                    color = Color(0xFF9E9E9E),
+                                    color = AppColors.IconNeutral,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -1184,7 +1188,7 @@ private fun OptionRow(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val textColor = if (selected) PrimaryTextColor else SecondaryTextColor
+    val textColor = if (selected) AppColors.PrimaryText else AppColors.SecondaryText
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1254,10 +1258,10 @@ private fun TaskItemCard(
                 modifier = Modifier
                     .size(22.dp)
                     .clip(CircleShape)
-                    .background(if (task.completed) Color(0xFFE0E0E0) else Color.Transparent)
+                    .background(if (task.completed) AppColors.Divider else Color.Transparent)
                     .border(
                         width = 2.dp,
-                        color = if (task.completed) Color(0xFFE0E0E0) else urgencyColor,
+                        color = if (task.completed) AppColors.Divider else urgencyColor,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -1266,7 +1270,7 @@ private fun TaskItemCard(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Completed",
-                        tint = Color(0xFF9E9E9E),
+                        tint = AppColors.IconNeutral,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -1282,14 +1286,14 @@ private fun TaskItemCard(
                     text = task.title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (task.completed) Color(0xFF9E9E9E) else PrimaryTextColor,
+                    color = if (task.completed) AppColors.IconNeutral else AppColors.PrimaryText,
                     textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
                 )
                 if (task.description.isNotBlank()) {
                     Text(
                         text = task.description,
                         fontSize = 13.sp,
-                        color = Color(0xFF8A8A8A),
+                        color = AppColors.SecondaryText.copy(alpha = 0.8f),
                         textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
@@ -1297,7 +1301,7 @@ private fun TaskItemCard(
                     Text(
                         text = "# ${task.label}",
                         fontSize = 12.sp,
-                        color = TimeBlockTitleColors[task.timeBlock] ?: SecondaryTextColor,
+                        color = TimeBlockTitleColors[task.timeBlock] ?: AppColors.SecondaryText,
                         modifier = Modifier.clickable { showFiltering = true }
                     )
                 }
@@ -1305,7 +1309,7 @@ private fun TaskItemCard(
                     Text(
                         text = "筛选中",
                         fontSize = 12.sp,
-                        color = SecondaryTextColor
+                        color = AppColors.SecondaryText
                     )
                 }
             }
@@ -1316,7 +1320,7 @@ private fun TaskItemCard(
                     modifier = Modifier
                         .size(imageSize)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFF0F0F0)),
+                        .background(AppColors.Divider.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!task.emojiImage.isNullOrBlank()) {
