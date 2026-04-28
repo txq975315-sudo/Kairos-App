@@ -63,13 +63,15 @@ class TaskUtilsTest {
 
     @Test
     fun stopRepeat_clearsSeriesRepeatRule() {
+        val today = LocalDate.of(2026, 4, 29)
+        val tomorrow = today.plusDays(1)
         val tasks = listOf(
-            Task(1, "Workout", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = 1, repeatRule = "WEEKLY_MON"),
-            Task(2, "Workout", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = 1, repeatRule = "WEEKLY_MON")
+            Task(1, "Workout", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = 1, repeatRule = "WEEKLY_MON", taskDate = today),
+            Task(2, "Workout", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = 1, repeatRule = "WEEKLY_MON", taskDate = tomorrow)
         )
         val updated = TaskUtils.stopRepeat(tasks, tasks[0])
         assertEquals(TaskConstants.REPEAT_RULE_NONE, updated[0].repeatRule)
-        assertEquals(TaskConstants.REPEAT_RULE_NONE, updated[1].repeatRule)
+        assertEquals(1, updated.size)
     }
 
 }

@@ -3,6 +3,7 @@ package com.example.taskmodel.util
 import androidx.compose.ui.graphics.Color
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
+import java.time.LocalDate
 
 object TaskUtils {
     private val urgencyColorMap = mapOf(
@@ -66,14 +67,21 @@ object TaskUtils {
     }
 
     /**
-     * 停止重复：将同一规律任务的 repeatRule 清空为 NONE。
+     * 停止重复（从目标任务当天起）：
+     * 1) 删除同系列且日期在目标日期之后的任务；
+     * 2) 保留目标日期及以前的任务，并将目标日期这一条的 repeatRule 置为 NONE。
      */
     fun stopRepeat(tasks: List<Task>, target: Task): List<Task> {
-        return tasks.map { task ->
-            if (isSameSeries(task, target)) {
-                task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE)
-            } else {
+        val cutoffDate = target.taskDate
+        return tasks.mapNotNull { task ->
+            if (!isSameSeries(task, target)) {
                 task
+            } else {
+                when {
+                    task.taskDate.isAfter(cutoffDate) -> null
+                    task.taskDate.isEqual(cutoffDate) -> task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE)
+                    else -> task
+                }
             }
         }
     }

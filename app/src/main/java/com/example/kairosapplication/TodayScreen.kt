@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -34,7 +33,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FormatQuote
@@ -75,7 +73,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalContext
@@ -84,7 +81,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -94,8 +90,6 @@ import com.example.kairosapplication.ui.TaskDetailBottomSheet
 import com.example.kairosapplication.ui.TaskItemCard
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppInteraction
-import com.example.kairosapplication.core.ui.AppShapes
-import com.example.kairosapplication.core.ui.AppSize
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.AppTypography
 import com.example.taskmodel.constants.TaskConstants
@@ -388,7 +382,7 @@ fun TodayScreen(
             },
             onStopRepeat = {
                 applyToAllTaskLists { taskList -> TaskUtils.stopRepeat(taskList, task) }
-                detailTask = task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE)
+                detailTask = null
             }
         )
     }

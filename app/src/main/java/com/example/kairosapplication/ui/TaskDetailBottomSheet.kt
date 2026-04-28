@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -31,14 +32,19 @@ fun TaskDetailBottomSheet(
     onCloseAll: () -> Unit,
     onStopRepeat: () -> Unit
 ) {
+    // 使用稳定的 sheetState，并避免半展开态减少手势冲突。
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = null
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -56,32 +62,35 @@ fun TaskDetailBottomSheet(
                 )
             }
             Text(
-                text = "重复规则：${formatRepeatRule(task.repeatRule)}",
+                text = "Repeat Rule: ${formatRepeatRule(task.repeatRule)}",
                 fontSize = 13.sp,
                 color = Color(0xFF757575)
             )
             Spacer(modifier = Modifier.height(4.dp))
 
             Button(
-                onClick = onCompleteToday,
-                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onCompleteToday()
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("完成今天")
+                Text("Complete Today")
             }
             Button(
-                onClick = onCloseAll,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF455A64))
-            ) {
-                Text("关闭全部")
-            }
-            Button(
-                onClick = onStopRepeat,
-                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onStopRepeat()
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD84315))
             ) {
-                Text("停止重复")
+                Text("Stop Repeat (from today)")
             }
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -92,10 +101,10 @@ private fun formatRepeatRule(repeatRule: String): String {
     return when {
         repeatRule.startsWith("WEEKLY_") -> {
             val day = repeatRule.removePrefix("WEEKLY_")
-            "每周$day，持续4周"
+            "Weekly $day, for 4 weeks"
         }
-        repeatRule == "NONE" -> "不重复"
-        repeatRule.isBlank() -> "不重复"
+        repeatRule == "NONE" -> "None"
+        repeatRule.isBlank() -> "None"
         else -> repeatRule
     }
 }

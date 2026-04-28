@@ -62,6 +62,7 @@ fun TaskItemCard(
                 ambientColor = Color.Black.copy(alpha = 0.2f),
                 spotColor = Color.Black.copy(alpha = 0.2f)
             )
+            // 卡片点击仅用于打开详情弹窗；左侧完成按钮独立处理完成状态。
             .clickable { onOpenDetail() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
