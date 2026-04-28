@@ -1,8 +1,12 @@
 package com.example.kairosapplication
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Edit
@@ -31,6 +35,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -49,6 +57,7 @@ private enum class Overlay { Create, DailyReview }
 fun MainScreen() {
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
+    val navController = rememberNavController()
 
     if (overlay != null) {
         AnimatedContent(
@@ -106,13 +115,47 @@ fun MainScreen() {
                 .fillMaxSize()
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            when (selectedTab) {
-                AppTab.Today -> TodayScreen(
-                    onCreateClick = { overlay = Overlay.Create },
-                    onDailyReviewClick = { overlay = Overlay.DailyReview }
-                )
-                else -> PlaceholderScreen(selectedTab.label)
+            if (selectedTab == AppTab.Today) {
+                NavHost(
+                    navController = navController,
+                    startDestination = "today"
+                ) {
+                    composable("today") {
+                        TodayScreen(
+                            onCreateClick = { overlay = Overlay.Create },
+                            onDailyReviewClick = { overlay = Overlay.DailyReview },
+                            onQuoteClick = { navController.navigate("quote_settings") }
+                        )
+                    }
+                    composable("quote_settings") {
+                        QuoteSettingScreen(onBack = { navController.popBackStack() })
+                    }
+                }
+            } else {
+                PlaceholderScreen(selectedTab.label)
             }
+        }
+    }
+}
+
+@Composable
+private fun QuoteSettingScreen(onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF9F9F9))
+            .statusBarsPadding()
+    ) {
+        CommonBackButton(onClick = onBack)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Daily Sentence",
+                fontSize = 22.sp,
+                color = SecondaryTextColor
+            )
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,9 +65,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -150,7 +153,8 @@ private enum class IconSheetType {
 @Composable
 fun TodayScreen(
     onCreateClick: () -> Unit = {},
-    onDailyReviewClick: () -> Unit = {}
+    onDailyReviewClick: () -> Unit = {},
+    onQuoteClick: () -> Unit = {}
 ) {
     var anytimeExpanded by remember { mutableStateOf(true) }
     var morningExpanded by remember { mutableStateOf(true) }
@@ -240,7 +244,7 @@ fun TodayScreen(
             onPrevious = { currentDate = currentDate.minusDays(1) },
             onNext = { currentDate = currentDate.plusDays(1) }
         )
-        QuoteSection()
+        QuoteSection(onClick = onQuoteClick)
         Spacer(Modifier.height(10.dp))
 
         // 任务区域独立滚动
@@ -531,8 +535,21 @@ private fun DateSection(
 }
 
 @Composable
-private fun QuoteSection() {
-    Column {
+private fun QuoteSection(onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Transparent)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick() }
+            .padding(horizontal = 2.dp)
+            .alpha(if (isPressed) 0.8f else 1f)
+    ) {
         HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
         Spacer(Modifier.height(8.dp))
         Row(
@@ -587,63 +604,66 @@ private fun TimeBlock(
                 ) {
                     Row(
                         modifier = Modifier
+                            .height(32.dp)
                             .clickable(enabled = hasTasks) { if (hasTasks) onToggle() }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
                             tint = SecondaryTextColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(14.dp)
                         )
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(4.dp))
                         Text(
                             text = label,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = PrimaryTextColor
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(2.dp))
                         Text(
                             text = "($count)",
                             fontSize = 14.sp,
                             color = SecondaryTextColor
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(2.dp))
                         Icon(
                             imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                             contentDescription = if (expanded) "Collapse" else "Expand",
                             tint = SecondaryTextColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
 
                 Spacer(Modifier.weight(1f))
 
-                // 每个时间块都提供创建入口
-                Box(
-                    modifier = Modifier
-                        .padding(end = 16.dp)
-                        .clip(CircleShape)
-                        .clickable { onCreateClick() }
-                        .padding(2.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                // 仅在有任务时显示右侧 + 按钮；无任务时隐藏
+                if (hasTasks) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .padding(end = 16.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.05f)),
+                            .clickable { onCreateClick() }
+                            .padding(2.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add task",
-                            tint = Color.Black.copy(alpha = 0.18f),
-                            modifier = Modifier.size(27.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.05f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add task",
+                                tint = Color.Black.copy(alpha = 0.18f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
