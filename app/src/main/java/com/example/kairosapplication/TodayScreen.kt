@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
+import java.time.LocalDate
 
 // 紧急程度颜色
 val UrgencyColors = listOf(
@@ -92,6 +93,9 @@ fun TodayScreen(
     var afternoonExpanded by remember { mutableStateOf(true) }
     var eveningExpanded by remember { mutableStateOf(true) }
 
+    var currentDate by remember { mutableStateOf(LocalDate.now()) }
+    val isToday = currentDate == LocalDate.now()
+
     val afternoonTasks = remember {
         mutableStateListOf(
             Task(1, "Learn Figma", 0),
@@ -120,12 +124,12 @@ fun TodayScreen(
         }
     }
 
-    // TopBar 汇总数据：实时追踪所有任务列表的完成状态
+    // TopBar 汇总数据：实时追踪所有任务列表的完成状态（非今天显示 0）
     val totalCount by remember {
-        derivedStateOf { afternoonTasks.size + eveningTasks.size }
+        derivedStateOf { if (currentDate == LocalDate.now()) afternoonTasks.size + eveningTasks.size else 0 }
     }
     val completedCount by remember {
-        derivedStateOf { afternoonTasks.count { it.completed } + eveningTasks.count { it.completed } }
+        derivedStateOf { if (currentDate == LocalDate.now()) afternoonTasks.count { it.completed } + eveningTasks.count { it.completed } else 0 }
     }
 
     Column(
@@ -143,7 +147,11 @@ fun TodayScreen(
             onCreateClick = onCreateClick,
             onDailyReviewClick = onDailyReviewClick
         )
-        DateSection()
+        DateSection(
+            currentDate = currentDate,
+            onPrevious = { currentDate = currentDate.minusDays(1) },
+            onNext = { currentDate = currentDate.plusDays(1) }
+        )
         QuoteSection()
         Spacer(Modifier.height(10.dp))
 
@@ -179,12 +187,12 @@ fun TodayScreen(
 
             TimeBlock(
                 label = "AFTERNOON",
-                count = afternoonTasks.size,
+                count = if (isToday) afternoonTasks.size else 0,
                 backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
                 icon = Icons.Default.WbSunny,
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
-                tasks = sortedAfternoonTasks,
+                tasks = if (isToday) sortedAfternoonTasks else emptyList(),
                 onToggleComplete = { task ->
                     val index = afternoonTasks.indexOfFirst { it.id == task.id }
                     if (index != -1) {
@@ -195,12 +203,12 @@ fun TodayScreen(
 
             TimeBlock(
                 label = "EVENING",
-                count = eveningTasks.size,
+                count = if (isToday) eveningTasks.size else 0,
                 backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
                 icon = Icons.Default.DarkMode,
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
-                tasks = sortedEveningTasks,
+                tasks = if (isToday) sortedEveningTasks else emptyList(),
                 onToggleComplete = { task ->
                     val index = eveningTasks.indexOfFirst { it.id == task.id }
                     if (index != -1) {
@@ -314,7 +322,23 @@ private fun TopBar(
 }
 
 @Composable
-private fun DateSection() {
+private fun DateSection(
+    currentDate: LocalDate,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit
+) {
+    val dayOfWeek = currentDate.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }
+    val month = currentDate.month.name.lowercase().replaceFirstChar { it.uppercase() }
+    val dayOfMonth = currentDate.dayOfMonth
+    val year = currentDate.year
+    val dayWithSuffix = when {
+        dayOfMonth % 100 in 11..13 -> "${dayOfMonth}th"
+        dayOfMonth % 10 == 1 -> "${dayOfMonth}st"
+        dayOfMonth % 10 == 2 -> "${dayOfMonth}nd"
+        dayOfMonth % 10 == 3 -> "${dayOfMonth}rd"
+        else -> "${dayOfMonth}th"
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -323,19 +347,19 @@ private fun DateSection() {
         Icon(
             imageVector = Icons.Default.KeyboardArrowLeft,
             contentDescription = "Previous day",
-            tint = PrimaryTextColor.copy(alpha = 0.5f),
-            modifier = Modifier.size(32.dp)
+            tint = PrimaryTextColor,
+            modifier = Modifier.size(32.dp).clickable { onPrevious() }
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "sunday",
+                text = dayOfWeek,
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryTextColor,
                 lineHeight = 48.sp
             )
             Text(
-                text = "April 19th, 2026",
+                text = "$month $dayWithSuffix, $year",
                 fontSize = 16.sp,
                 color = SecondaryTextColor
             )
@@ -343,8 +367,8 @@ private fun DateSection() {
         Icon(
             imageVector = Icons.Default.KeyboardArrowRight,
             contentDescription = "Next day",
-            tint = PrimaryTextColor.copy(alpha = 0.5f),
-            modifier = Modifier.size(32.dp)
+            tint = PrimaryTextColor,
+            modifier = Modifier.size(32.dp).clickable { onNext() }
         )
     }
 }
