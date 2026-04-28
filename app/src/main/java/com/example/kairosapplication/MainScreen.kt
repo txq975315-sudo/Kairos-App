@@ -15,6 +15,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,9 +43,29 @@ private enum class AppTab(val label: String, val icon: ImageVector) {
     Mine("Mine", Icons.Default.Person)
 }
 
+private enum class Overlay { Create, DailyReview }
+
 @Composable
 fun MainScreen() {
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
+    var overlay by remember { mutableStateOf<Overlay?>(null) }
+
+    if (overlay != null) {
+        AnimatedContent(
+            targetState = overlay,
+            transitionSpec = {
+                slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+            },
+            label = "overlay"
+        ) { current ->
+            when (current) {
+                Overlay.Create -> CreateScreen(onBack = { overlay = null })
+                Overlay.DailyReview -> DailyReviewScreen(onBack = { overlay = null })
+                null -> Unit
+            }
+        }
+        return
+    }
 
     Scaffold(
         containerColor = BackgroundColor,
@@ -83,7 +107,10 @@ fun MainScreen() {
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             when (selectedTab) {
-                AppTab.Today -> TodayScreen()
+                AppTab.Today -> TodayScreen(
+                    onCreateClick = { overlay = Overlay.Create },
+                    onDailyReviewClick = { overlay = Overlay.DailyReview }
+                )
                 else -> PlaceholderScreen(selectedTab.label)
             }
         }

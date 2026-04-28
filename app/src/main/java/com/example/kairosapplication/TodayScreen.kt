@@ -25,13 +25,13 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.Card
@@ -83,7 +83,10 @@ data class Task(
 )
 
 @Composable
-fun TodayScreen() {
+fun TodayScreen(
+    onCreateClick: () -> Unit = {},
+    onDailyReviewClick: () -> Unit = {}
+) {
     var anytimeExpanded by remember { mutableStateOf(true) }
     var morningExpanded by remember { mutableStateOf(true) }
     var afternoonExpanded by remember { mutableStateOf(true) }
@@ -117,6 +120,14 @@ fun TodayScreen() {
         }
     }
 
+    // TopBar 汇总数据：实时追踪所有任务列表的完成状态
+    val totalCount by remember {
+        derivedStateOf { afternoonTasks.size + eveningTasks.size }
+    }
+    val completedCount by remember {
+        derivedStateOf { afternoonTasks.count { it.completed } + eveningTasks.count { it.completed } }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -126,7 +137,12 @@ fun TodayScreen() {
     ) {
         // 固定头部区域（不随内容滚动）
         Spacer(Modifier.height(8.dp))
-        TopBar()
+        TopBar(
+            completed = completedCount,
+            total = totalCount,
+            onCreateClick = onCreateClick,
+            onDailyReviewClick = onDailyReviewClick
+        )
         DateSection()
         QuoteSection()
         Spacer(Modifier.height(10.dp))
@@ -199,12 +215,28 @@ fun TodayScreen() {
 }
 
 @Composable
-private fun TopBar() {
+private fun TopBar(
+    completed: Int,
+    total: Int,
+    onCreateClick: () -> Unit,
+    onDailyReviewClick: () -> Unit
+) {
+    // 统一阴影参数：Blur≈8, Y偏移≈2, Black 5%
+    val shadowElevation = 4.dp
+    val shadowColor = Color.Black.copy(alpha = 0.05f)
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 左侧：任务数汇总卡片（加阴影）
         Card(
+            modifier = Modifier.shadow(
+                elevation = shadowElevation,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = shadowColor,
+                spotColor = shadowColor
+            ),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -214,14 +246,14 @@ private fun TopBar() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.Edit,
+                    imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
                     tint = SecondaryTextColor,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "0 / 0",
+                    text = "$completed / $total",
                     color = PrimaryTextColor,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
@@ -231,35 +263,51 @@ private fun TopBar() {
 
         Spacer(Modifier.weight(1f))
 
+        // 中间：创建按钮（白底、黑色图标、加阴影）
         Box(
             modifier = Modifier
                 .size(36.dp)
+                .shadow(
+                    elevation = shadowElevation,
+                    shape = CircleShape,
+                    ambientColor = shadowColor,
+                    spotColor = shadowColor
+                )
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.05f)),
+                .background(Color.White)
+                .clickable { onCreateClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add task",
-                tint = Color.Black.copy(alpha = 0.18f),
+                tint = Color.Black,
                 modifier = Modifier.size(18.dp)
             )
         }
 
         Spacer(Modifier.width(8.dp))
 
+        // 右侧：Daily Review 入口（加阴影）
         Box(
             modifier = Modifier
                 .size(36.dp)
+                .shadow(
+                    elevation = shadowElevation,
+                    shape = CircleShape,
+                    ambientColor = shadowColor,
+                    spotColor = shadowColor
+                )
                 .clip(CircleShape)
-                .background(Color.White),
+                .background(Color.White)
+                .clickable { onDailyReviewClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options",
+                imageVector = Icons.Default.MoreHoriz,
+                contentDescription = "Daily Review",
                 tint = PrimaryTextColor,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(26.dp)
             )
         }
     }
