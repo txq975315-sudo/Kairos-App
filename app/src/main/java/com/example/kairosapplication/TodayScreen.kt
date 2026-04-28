@@ -40,7 +40,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -87,28 +89,32 @@ fun TodayScreen() {
     var afternoonExpanded by remember { mutableStateOf(true) }
     var eveningExpanded by remember { mutableStateOf(true) }
 
-    // ==========================================
-    // 🌟 修改位置1：重新组织任务数据
-    // ==========================================
-    val tasks = remember {
-        mapOf(
-            "anytime" to emptyList(),
-            "morning" to emptyList(),
-            "afternoon" to listOf(
-                Task(1, "Learn Figma", 0),
-                Task(2, "Write a PRD", 1),
-                Task(3, "Learn SQL", 2, completed = true),
-                Task(4, "Design UI", 1),
-                Task(5, "Review code", 0),
-                Task(6, "Team meeting", 3)
-            ),
-            "evening" to listOf(
-                Task(7, "Reading", 1),
-                Task(8, "Practice Kotlin", 3),
-                Task(9, "Watch tutorial", 2),
-                Task(10, "Write notes", 1)
-            )
+    val afternoonTasks = remember {
+        mutableStateListOf(
+            Task(1, "Learn Figma", 0),
+            Task(2, "Write a PRD", 1),
+            Task(3, "Learn SQL", 2, completed = true)
         )
+    }
+
+    val eveningTasks = remember {
+        mutableStateListOf(
+            Task(4, "Reading", 1),
+            Task(5, "Practice Kotlin", 3)
+        )
+    }
+
+    // derivedStateOf 追踪 SnapshotStateList 内容变化，item 修改时自动重算排序
+    val sortedAfternoonTasks by remember {
+        derivedStateOf {
+            afternoonTasks.sortedWith(compareBy({ it.completed }, { it.urgency }, { it.id }))
+        }
+    }
+
+    val sortedEveningTasks by remember {
+        derivedStateOf {
+            eveningTasks.sortedWith(compareBy({ it.completed }, { it.urgency }, { it.id }))
+        }
     }
 
     Column(
@@ -117,75 +123,69 @@ fun TodayScreen() {
             .background(Color(0xFFF9F9F9))
             .statusBarsPadding()
             .padding(horizontal = 16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // 顶部固定区域（不滑动）
         Spacer(Modifier.height(8.dp))
         TopBar()
         DateSection()
         QuoteSection()
-        Spacer(Modifier.height(10.dp))
 
-        // 任务区域（可以滑动）
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // ==========================================
-            // 🌟 修改位置2：ANYTIME 时间块
-            // ==========================================
-            TimeBlock(
-                label = "ANYTIME",
-                count = tasks["anytime"]?.size ?: 0,  // 动态获取数量
-                backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
-                icon = Icons.Default.AccessTime,
-                expanded = anytimeExpanded,
-                onToggle = { anytimeExpanded = !anytimeExpanded },
-                tasks = tasks["anytime"] ?: emptyList()
-            )
+        TimeBlock(
+            label = "ANYTIME",
+            count = 0,
+            backgroundColor = TimeBlockColors["ANYTIME"] ?: Color(0xFFF2EEE6),
+            icon = Icons.Default.AccessTime,
+            expanded = anytimeExpanded,
+            onToggle = { anytimeExpanded = !anytimeExpanded },
+            tasks = emptyList(),
+            onToggleComplete = {}
+        )
 
-            // ==========================================
-            // 🌟 修改位置3：MORNING 时间块
-            // ==========================================
-            TimeBlock(
-                label = "MORNING",
-                count = tasks["morning"]?.size ?: 0,  // 动态获取数量
-                backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
-                icon = Icons.Default.WbTwilight,
-                expanded = morningExpanded,
-                onToggle = { morningExpanded = !morningExpanded },
-                tasks = tasks["morning"] ?: emptyList()
-            )
+        TimeBlock(
+            label = "MORNING",
+            count = 0,
+            backgroundColor = TimeBlockColors["MORNING"] ?: Color(0xFFFFF8E6),
+            icon = Icons.Default.WbTwilight,
+            expanded = morningExpanded,
+            onToggle = { morningExpanded = !morningExpanded },
+            tasks = emptyList(),
+            onToggleComplete = {}
+        )
 
-            // ==========================================
-            // 🌟 修改位置4：AFTERNOON 时间块
-            // ==========================================
-            TimeBlock(
-                label = "AFTERNOON",
-                count = tasks["afternoon"]?.size ?: 0,  // 动态获取数量
-                backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
-                icon = Icons.Default.WbSunny,
-                expanded = afternoonExpanded,
-                onToggle = { afternoonExpanded = !afternoonExpanded },
-                tasks = tasks["afternoon"] ?: emptyList()
-            )
+        TimeBlock(
+            label = "AFTERNOON",
+            count = afternoonTasks.size,
+            backgroundColor = TimeBlockColors["AFTERNOON"] ?: Color(0xFFFED7C7),
+            icon = Icons.Default.WbSunny,
+            expanded = afternoonExpanded,
+            onToggle = { afternoonExpanded = !afternoonExpanded },
+            tasks = sortedAfternoonTasks,
+            onToggleComplete = { task ->
+                val index = afternoonTasks.indexOfFirst { it.id == task.id }
+                if (index != -1) {
+                    afternoonTasks[index] = afternoonTasks[index].copy(completed = !afternoonTasks[index].completed)
+                }
+            }
+        )
 
-            // ==========================================
-            // 🌟 修改位置5：EVENING 时间块
-            // ==========================================
-            TimeBlock(
-                label = "EVENING",
-                count = tasks["evening"]?.size ?: 0,  // 动态获取数量
-                backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
-                icon = Icons.Default.DarkMode,
-                expanded = eveningExpanded,
-                onToggle = { eveningExpanded = !eveningExpanded },
-                tasks = tasks["evening"] ?: emptyList()
-            )
+        TimeBlock(
+            label = "EVENING",
+            count = eveningTasks.size,
+            backgroundColor = TimeBlockColors["EVENING"] ?: Color(0xFFE0DBFF),
+            icon = Icons.Default.DarkMode,
+            expanded = eveningExpanded,
+            onToggle = { eveningExpanded = !eveningExpanded },
+            tasks = sortedEveningTasks,
+            onToggleComplete = { task ->
+                val index = eveningTasks.indexOfFirst { it.id == task.id }
+                if (index != -1) {
+                    eveningTasks[index] = eveningTasks[index].copy(completed = !eveningTasks[index].completed)
+                }
+            }
+        )
 
-            Spacer(Modifier.height(16.dp))
-        }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -327,80 +327,83 @@ private fun TimeBlock(
     icon: ImageVector,
     expanded: Boolean,
     onToggle: () -> Unit,
-    tasks: List<Task>
+    tasks: List<Task>,
+    onToggleComplete: (Task) -> Unit
 ) {
     val hasTasks = count > 0
-    // 先按完成状态排序（未完成的在前），再按紧急程度，最后按id
-    val sortedTasks = tasks.sortedWith(
-        compareBy(
-            { it.completed },  // 未完成的在前
-            { it.urgency },    // 再按紧急程度
-            { it.id }          // 最后按id
-        )
-    )
 
     Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        // 用Box包裹头部，确保按钮位置固定
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // 时间块头部卡片（缩短长度）
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.8f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .clickable(enabled = hasTasks) { if (hasTasks) onToggle() }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.8f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = SecondaryTextColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = label,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = PrimaryTextColor
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "($count)",
-                        fontSize = 14.sp,
-                        color = SecondaryTextColor
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse" else "Expand",
-                        tint = SecondaryTextColor,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .clickable(enabled = hasTasks) { if (hasTasks) onToggle() }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = SecondaryTextColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = label,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimaryTextColor
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "($count)",
+                            fontSize = 14.sp,
+                            color = SecondaryTextColor
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (expanded) "Collapse" else "Expand",
+                            tint = SecondaryTextColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-            }
 
-            Spacer(Modifier.weight(1f))
+                Spacer(Modifier.weight(1f))
 
-            if (hasTasks) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.05f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add task",
-                        tint = Color.Black.copy(alpha = 0.18f),
-                        modifier = Modifier.size(27.dp)
-                    )
+                // 创建按钮 - 用固定的右边距
+                if (hasTasks) {
+                    Box(
+                        modifier = Modifier.padding(end = 16.dp), // 这里设置右边距
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.05f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add task",
+                                tint = Color.Black.copy(alpha = 0.18f),
+                                modifier = Modifier.size(27.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -414,8 +417,11 @@ private fun TimeBlock(
                     EmptyTaskCard(label = label)
                 }
 
-                sortedTasks.forEach { task ->
-                    TaskItemCard(task = task)
+                tasks.forEach { task ->
+                    TaskItemCard(
+                        task = task,
+                        onToggleComplete = { onToggleComplete(task) }
+                    )
                 }
             }
         }
@@ -433,56 +439,52 @@ private fun EmptyTaskCard(label: String) {
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .height(48.dp)
                 .border(
-                    width = 2.dp,
+                    width = 1.dp,
                     color = Color(0xC1C1C1).copy(alpha = 0.5f),
                     shape = RoundedCornerShape(12.dp)
                 )
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 16.dp), // 左右padding统一
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Text(
+                text = hintText,
+                fontSize = 14.sp,
+                color = Color(0x999999).copy(alpha = 0.6f)
+            )
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.05f)),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = hintText,
-                    fontSize = 14.sp,
-                    color = Color(0x999999).copy(alpha = 0.6f)
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add task",
+                    tint = Color.Black.copy(alpha = 0.18f),
+                    modifier = Modifier.size(27.dp)
                 )
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.05f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add task",
-                        tint = Color.Black.copy(alpha = 0.18f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-private fun TaskItemCard(task: Task) {
-    var completed by remember { mutableStateOf(task.completed) }
+private fun TaskItemCard(
+    task: Task,
+    onToggleComplete: () -> Unit
+) {
     val urgencyColor = UrgencyColors[task.urgency]
 
     Card(
@@ -502,7 +504,7 @@ private fun TaskItemCard(task: Task) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable { completed = !completed }
+                .clickable { onToggleComplete() }
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -510,15 +512,15 @@ private fun TaskItemCard(task: Task) {
                 modifier = Modifier
                     .size(22.dp)
                     .clip(CircleShape)
-                    .background(if (completed) Color(0xFFE0E0E0) else Color.Transparent)
+                    .background(if (task.completed) Color(0xFFE0E0E0) else Color.Transparent)
                     .border(
                         width = 2.dp,
-                        color = if (completed) Color(0xFFE0E0E0) else urgencyColor,
+                        color = if (task.completed) Color(0xFFE0E0E0) else urgencyColor,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                if (completed) {
+                if (task.completed) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Completed",
@@ -534,8 +536,8 @@ private fun TaskItemCard(task: Task) {
                 text = task.title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (completed) Color(0xFF9E9E9E) else PrimaryTextColor,
-                textDecoration = if (completed) TextDecoration.LineThrough else TextDecoration.None
+                color = if (task.completed) Color(0xFF9E9E9E) else PrimaryTextColor,
+                textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None
             )
         }
     }
