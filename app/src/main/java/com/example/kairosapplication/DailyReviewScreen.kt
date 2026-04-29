@@ -30,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -43,6 +44,7 @@ import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
+import com.example.taskmodel.store.TaskCreationBus
 import java.time.LocalDate
 
 @Composable
@@ -61,14 +63,27 @@ fun DailyReviewScreen(
             Task(1005, "Learn Figma", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = TaskConstants.URGENCY_NORMAL, isCompleted = true, taskDate = yesterday)
         )
     }
-    val selectedIds = remember { mutableStateListOf<Int>() }
+    val selectedTaskIds = remember { mutableStateListOf<Int>() }
+    val nextTaskId = remember { mutableIntStateOf((tasks.maxOfOrNull { it.id } ?: 1000) + 1) }
 
     fun toggleSelect(id: Int) {
-        if (!selectedIds.add(id)) selectedIds.remove(id)
+        if (!selectedTaskIds.add(id)) selectedTaskIds.remove(id)
+    }
+
+    fun toggleSelectAll(sectionTaskIds: List<Int>) {
+        if (sectionTaskIds.isEmpty()) return
+        val allSelected = sectionTaskIds.all { selectedTaskIds.contains(it) }
+        if (allSelected) {
+            selectedTaskIds.removeAll(sectionTaskIds.toSet())
+        } else {
+            selectedTaskIds.addAll(sectionTaskIds)
+        }
     }
 
     val overdueTasks = tasks.filter { it.taskDate == yesterday && !it.isCompleted }
     val completedTasks = tasks.filter { it.taskDate == yesterday && it.isCompleted }
+    val selectedTasks = tasks.filter { selectedTaskIds.contains(it.id) }
+    val selectedOverdueTasks = overdueTasks.filter { selectedTaskIds.contains(it.id) }
 
     Column(
         modifier = Modifier
@@ -100,7 +115,7 @@ fun DailyReviewScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         QuoteSnapshot(text = "纵有疾风起，人生不言弃")
         Spacer(modifier = Modifier.height(18.dp))
 
@@ -114,7 +129,9 @@ fun DailyReviewScreen(
                 backgroundColor = Color(0x40E53935),
                 borderColor = Color.Transparent,
                 tasks = overdueTasks,
-                selectedIds = selectedIds,
+                    selectedIds = selectedTaskIds,
+                allSelected = overdueTasks.isNotEmpty() && overdueTasks.all { selectedTaskIds.contains(it.id) },
+                onSelectAll = { toggleSelectAll(overdueTasks.map { it.id }) },
                 selectable = true,
                 onToggle = ::toggleSelect
             )
@@ -125,59 +142,75 @@ fun DailyReviewScreen(
                 backgroundColor = Color(0x404A74FF),
                 borderColor = Color(0x664A74FF),
                 tasks = completedTasks,
-                selectedIds = emptyList(),
-                selectable = false,
-                onToggle = {}
+                selectedIds = selectedTaskIds,
+                allSelected = completedTasks.isNotEmpty() && completedTasks.all { selectedTaskIds.contains(it.id) },
+                onSelectAll = { toggleSelectAll(completedTasks.map { it.id }) },
+                selectable = true,
+                onToggle = ::toggleSelect
             )
         }
 
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(bottom = if (isDialogMode) 30.dp else 36.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Button(
                 onClick = {
-                    val selected = selectedIds.toSet()
-                    for (i in tasks.indices) {
-                        val task = tasks[i]
-                        if (task.id in selected && task.taskDate == yesterday && !task.isCompleted) {
-                            tasks[i] = task.copy(taskDate = today)
-                        }
+                    val copiedTasks = selectedTasks.map { task ->
+                        task.copy(
+                            id = nextTaskId.intValue++,
+                            taskDate = today,
+                            isCompleted = false
+                        )
                     }
-                    selectedIds.clear()
+                    TaskCreationBus.push(copiedTasks)
+                    selectedTaskIds.clear()
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
+                enabled = selectedTasks.isNotEmpty(),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFF1A1A1A)),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
-                    contentColor = Color(0xFF1A1A1A)
+                    contentColor = Color(0xFF1A1A1A),
+                    disabledContainerColor = Color(0xFFEDEDED),
+                    disabledContentColor = Color(0xFF9E9E9E)
                 )
             ) {
-                Text("Roll selected to today", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text("Copy to Today", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Button(
                 onClick = {
+                    val movedToToday = mutableListOf<Task>()
                     for (i in tasks.indices) {
                         val task = tasks[i]
-                        if (task.taskDate == yesterday && !task.isCompleted) {
-                            tasks[i] = task.copy(taskDate = today)
+                        if (task.id in selectedTaskIds && task.taskDate == yesterday && !task.isCompleted) {
+                            val movedTask = task.copy(
+                                taskDate = today,
+                                isCompleted = false
+                            )
+                            tasks[i] = movedTask
+                            movedToToday.add(movedTask)
                         }
                     }
-                    selectedIds.clear()
+                    TaskCreationBus.push(movedToToday)
+                    selectedTaskIds.clear()
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
+                enabled = selectedOverdueTasks.isNotEmpty(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF8A7CF8),
-                    contentColor = Color.White
+                    contentColor = Color.White,
+                    disabledContainerColor = Color(0xFFD5D0FF),
+                    disabledContentColor = Color(0xFFF5F3FF)
                 )
             ) {
-                Text("Roll overdue to today", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Move to Today", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -188,10 +221,10 @@ private fun QuoteSnapshot(text: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFF5F5F5))
-            .padding(vertical = 12.dp, horizontal = 16.dp)
+            .padding(horizontal = 2.dp)
     ) {
+        HorizontalDivider(color = Color(0xFFE3E3E3), thickness = 1.dp)
+        Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -218,7 +251,9 @@ private fun ReviewSection(
     backgroundColor: Color,
     borderColor: Color,
     tasks: List<Task>,
-    selectedIds: List<Int>,
+    selectedIds: Collection<Int>,
+    allSelected: Boolean,
+    onSelectAll: () -> Unit,
     selectable: Boolean,
     onToggle: (Int) -> Unit
 ) {
@@ -230,12 +265,33 @@ private fun ReviewSection(
             .background(backgroundColor)
             .padding(10.dp)
     ) {
-        Text(
-            text = title,
-            color = titleColor,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = title,
+                color = titleColor,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .clickable(enabled = tasks.isNotEmpty(), onClick = onSelectAll)
+                    .border(
+                        width = 2.dp,
+                        color = if (allSelected) Color(0xFF8A7CF8) else Color(0xFF1A1A1A),
+                        shape = CircleShape
+                    )
+                    .background(
+                        if (allSelected) Color(0xFF8A7CF8).copy(alpha = 0.2f) else Color.Transparent,
+                        CircleShape
+                    )
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Column(
             modifier = Modifier
@@ -288,6 +344,7 @@ private fun DailyTaskCard(
                 modifier = Modifier
                     .size(22.dp)
                     .clip(CircleShape)
+                    .clickable(enabled = selectable, onClick = onClick)
                     .border(
                         width = 2.dp,
                         color = if (!selectable) Color(0xFFB0B0B0) else if (selected) Color(0xFF8A7CF8) else Color(0xFF1A1A1A),
