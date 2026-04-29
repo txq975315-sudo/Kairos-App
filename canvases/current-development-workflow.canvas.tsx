@@ -1,54 +1,117 @@
-import { H1, Table, Text, Stack, Divider } from "cursor/canvas";
+import { H1, H2, Table, Text, Stack, Divider, Callout } from "cursor/canvas";
 
 export default function CurrentDevelopmentWorkflow() {
   return (
     <Stack gap={16}>
-      <H1>当前开发流程汇总</H1>
+      <H1>开发记录与对接看板</H1>
       <Text tone="secondary">
-        适用于当前 Kotlin + Compose 项目（含 task-model 胚子库）的日常迭代流程。
+        项目：Kotlin + Jetpack Compose（含 task-model 模块）｜用途：进度查看、跨人对接、后续排期。
       </Text>
+      <Callout tone="info">
+        当前分支已完成 task-model 抽离、CreateScreen 交互增强、重复任务详情弹窗与停止重复逻辑修复，并持续通过 compile/assemble 校验。
+      </Callout>
       <Divider />
+
+      <H2>阶段进度</H2>
       <Table
-        headers={["阶段", "执行动作", "产出/目标", "校验命令"]}
+        headers={["阶段", "状态", "核心结果", "验收方式"]}
         rows={[
           [
-            "1. 需求拆解",
-            "确认本轮功能范围与影响模块（app/task-model）",
-            "形成可执行改动清单，避免无边界开发",
-            "N/A",
+            "基础架构",
+            "已完成",
+            "新增 task-model 模块；Task/CreateTaskParam/常量/工具函数沉淀",
+            ":task-model:test + :app:assembleDebug",
           ],
           [
-            "2. 代码实现",
-            "按分层原则修改：task-model 放模型规则，app 放 UI 与文案",
-            "完成一轮可编译代码改动",
-            "N/A",
+            "文案分层",
+            "已完成",
+            "TaskText 从库回迁至 app（strings + provider），避免模型层耦合文案",
+            ":app:compileDebugKotlin",
           ],
           [
-            "3. 模块测试",
-            "先跑 task-model 单测，验证核心规则不回归",
-            "确保排序/映射等基础能力稳定",
-            "./gradlew.bat :task-model:test",
+            "CreateScreen",
+            "已完成",
+            "日历、多选/范围/重复规则、键盘上方发送按钮、创建成功反馈",
+            ":app:assembleDebug + 手动UI验收",
           ],
           [
-            "4. 整体编译验证",
-            "统一执行 assembleDebug 验证主工程可构建",
-            "避免把不可编译状态带入下一轮",
-            "powershell -ExecutionPolicy Bypass -File \"D:/KairosApplication/scripts/verify-assemble-debug.ps1\"",
+            "重复任务管理",
+            "已完成",
+            "任务卡片重复标识、详情弹窗、完成今天/停止重复（from target day）",
+            "Today 交互验证 + :task-model:test",
           ],
           [
-            "5. 结果确认",
-            "检查关键页面行为（Today 任务排序/创建/颜色）",
-            "确认功能与视觉无回归",
-            "必要时再执行 :app:assembleDebug",
-          ],
-          [
-            "6. 进入下一轮",
-            "记录本轮完成项与下一优先级",
-            "形成连续迭代闭环（改动 -> 校验 -> 再迭代）",
-            "重复步骤 1-5",
+            "稳定性",
+            "持续中",
+            "每轮改动后固定执行 compile + assemble；冲突与IDE假红已建立处理流程",
+            "verify-assemble-debug.ps1",
           ],
         ]}
       />
+
+      <H2>关键改动清单</H2>
+      <Table
+        headers={["模块/文件", "变更类型", "摘要"]}
+        rows={[
+          [
+            "task-model/*",
+            "新增与重构",
+            "Task/参数模型、排序/颜色工具、重复任务批量处理（complete/stop）",
+          ],
+          [
+            "app/ui/CreateScreen.kt",
+            "功能迭代",
+            "日期选择增强、互斥选择逻辑、发送创建链路、键盘工具栏发送按钮",
+          ],
+          [
+            "app/TodayScreen.kt",
+            "数据流重构",
+            "接入 TaskCreationBus、按 taskDate 分桶显示、详情弹窗动作接入",
+          ],
+          [
+            "app/ui/TaskItemCard.kt",
+            "新增",
+            "重复任务标识展示、卡片详情入口、编译兼容修复（padding/smart cast）",
+          ],
+          [
+            "app/ui/TaskDetailBottomSheet.kt",
+            "新增+迭代",
+            "按钮交互修复、英文文案、按钮简化为 Complete Today/Stop Repeat",
+          ],
+        ]}
+      />
+
+      <H2>对接说明（给协作者）</H2>
+      <Table
+        headers={["主题", "当前约定", "协作者需要知道"]}
+        rows={[
+          [
+            "任务创建入口",
+            "CreateScreen 通过 TaskCreationBus 推送新任务",
+            "TodayScreen 会消费总线并刷新，不需要手动注入任务",
+          ],
+          [
+            "重复停止语义",
+            "以被点击任务日期为 cutoff，保留当天，删除未来",
+            "不要再用 LocalDate.now() 作为全局 cutoff",
+          ],
+          [
+            "文案归属",
+            "业务文案在 app 层；task-model 只放模型与规则",
+            "新增文案优先 strings/provider，不进模型库",
+          ],
+          [
+            "验证基线",
+            "每次改动至少过 compile + assemble",
+            "命令固定：:app:compileDebugKotlin / :app:assembleDebug",
+          ],
+        ]}
+      />
+
+      <H2>下一步建议</H2>
+      <Text>1) 为重复任务增加 seriesId，替代 title+timeBlock 匹配。</Text>
+      <Text>2) 将 TaskCreationBus 升级为持久化存储（Room）避免进程丢失。</Text>
+      <Text>3) 补齐重复任务 UI 自动化回归用例（停止重复后跨日期验证）。</Text>
     </Stack>
   );
 }

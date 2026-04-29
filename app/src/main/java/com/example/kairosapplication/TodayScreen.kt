@@ -42,8 +42,6 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -92,6 +90,8 @@ import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppInteraction
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.AppTypography
+import com.example.kairosapplication.ui.components.ArrowButton
+import com.example.kairosapplication.ui.components.ArrowDirection
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
@@ -511,11 +511,12 @@ private fun DateSection(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-            contentDescription = "Previous day",
+        ArrowButton(
+            onClick = onPrevious,
+            direction = ArrowDirection.LEFT,
+            size = 32.dp,
             tint = AppColors.PrimaryText,
-            modifier = Modifier.size(32.dp).clickable { onPrevious() }
+            contentDescription = "Previous day"
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -531,11 +532,12 @@ private fun DateSection(
                 color = AppColors.SecondaryText
             )
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = "Next day",
+        ArrowButton(
+            onClick = onNext,
+            direction = ArrowDirection.RIGHT,
+            size = 32.dp,
             tint = AppColors.PrimaryText,
-            modifier = Modifier.size(32.dp).clickable { onNext() }
+            contentDescription = "Next day"
         )
     }
 }

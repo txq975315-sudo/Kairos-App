@@ -71,7 +71,6 @@ fun TaskDetailBottomSheet(
             Button(
                 onClick = {
                     onCompleteToday()
-                    onDismiss()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,7 +82,6 @@ fun TaskDetailBottomSheet(
             Button(
                 onClick = {
                     onStopRepeat()
-                    onDismiss()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

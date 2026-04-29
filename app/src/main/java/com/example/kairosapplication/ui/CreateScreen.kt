@@ -29,8 +29,6 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Card
@@ -66,6 +64,8 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import com.example.kairosapplication.ui.components.ArrowButton
+import com.example.kairosapplication.ui.components.ArrowDirection
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -231,14 +231,13 @@ fun CreateScreen(onBack: () -> Unit) {
                 .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
-                Text(
-                    text = "<",
-                    color = Color(0xFF1A1A1A),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            ArrowButton(
+                onClick = onBack,
+                direction = ArrowDirection.LEFT,
+                size = 36.dp,
+                tint = Color(0xFF1A1A1A),
+                contentDescription = "Back"
+            )
             Text(
                 text = "Let's plan!",
                 fontSize = 24.sp,
@@ -284,7 +283,9 @@ fun CreateScreen(onBack: () -> Unit) {
         )
 
         ActionIconsRow(
-            modifier = Modifier.padding(top = 18.dp),
+            modifier = Modifier
+                .padding(top = 18.dp)
+                .imePadding(),
             selectedUrgency = selectedUrgency,
             onTimeClick = {
                 activeTool = CreateTool.TIME
@@ -422,17 +423,25 @@ fun CreateScreen(onBack: () -> Unit) {
         )
 
         Text(
-            text = "Draft: ${draftTask.timeBlock} · ${TaskConstants.URGENCY_LEVELS[draftTask.urgency]} · ${draftTask.label ?: "No Label"} · ${selectedDates.size} days · ${repeatRule ?: "NO_RULE"}",
+            text = buildDraftSummary(
+                timeBlock = draftTask.timeBlock,
+                urgency = draftTask.urgency,
+                label = draftTask.label,
+                selectedDaysCount = selectedDates.size,
+                repeatRule = repeatRule
+            ),
             color = Color(0xFF757575),
             fontSize = 12.sp,
             modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
         )
-        Text(
-            text = repeatSummary,
-            color = Color(0xFF616161),
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        if (dateSelectionMode == null) {
+            Text(
+                text = repeatSummary,
+                color = Color(0xFF616161),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
         // 键盘上方工具栏：仅保留发送按钮，避免页面底部额外占位。
         Row(
@@ -496,26 +505,26 @@ private fun CalendarSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = onPreviousMonth, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowLeft,
-                    contentDescription = "Previous month",
-                    tint = Color(0xFF1A1A1A)
-                )
-            }
+            ArrowButton(
+                onClick = onPreviousMonth,
+                direction = ArrowDirection.LEFT,
+                size = 28.dp,
+                tint = Color(0xFF1A1A1A),
+                contentDescription = "Previous month"
+            )
             Text(
                 text = monthLabel,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF1A1A1A)
             )
-            IconButton(onClick = onNextMonth, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
-                    contentDescription = "Next month",
-                    tint = Color(0xFF1A1A1A)
-                )
-            }
+            ArrowButton(
+                onClick = onNextMonth,
+                direction = ArrowDirection.RIGHT,
+                size = 28.dp,
+                tint = Color(0xFF1A1A1A),
+                contentDescription = "Next month"
+            )
         }
 
         Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
@@ -769,34 +778,34 @@ private fun CreateToolPanel(
                     Text(text = "Repeat Range", fontSize = 13.sp, color = Color(0xFF757575))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SelectionChip(
-                            text = "无限重复",
+                            text = "Infinite",
                             selected = repeatRange == RepeatRange.UNLIMITED,
                             onClick = { onRepeatRangeChanged(RepeatRange.UNLIMITED) }
                         )
                         SelectionChip(
-                            text = "接下来1周",
+                            text = "Next 1 week",
                             selected = repeatRange == RepeatRange.NEXT_1_WEEK,
                             onClick = { onRepeatRangeChanged(RepeatRange.NEXT_1_WEEK) }
                         )
                         SelectionChip(
-                            text = "接下来2周",
+                            text = "Next 2 weeks",
                             selected = repeatRange == RepeatRange.NEXT_2_WEEKS,
                             onClick = { onRepeatRangeChanged(RepeatRange.NEXT_2_WEEKS) }
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SelectionChip(
-                            text = "接下来4周",
+                            text = "Next 4 weeks",
                             selected = repeatRange == RepeatRange.NEXT_4_WEEKS,
                             onClick = { onRepeatRangeChanged(RepeatRange.NEXT_4_WEEKS) }
                         )
                         SelectionChip(
-                            text = "本月内",
+                            text = "This month",
                             selected = repeatRange == RepeatRange.THIS_MONTH,
                             onClick = { onRepeatRangeChanged(RepeatRange.THIS_MONTH) }
                         )
                         SelectionChip(
-                            text = "自定义结束日期",
+                            text = "Custom end date",
                             selected = repeatRange == RepeatRange.CUSTOM_END_DATE,
                             onClick = { onRepeatRangeChanged(RepeatRange.CUSTOM_END_DATE) }
                         )
@@ -862,6 +871,7 @@ private fun CreateToolPanel(
                         OptionPill(
                             text = block,
                             selected = selectedTimeBlock == block,
+                            leadingEmoji = timeBlockEmoji(block),
                             onClick = { onTimeSelected(block) }
                         )
                     }
@@ -884,6 +894,7 @@ private fun CreateToolPanel(
                         OptionPill(
                             text = if (isNone) label else "# $label",
                             selected = if (isNone) selectedLabel == null else selectedLabel == label,
+                            leadingEmoji = labelEmoji(label),
                             onClick = { onLabelSelected(if (isNone) null else label) }
                         )
                     }
@@ -919,6 +930,7 @@ private fun CreateToolPanel(
 private fun OptionPill(
     text: String,
     selected: Boolean,
+    leadingEmoji: String? = null,
     colorDot: Color? = null,
     onClick: () -> Unit
 ) {
@@ -931,6 +943,13 @@ private fun OptionPill(
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (leadingEmoji != null) {
+            Text(
+                text = leadingEmoji,
+                fontSize = 15.sp
+            )
+            Box(modifier = Modifier.size(8.dp))
+        }
         if (colorDot != null) {
             Box(
                 modifier = Modifier
@@ -1008,27 +1027,78 @@ private fun buildRepeatSummary(
     customRepeatEndDate: LocalDate?
 ): String {
     val ruleText = when {
-        repeatRule == null -> "未选择重复规则"
+        repeatRule == null -> "No repeat rule selected"
         repeatRule.startsWith("WEEKLY_") -> {
             val weekday = repeatRule.removePrefix("WEEKLY_")
-            "每周$weekday"
+            "Weekly $weekday"
         }
         repeatRule == "CUSTOM" -> {
-            if (customRepeatRule.isBlank()) "自定义规则" else customRepeatRule
+            if (customRepeatRule.isBlank()) "Custom rule" else customRepeatRule
         }
-        else -> "不重复"
+        else -> "No repeat"
     }
 
     val rangeText = when (repeatRange) {
-        RepeatRange.UNLIMITED -> "无限重复"
-        RepeatRange.NEXT_1_WEEK -> "持续1周"
-        RepeatRange.NEXT_2_WEEKS -> "持续2周"
-        RepeatRange.NEXT_4_WEEKS -> "持续4周"
-        RepeatRange.THIS_MONTH -> "持续到本月结束"
-        RepeatRange.CUSTOM_END_DATE -> "截止到 ${customRepeatEndDate ?: "未设置日期"}"
-        null -> "未选择时间范围"
+        RepeatRange.UNLIMITED -> "Infinite"
+        RepeatRange.NEXT_1_WEEK -> "Next 1 week"
+        RepeatRange.NEXT_2_WEEKS -> "Next 2 weeks"
+        RepeatRange.NEXT_4_WEEKS -> "Next 4 weeks"
+        RepeatRange.THIS_MONTH -> "This month"
+        RepeatRange.CUSTOM_END_DATE -> "Until ${customRepeatEndDate ?: "date not set"}"
+        null -> "No range selected"
     }
     return "$ruleText，$rangeText"
+}
+
+private fun buildDraftSummary(
+    timeBlock: String,
+    urgency: Int,
+    label: String?,
+    selectedDaysCount: Int,
+    repeatRule: String?
+): String {
+    val urgencyText = when (urgency) {
+        TaskConstants.URGENCY_URGENT -> "Urgent"
+        TaskConstants.URGENCY_HIGH -> "High Priority"
+        TaskConstants.URGENCY_NORMAL -> "Normal"
+        else -> "Low Priority"
+    }
+    val parts = mutableListOf<String>()
+    parts += timeBlock
+    parts += urgencyText
+    if (!label.isNullOrBlank()) {
+        parts += label
+    }
+    if (selectedDaysCount > 0) {
+        parts += "$selectedDaysCount days"
+    }
+    if (!repeatRule.isNullOrBlank()) {
+        parts += repeatRule
+    }
+    return parts.joinToString(" · ")
+}
+
+private fun timeBlockEmoji(timeBlock: String): String {
+    return when (timeBlock) {
+        TaskConstants.TIME_BLOCK_ANYTIME -> "🕐"
+        TaskConstants.TIME_BLOCK_MORNING -> "🌅"
+        TaskConstants.TIME_BLOCK_AFTERNOON -> "☀️"
+        TaskConstants.TIME_BLOCK_EVENING -> "🌙"
+        else -> "🕐"
+    }
+}
+
+private fun labelEmoji(label: String): String? {
+    return when (label) {
+        TaskConstants.LABEL_NONE -> "○"
+        TaskConstants.LABEL_WORK -> "💼"
+        TaskConstants.LABEL_HABIT -> "🎯"
+        TaskConstants.LABEL_STUDY -> "📚"
+        TaskConstants.LABEL_LIFE -> "🏠"
+        TaskConstants.LABEL_EXERCISE -> "🏃"
+        TaskConstants.LABEL_TRAVEL -> "✈️"
+        else -> null
+    }
 }
 
 private fun resolveCreateDates(
@@ -1039,8 +1109,21 @@ private fun resolveCreateDates(
     customRepeatEndDate: LocalDate?
 ): List<LocalDate> {
     val baseDates = if (selectedDates.isEmpty()) listOf(selectedDate) else selectedDates.toList().sorted()
+    if (repeatRange == null) return baseDates
+
+    val start = baseDates.minOrNull() ?: selectedDate
+    val end = when (repeatRange) {
+        RepeatRange.NEXT_1_WEEK -> start.plusWeeks(1)
+        RepeatRange.NEXT_2_WEEKS -> start.plusWeeks(2)
+        RepeatRange.NEXT_4_WEEKS -> start.plusWeeks(4)
+        RepeatRange.THIS_MONTH -> start.withDayOfMonth(start.lengthOfMonth())
+        RepeatRange.CUSTOM_END_DATE -> customRepeatEndDate ?: start
+        RepeatRange.UNLIMITED, null -> start.plusWeeks(4)
+    }
+    val rangeDates = generateDateSequence(start, end)
+
     if (repeatRule == null || !repeatRule.startsWith("WEEKLY_")) {
-        return baseDates
+        return rangeDates
     }
 
     val targetDay = when (repeatRule.removePrefix("WEEKLY_")) {
@@ -1053,15 +1136,5 @@ private fun resolveCreateDates(
         "SUN" -> DayOfWeek.SUNDAY
         else -> selectedDate.dayOfWeek
     }
-
-    val start = baseDates.minOrNull() ?: selectedDate
-    val end = when (repeatRange) {
-        RepeatRange.NEXT_1_WEEK -> start.plusWeeks(1)
-        RepeatRange.NEXT_2_WEEKS -> start.plusWeeks(2)
-        RepeatRange.NEXT_4_WEEKS -> start.plusWeeks(4)
-        RepeatRange.THIS_MONTH -> start.withDayOfMonth(start.lengthOfMonth())
-        RepeatRange.CUSTOM_END_DATE -> customRepeatEndDate ?: start
-        RepeatRange.UNLIMITED, null -> start.plusWeeks(4)
-    }
-    return generateDateSequence(start, end).filter { it.dayOfWeek == targetDay }
+    return rangeDates.filter { it.dayOfWeek == targetDay }
 }

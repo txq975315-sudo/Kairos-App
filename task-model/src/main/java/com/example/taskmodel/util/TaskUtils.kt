@@ -88,7 +88,9 @@ object TaskUtils {
 
     private fun isSameSeries(task: Task, target: Task): Boolean {
         if (target.repeatRule == TaskConstants.REPEAT_RULE_NONE) {
-            return task.id == target.id
+            // 无 repeatRule 的跨天任务，按标题+时间段识别同系列。
+            return task.title == target.title &&
+                task.timeBlock == target.timeBlock
         }
         return task.title == target.title &&
             task.timeBlock == target.timeBlock &&
