@@ -8,7 +8,7 @@ export default function CurrentDevelopmentWorkflow() {
         项目：Kotlin + Jetpack Compose（含 task-model 模块）｜用途：进度查看、跨人对接、后续排期。
       </Text>
       <Callout tone="info">
-        当前分支已完成 task-model 抽离、CreateScreen 交互增强、重复任务详情弹窗与停止重复逻辑修复，并持续通过 compile/assemble 校验。
+        当前分支已新增 ArrowButton 统一按钮库、CreateScreen 路由独立化与返回刷新链路，并完成 DailyReviewScreen 从原型到可编译运行版的多轮重构修复。
       </Callout>
       <Divider />
 
@@ -46,6 +46,24 @@ export default function CurrentDevelopmentWorkflow() {
             "每轮改动后固定执行 compile + assemble；冲突与IDE假红已建立处理流程",
             "verify-assemble-debug.ps1",
           ],
+          [
+            "导航重构",
+            "已完成",
+            "CreateScreen 从 overlay 升级为独立路由；Today 点击创建可跳转并返回原页",
+            ":app:compileDebugKotlin + 手动导航验收",
+          ],
+          [
+            "按钮组件统一",
+            "已完成",
+            "新增 ArrowButton 并替换 Today/Create 页箭头，删除不稳定 BackButton 实现",
+            ":app:assembleDebug",
+          ],
+          [
+            "Daily Review 页面",
+            "已完成（首版）",
+            "完成昨日任务复盘页结构、分区展示与底部操作按钮，清理重复代码导致的编译雪崩问题",
+            "clean + :app:compileDebugKotlin + :app:assembleDebug",
+          ],
         ]}
       />
 
@@ -78,6 +96,21 @@ export default function CurrentDevelopmentWorkflow() {
             "新增+迭代",
             "按钮交互修复、英文文案、按钮简化为 Complete Today/Stop Repeat",
           ],
+          [
+            "app/ui/components/ButtonLibrary.kt",
+            "新增",
+            "提供 ArrowButton（LEFT/RIGHT、size/tint 可配置），统一页面箭头入口",
+          ],
+          [
+            "app/MainScreen.kt + app/TodayScreen.kt",
+            "导航与刷新链路",
+            "Create 页路由化；Today 在回前台时消费 TaskCreationBus，确保创建后列表刷新",
+          ],
+          [
+            "app/DailyReviewScreen.kt",
+            "重构修复",
+            "多版本残留代码已清理为单一实现；页面结构、分区和按钮完成，当前可稳定编译运行",
+          ],
         ]}
       />
 
@@ -103,7 +136,12 @@ export default function CurrentDevelopmentWorkflow() {
           [
             "验证基线",
             "每次改动至少过 compile + assemble",
-            "命令固定：:app:compileDebugKotlin / :app:assembleDebug",
+            "命令固定：clean / :app:compileDebugKotlin / :app:assembleDebug",
+          ],
+          [
+            "Daily Review 当前约束",
+            "先保证单文件可编译，再叠加交互",
+            "若出现大量报错优先检查是否有重复 package/重复整段代码拼接",
           ],
         ]}
       />
