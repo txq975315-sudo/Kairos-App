@@ -62,6 +62,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,6 +100,9 @@ import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
 import java.time.LocalDate
 import android.widget.Toast
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 private data class CreateSheetConfig(
     val timeBlock: String,
@@ -123,6 +127,7 @@ fun TodayScreen(
     onDailyReviewClick: () -> Unit = {},
     onQuoteClick: () -> Unit = {}
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     var anytimeExpanded by remember { mutableStateOf(true) }
     var morningExpanded by remember { mutableStateOf(true) }
     var afternoonExpanded by remember { mutableStateOf(true) }
@@ -189,6 +194,20 @@ fun TodayScreen(
         val incoming = TaskCreationBus.consumeAll()
         if (incoming.isNotEmpty()) {
             allTasks.addAll(incoming)
+        }
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                val incoming = TaskCreationBus.consumeAll()
+                if (incoming.isNotEmpty()) {
+                    allTasks.addAll(incoming)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 

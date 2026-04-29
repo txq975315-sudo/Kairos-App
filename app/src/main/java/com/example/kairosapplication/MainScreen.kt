@@ -52,7 +52,7 @@ private enum class AppTab(val label: String, val icon: ImageVector) {
     Mine("Mine", Icons.Default.Person)
 }
 
-private enum class Overlay { Create, DailyReview }
+private enum class Overlay { DailyReview }
 
 @Composable
 fun MainScreen() {
@@ -69,7 +69,6 @@ fun MainScreen() {
             label = "overlay"
         ) { current ->
             when (current) {
-                Overlay.Create -> CreateScreen(onBack = { overlay = null })
                 Overlay.DailyReview -> DailyReviewScreen(onBack = { overlay = null })
                 null -> Unit
             }
@@ -123,10 +122,13 @@ fun MainScreen() {
                 ) {
                     composable("today") {
                         TodayScreen(
-                            onCreateClick = { overlay = Overlay.Create },
+                            onCreateClick = { navController.navigate("create") },
                             onDailyReviewClick = { overlay = Overlay.DailyReview },
                             onQuoteClick = { navController.navigate("quote_settings") }
                         )
+                    }
+                    composable("create") {
+                        CreateScreen(onBack = { navController.popBackStack() })
                     }
                     composable("quote_settings") {
                         QuoteSettingScreen(onBack = { navController.popBackStack() })
