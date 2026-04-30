@@ -73,13 +73,27 @@ object TaskUtils {
      */
     fun stopRepeat(tasks: List<Task>, target: Task): List<Task> {
         val cutoffDate = target.taskDate
+        val sourceRule = target.repeatRule
+
+        if (sourceRule == TaskConstants.REPEAT_RULE_NONE) {
+            return tasks.map { task ->
+                if (task.id == target.id) task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE) else task
+            }
+        }
+
         return tasks.mapNotNull { task ->
-            if (!isSameSeries(task, target)) {
+            val sameSeries =
+                task.repeatRule == sourceRule &&
+                    task.timeBlock == target.timeBlock &&
+                    task.title == target.title
+
+            if (!sameSeries) {
                 task
             } else {
                 when {
                     task.taskDate.isAfter(cutoffDate) -> null
-                    task.taskDate.isEqual(cutoffDate) -> task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE)
+                    task.taskDate.isEqual(cutoffDate) || task.id == target.id ->
+                        task.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE)
                     else -> task
                 }
             }

@@ -196,7 +196,12 @@ fun CreateScreen(onBack: () -> Unit) {
                 repeatRange = repeatRange,
                 customRepeatEndDate = customRepeatEndDate
             )
-            val normalizedRepeatRule = repeatRule ?: TaskConstants.REPEAT_RULE_NONE
+            val normalizedRepeatRule = normalizeRepeatRuleForSave(
+                dateSelectionMode = dateSelectionMode,
+                repeatRule = repeatRule,
+                repeatRange = repeatRange,
+                customRepeatRule = customRepeatRule
+            )
             val nowSeed = System.currentTimeMillis().toInt()
             val tasks = dates.mapIndexed { index, date ->
                 CreateTaskParam(
@@ -343,12 +348,28 @@ fun CreateScreen(onBack: () -> Unit) {
             rangeEndDate = rangeEndDate,
             labelOptions = availableLabels,
             onSelectionModeChanged = { mode ->
-                // 互斥逻辑：启用 Date Selection 时，清空 Repeat Range 与 Repeat Rules。
+                // 日期选择模式与重复规则联动：
+                // Single -> NONE；Multi/Range -> 至少 DAILY。
                 dateSelectionMode = if (dateSelectionMode == mode) null else mode
                 if (dateSelectionMode != null) {
                     repeatRange = null
-                    repeatRule = null
                     customRepeatEndDate = null
+                }
+                when (dateSelectionMode) {
+                    DateSelectionMode.SINGLE -> {
+                        repeatRule = TaskConstants.REPEAT_RULE_NONE
+                    }
+                    DateSelectionMode.MULTI, DateSelectionMode.RANGE -> {
+                        val currentRule = repeatRule?.trim().orEmpty()
+                        if (currentRule.isEmpty() || currentRule == TaskConstants.REPEAT_RULE_NONE) {
+                            repeatRule = TaskConstants.REPEAT_RULE_DAILY
+                        }
+                    }
+                    null -> {
+                        if (repeatRule == null) {
+                            repeatRule = TaskConstants.REPEAT_RULE_NONE
+                        }
+                    }
                 }
                 when (dateSelectionMode) {
                     DateSelectionMode.SINGLE -> {
@@ -374,7 +395,10 @@ fun CreateScreen(onBack: () -> Unit) {
                 }
             },
             onRepeatRuleChanged = { rule ->
-                if (repeatRange == null) return@CreateToolPanel
+                // 允许用户先选规则再选范围：若范围为空则自动兜底为无限范围，避免 repeatRule 丢失为 NONE。
+                if (repeatRange == null) {
+                    repeatRange = RepeatRange.UNLIMITED
+                }
                 repeatRule = if (repeatRule == rule) null else rule
             },
             onRepeatRangeChanged = { range ->
@@ -1137,4 +1161,43 @@ private fun resolveCreateDates(
         else -> selectedDate.dayOfWeek
     }
     return rangeDates.filter { it.dayOfWeek == targetDay }
+}
+
+private fun normalizeRepeatRuleForSave(
+    dateSelectionMode: DateSelectionMode?,
+    repeatRule: String?,
+    repeatRange: RepeatRange?,
+    customRepeatRule: String
+): String {
+    if (dateSelectionMode == DateSelectionMode.SINGLE) {
+        return TaskConstants.REPEAT_RULE_NONE
+    }
+
+    if (dateSelectionMode == DateSelectionMode.MULTI || dateSelectionMode == DateSelectionMode.RANGE) {
+        // Multi/Range 一律按重复任务保存，默认 DAILY。
+        val modeRule = repeatRule?.trim().orEmpty()
+        if (modeRule.isEmpty() || modeRule == TaskConstants.REPEAT_RULE_NONE) {
+            return TaskConstants.REPEAT_RULE_DAILY
+        }
+        if (modeRule == "CUSTOM") {
+            val custom = customRepeatRule.trim()
+            return if (custom.isNotEmpty()) custom else TaskConstants.REPEAT_RULE_DAILY
+        }
+        return modeRule
+    }
+
+    if (repeatRange == null) return TaskConstants.REPEAT_RULE_NONE
+
+    val normalizedRule = repeatRule?.trim().orEmpty()
+    if (normalizedRule.isEmpty()) {
+        // 选择了重复范围但未显式选择规则时，默认按每日重复保存，避免落成 NONE。
+        return TaskConstants.REPEAT_RULE_DAILY
+    }
+
+    if (normalizedRule == "CUSTOM") {
+        val custom = customRepeatRule.trim()
+        return if (custom.isNotEmpty()) custom else TaskConstants.REPEAT_RULE_DAILY
+    }
+
+    return normalizedRule
 }

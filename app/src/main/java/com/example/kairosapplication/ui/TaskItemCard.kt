@@ -23,6 +23,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
 import android.widget.ImageView
+import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
@@ -45,10 +50,12 @@ fun TaskItemCard(
     onToggleComplete: () -> Unit,
     onOpenDetail: () -> Unit
 ) {
-    val urgencyColor = TaskUtils.getUrgencyColor(task.urgency)
-    val hasDescription = task.description.isNotBlank()
-    val hasImage = !task.emojiImage.isNullOrBlank() || !task.localImageUri.isNullOrBlank()
-    val isRepeating = task.repeatRule != TaskConstants.REPEAT_RULE_NONE
+    var currentTask by remember(task.id) { mutableStateOf(task) }
+    var showEditSheet by remember(task.id) { mutableStateOf(false) }
+    val urgencyColor = TaskUtils.getUrgencyColor(currentTask.urgency)
+    val hasDescription = currentTask.description.isNotBlank()
+    val hasImage = !currentTask.emojiImage.isNullOrBlank() || !currentTask.localImageUri.isNullOrBlank()
+    val isRepeating = currentTask.repeatRule != TaskConstants.REPEAT_RULE_NONE
     val baseCardHeight = 48.dp
     val maxCardHeight = if (hasImage && hasDescription) 96.dp else baseCardHeight
     val imageSize = if (hasImage) maxCardHeight else 0.dp
@@ -63,7 +70,7 @@ fun TaskItemCard(
                 spotColor = Color.Black.copy(alpha = 0.2f)
             )
             // 卡片点击仅用于打开详情弹窗；左侧完成按钮独立处理完成状态。
-            .clickable { onOpenDetail() },
+            .clickable { showEditSheet = true },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -79,16 +86,16 @@ fun TaskItemCard(
                 modifier = Modifier
                     .size(22.dp)
                     .clip(CircleShape)
-                    .background(if (task.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
+                    .background(if (currentTask.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
                     .border(
                         width = 2.dp,
-                        color = if (task.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
+                        color = if (currentTask.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
                         shape = CircleShape
                     )
                     .clickable { onToggleComplete() },
                 contentAlignment = Alignment.Center
             ) {
-                if (task.isCompleted) {
+                if (currentTask.isCompleted) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Completed",
@@ -104,18 +111,18 @@ fun TaskItemCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = task.title,
+                    text = currentTask.title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
-                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    color = if (currentTask.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
+                    textDecoration = if (currentTask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                 )
                 if (hasDescription) {
                     Text(
-                        text = task.description,
+                        text = currentTask.description,
                         fontSize = 13.sp,
                         color = Color(0xFF757575),
-                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                        textDecoration = if (currentTask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
                 }
                 if (isRepeating) {
@@ -128,7 +135,7 @@ fun TaskItemCard(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = formatRepeatRuleTag(task.repeatRule),
+                            text = formatRepeatRuleTag(currentTask.repeatRule),
                             color = Color(0xFF5C6BC0),
                             fontSize = 12.sp
                         )
@@ -146,8 +153,8 @@ fun TaskItemCard(
                     contentAlignment = Alignment.Center
                 ) {
                     // 通过局部不可变变量进行空安全处理，避免属性智能转换失败。
-                    val emojiImage = task.emojiImage
-                    val localImageUri = task.localImageUri
+                    val emojiImage = currentTask.emojiImage
+                    val localImageUri = currentTask.localImageUri
                     if (!emojiImage.isNullOrBlank()) {
                         Text(text = emojiImage, fontSize = 34.sp)
                     } else if (!localImageUri.isNullOrBlank()) {
@@ -164,6 +171,17 @@ fun TaskItemCard(
                 }
             }
         }
+    }
+
+    if (showEditSheet) {
+        CreateTaskBottomSheet(
+            task = currentTask,
+            onDismiss = { showEditSheet = false },
+            onSave = {
+                currentTask = it.copy(id = currentTask.id, taskDate = currentTask.taskDate)
+                showEditSheet = false
+            }
+        )
     }
 }
 

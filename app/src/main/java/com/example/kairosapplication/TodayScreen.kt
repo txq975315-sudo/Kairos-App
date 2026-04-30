@@ -195,6 +195,13 @@ fun TodayScreen(
         }
     }
 
+    // 临时调试：跟踪列表中的 repeatRule，定位创建链路是否丢失重复规则。
+    LaunchedEffect(allTasks.size) {
+        allTasks.forEach { task ->
+            println("TodayScreen task='${task.title}', date=${task.taskDate}, repeatRule='${task.repeatRule}'")
+        }
+    }
+
     // TopBar 汇总数据：实时追踪所有任务列表的完成状态（非今天显示 0）
     val totalCount by remember {
         derivedStateOf {
@@ -217,6 +224,7 @@ fun TodayScreen(
     var createLabel by remember { mutableStateOf<String?>(null) }
     var createEmojiImage by remember { mutableStateOf<String?>(null) }
     var createLocalImageUri by remember { mutableStateOf<String?>(null) }
+    var editingTask by remember { mutableStateOf<Task?>(null) }
     var detailTask by remember { mutableStateOf<Task?>(null) }
 
     // 统一时间块创建入口：按点击块动态切换弹窗标题与配色
@@ -274,7 +282,8 @@ fun TodayScreen(
                 onToggle = { anytimeExpanded = !anytimeExpanded },
                 tasks = anytimeTasks,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
-                onOpenDetail = { task -> detailTask = task },
+                // 统一编辑入口：任务卡片点击后仅通过 editingTask 打开编辑弹窗。
+                onOpenDetail = { clickedTask -> editingTask = clickedTask },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME) }
             )
 
@@ -287,7 +296,7 @@ fun TodayScreen(
                 onToggle = { morningExpanded = !morningExpanded },
                 tasks = morningTasks,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
-                onOpenDetail = { task -> detailTask = task },
+                onOpenDetail = { clickedTask -> editingTask = clickedTask },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_MORNING) }
             )
 
@@ -300,7 +309,7 @@ fun TodayScreen(
                 onToggle = { afternoonExpanded = !afternoonExpanded },
                 tasks = afternoonTasks,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
-                onOpenDetail = { task -> detailTask = task },
+                onOpenDetail = { clickedTask -> editingTask = clickedTask },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_AFTERNOON) }
             )
 
@@ -313,7 +322,7 @@ fun TodayScreen(
                 onToggle = { eveningExpanded = !eveningExpanded },
                 tasks = eveningTasks,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
-                onOpenDetail = { task -> detailTask = task },
+                onOpenDetail = { clickedTask -> editingTask = clickedTask },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_EVENING) }
             )
 
@@ -367,6 +376,31 @@ fun TodayScreen(
                     allTasks.add(newTask)
                     true
                 }
+            }
+        )
+    }
+
+    editingTask?.let { task ->
+        CreateTaskBottomSheet(
+            task = task,
+            onDismiss = { editingTask = null },
+            onSave = { updated ->
+                val isStopRepeatAction =
+                    task.repeatRule != TaskConstants.REPEAT_RULE_NONE &&
+                        updated.repeatRule == TaskConstants.REPEAT_RULE_NONE
+
+                if (isStopRepeatAction) {
+                    // Stop 需要作用于整条重复链：当天置为 NONE，未来日期同系列任务移除。
+                    val updatedTasks = TaskUtils.stopRepeat(allTasks.toList(), task)
+                    allTasks.clear()
+                    allTasks.addAll(updatedTasks)
+                } else {
+                    val index = allTasks.indexOfFirst { it.id == task.id }
+                    if (index != -1) {
+                        allTasks[index] = updated.copy(id = task.id, taskDate = task.taskDate)
+                    }
+                }
+                editingTask = null
             }
         )
     }

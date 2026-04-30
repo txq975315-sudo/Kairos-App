@@ -1,0 +1,25 @@
+[33mf8e649d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m 创建弹块迁移成功
+[33m79f3345[m dailyreview页面暂时完成UI和交互
+[33mbc34d4d[m 复盘界面第一次ui
+[33mc51de16[m 主创建页面独立出来了
+[33me345c2b[m 主创建页面完成了，并更新了按钮组件
+[33m6971451[m WIP: 规律任务管理功能开发中 - 新增 TaskDetailBottomSheet 详情弹窗 - 实现 Complete Today 和 Stop Repeat (from today) 功能 - 修复停止重复逻辑：保留今天任务，删除未来重复 - 修复停止重复后弹窗不关闭的问题
+[33m23f9620[m feat: 完成任务创建功能 - 添加键盘发送按钮 - 修复任务保存逻辑 - 优化按钮样式
+[33m5dc5fab[m fix: 修复Today任务完成后未沉底排序问题
+[33m4ff9240[m refactor: 完成全局规范库落地+Today页面硬编码迁移 # 规范库新增 - StyleConstants.kt：统一管理颜色/尺寸/圆角/字体等视觉常量 - CommonComponents.kt：封装CommonBackButton等4个通用组件 - CodeStandard.kt：约束编码规范，新增硬编码提示注解 - core/README.md：规范库使用指南（替换示例+接入步骤）
+[33mb34af83[m feat: Today页面功能&样式全量完成 # 核心功能 - 任务模块：无任务显示空白card/有任务显示+按钮，显隐动态联动 - 每日一句：添加点击跳转+通用退出键（规范：左距20-24dp、14×8dp/360×800、#000000） - 图标交互：5个中部图标风格统一（空心线条）、颜色随选择同步、标签英文+滑动+图标 - 图片选择：新增返回键、尺寸按card高度动态限制（最大2倍）
+[33mc0c4823[m feat: 优化CreateTaskBottomSheet图标样式及交互 - 标签/紧急程度图标：实心改空心几何线条，与中部其他图标风格统一 - 图片选择页：新增返回键，支持回退到主弹窗 - 时间/紧急程度图标：颜色随选择同步（匹配时间段/紧急等级色值） - 标签列表：全量替换为英文+匹配专属图标，添加垂直滑动交互 - 图片尺寸：按任务card高度动态限制，最大不超原始高度2倍
+[33m5afe582[m feat: 优化CreateTaskBottomSheet弹窗体验 - 弹窗布局紧凑化，模块间距8-12dp，消除空白留白 - 统一标题字号与输入框字体大小、输入框文字颜色 - 保留键盘自动弹出、Enter键返回Today页交互
+[33m353cea8[m feat: 日期切换联动任务状态，非今天展示空白待办卡片
+[33ma829543[m feat: TopBar 创建/Daily Review 按钮跳转至对应占位页面
+[33m2724f19[m fix: 固定 QuoteSection 下方 10dp 间距，任务区域从此处开始独立滚动
+[33m0751ddb[m feat: 任务完成状态上提至 ViewModel 层并实现自动排序
+[33mdd97075[m 优化任务排序：未完成在前，已完成在后，按紧急程度和id排序
+[33m994043f[m 关联时间卡片任务数量与实际任务列表
+[33m8c6cb56[m 添加任务卡片阴影，优化页面滑动布局
+[33meea3b53[m today创建待办内部card形式优化完成
+[33m9bfd988[m feat: 完成今日待办页面UI框架和底部导航栏
+[33m521fd83[m Update README.md
+[33md7c6b80[m Update README.md
+[33mf6baef7[m Create README.md
+[33md03cd7a[m 初始项目结构（第一次存档）

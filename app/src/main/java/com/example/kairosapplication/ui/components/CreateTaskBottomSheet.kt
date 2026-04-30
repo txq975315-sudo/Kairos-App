@@ -31,11 +31,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -65,6 +69,7 @@ import com.example.kairosapplication.core.text.rememberTaskTextProvider
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppTypography
 import com.example.taskmodel.constants.TaskConstants
+import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
 
 internal data class CreateSheetConfig(
@@ -84,6 +89,87 @@ private enum class IconSheetType {
     TIME, URGENCY, LABEL, ATTACH, ATTACH_LOCAL
 }
 
+/** 统一重复任务判断：非空且非 NONE 才视为重复任务。 */
+private fun isRepeatingTask(task: Task): Boolean {
+    return task.repeatRule.isNotBlank() &&
+        task.repeatRule.trim().uppercase() != TaskConstants.REPEAT_RULE_NONE
+}
+
+@Composable
+fun CreateTaskBottomSheet(
+    task: Task? = null,
+    onDismiss: () -> Unit,
+    onSave: (Task) -> Unit
+) {
+    val shouldShowStopButton = task?.let(::isRepeatingTask) ?: false
+    val debugRepeatRuleText = task?.repeatRule
+    val seed = task ?: Task(
+        id = 0,
+        title = "",
+        description = "",
+        timeBlock = TaskConstants.TIME_BLOCK_ANYTIME,
+        urgency = TaskConstants.URGENCY_LOW
+    )
+    var draftTask by remember(task) { mutableStateOf(seed) }
+    var title by remember(task) { mutableStateOf(seed.title) }
+    var description by remember(task) { mutableStateOf(seed.description) }
+    var meta by remember(task) {
+        mutableStateOf(
+            CreateTaskMeta(
+                urgency = seed.urgency,
+                label = seed.label,
+                emojiImage = seed.emojiImage,
+                localImageUri = seed.localImageUri
+            )
+        )
+    }
+    val config = remember(draftTask.timeBlock) {
+        CreateSheetConfig(
+            timeBlock = draftTask.timeBlock,
+            backgroundColor = TaskUtils.getTimeBlockColor(draftTask.timeBlock),
+            titleColor = TaskUtils.getTimeBlockTitleColor(draftTask.timeBlock)
+        )
+    }
+
+    CreateTaskBottomSheet(
+        config = config,
+        onDismiss = onDismiss,
+        title = title,
+        onTitleChange = { title = it },
+        description = description,
+        onDescriptionChange = { description = it },
+        meta = meta,
+        onMetaChange = { meta = it },
+        onTimeBlockChange = { draftTask = draftTask.copy(timeBlock = it) },
+        onCreateTask = { valueTitle, valueDescription, timeBlock, valueMeta ->
+            val trimmed = valueTitle.trim()
+            if (trimmed.isEmpty()) {
+                false
+            } else {
+                onSave(
+                    draftTask.copy(
+                        title = trimmed,
+                        description = valueDescription.trim(),
+                        timeBlock = timeBlock,
+                        urgency = valueMeta.urgency,
+                        label = valueMeta.label,
+                        emojiImage = valueMeta.emojiImage,
+                        localImageUri = valueMeta.localImageUri
+                    )
+                )
+                true
+            }
+        },
+        showStopButton = shouldShowStopButton,
+        debugRepeatRuleText = debugRepeatRuleText,
+        onStopClick = {
+            val sourceTask = task ?: draftTask
+            onSave(sourceTask.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE))
+            onDismiss()
+        }
+    )
+}
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 internal fun CreateTaskBottomSheet(
@@ -96,7 +182,10 @@ internal fun CreateTaskBottomSheet(
     meta: CreateTaskMeta,
     onMetaChange: (CreateTaskMeta) -> Unit,
     onTimeBlockChange: (String) -> Unit,
-    onCreateTask: (title: String, description: String, timeBlock: String, meta: CreateTaskMeta) -> Boolean
+    onCreateTask: (title: String, description: String, timeBlock: String, meta: CreateTaskMeta) -> Boolean,
+    showStopButton: Boolean = false,
+    debugRepeatRuleText: String? = null,
+    onStopClick: (() -> Unit)? = null
 ) {
     val taskText = rememberTaskTextProvider()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -117,6 +206,7 @@ internal fun CreateTaskBottomSheet(
     var hasSelectedUrgency by remember { mutableStateOf(false) }
     var keyboardHeightDp by remember { mutableStateOf(280.dp) }
     val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val isKeyboardVisible = imeBottomPx > 0
 
     LaunchedEffect(imeBottomPx) {
         if (imeBottomPx > 0) {
@@ -193,6 +283,16 @@ internal fun CreateTaskBottomSheet(
                 textAlign = TextAlign.Center
             )
 
+            debugRepeatRuleText?.let { repeatRule ->
+                Text(
+                    text = "repeatRule: $repeatRule",
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
 
             BasicTextField(
@@ -259,76 +359,93 @@ internal fun CreateTaskBottomSheet(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = taskText.contentDescTimeIcon,
-                        tint = if (hasSelectedTime) TaskUtils.getTimeBlockTitleColor(config.timeBlock) else AppColors.IconNeutral,
-                        modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Flag,
-                        contentDescription = taskText.contentDescFlagIcon,
-                        tint = if (hasSelectedUrgency) TaskUtils.getUrgencyColor(meta.urgency) else AppColors.IconNeutral,
-                        modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(TaskUtils.getUrgencyColor(meta.urgency))
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Label,
-                        contentDescription = taskText.contentDescLabelIcon,
-                        tint = AppColors.IconNeutral,
-                        modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
-                    )
-                    if (!meta.label.isNullOrBlank()) {
-                        Spacer(Modifier.width(4.dp))
-                        Text(text = "# ${meta.label}", fontSize = 12.sp, color = config.titleColor)
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = taskText.contentDescTimeIcon,
+                            tint = if (hasSelectedTime) TaskUtils.getTimeBlockTitleColor(config.timeBlock) else AppColors.IconNeutral,
+                            modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
+                        )
                     }
-                }
-                Icon(
-                    imageVector = Icons.Default.AttachFile,
-                    contentDescription = taskText.contentDescAttachIcon,
-                    tint = AppColors.IconNeutral,
-                    modifier = Modifier.clickable { showIconSheet(IconSheetType.ATTACH) }
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.Flag,
+                            contentDescription = taskText.contentDescFlagIcon,
+                            tint = if (hasSelectedUrgency) TaskUtils.getUrgencyColor(meta.urgency) else AppColors.IconNeutral,
+                            modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(TaskUtils.getUrgencyColor(meta.urgency))
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.Label,
+                            contentDescription = taskText.contentDescLabelIcon,
+                            tint = AppColors.IconNeutral,
+                            modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
+                        )
+                        if (!meta.label.isNullOrBlank()) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(text = "# ${meta.label}", fontSize = 12.sp, color = config.titleColor)
+                        }
+                    }
                     Icon(
-                        imageVector = Icons.Default.Mic,
-                        contentDescription = taskText.contentDescMicIcon,
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = taskText.contentDescAttachIcon,
                         tint = AppColors.IconNeutral,
                         modifier = Modifier.clickable {
-                            isRecording = true
-                            val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
-                                putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
-                                putExtra("android.speech.extra.PROMPT", taskText.voicePrompt)
-                            }
-                            try {
-                                speechLauncher.launch(intent)
-                            } catch (_: Exception) {
-                                isRecording = false
-                                Toast.makeText(context, taskText.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
-                            }
+                            showIconSheet(IconSheetType.ATTACH)
                         }
                     )
-                    if (isRecording) {
-                        Text(text = taskText.recording, fontSize = AppTypography.Caption, color = AppColors.Urgent)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = taskText.contentDescMicIcon,
+                            tint = AppColors.IconNeutral,
+                            modifier = Modifier.clickable {
+                                isRecording = true
+                                val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
+                                    putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
+                                    putExtra("android.speech.extra.PROMPT", taskText.voicePrompt)
+                                }
+                                try {
+                                    speechLauncher.launch(intent)
+                                } catch (_: Exception) {
+                                    isRecording = false
+                                    Toast.makeText(context, taskText.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                        if (isRecording) {
+                            Text(text = taskText.recording, fontSize = AppTypography.Caption, color = AppColors.Urgent)
+                        }
+                    }
+                }
+                if (showStopButton && onStopClick != null) {
+                    IconButton(onClick = onStopClick) {
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = "Stop 重复",
+                            tint = Color.Red
+                        )
                     }
                 }
             }
 
-            if (iconSheetType == null) {
+            if (iconSheetType == null && !isKeyboardVisible) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 

@@ -5,151 +5,179 @@ export default function CurrentDevelopmentWorkflow() {
     <Stack gap={16}>
       <H1>开发记录与对接看板</H1>
       <Text tone="secondary">
-        项目：Kotlin + Jetpack Compose（含 task-model 模块）｜用途：进度查看、跨人对接、后续排期。
+        项目：Kotlin + Jetpack Compose（含 task-model 模块）｜用途：完整记录本轮对话开发过程，并给后续接手方直接对接。
       </Text>
       <Callout tone="info">
-        当前分支已新增 ArrowButton 统一按钮库、CreateScreen 路由独立化与返回刷新链路，并完成 DailyReviewScreen 从原型到可编译运行版的多轮重构修复。
+        当前状态：TodayScreen 的任务卡片编辑调用链已闭环并通过编译验证；DailyReview / CreateTaskBottomSheet 曾多轮迭代并发生回滚，已按对话过程完整登记。
       </Callout>
       <Divider />
 
-      <H2>阶段进度</H2>
+      <H2>全量时间线（本轮会话）</H2>
       <Table
-        headers={["阶段", "状态", "核心结果", "验收方式"]}
+        headers={["阶段/时间", "用户目标", "执行结果", "验证与备注"]}
         rows={[
           [
-            "基础架构",
+            "1) 初始诊断",
+            "检查项目结构与 Gradle，先保证可编译",
+            "完成结构扫描与构建问题定位",
+            "后续多轮均要求 clean/compile/assemble",
+          ],
+          [
+            "2) DailyReview UI 优化",
+            "标题区间距/高度、背景统一、底部按钮、文案与 quote 样式",
+            "已按要求多次调整（仅限 DailyReview）",
+            "多次 compile 验证，后续进入交互增强阶段",
+          ],
+          [
+            "3) DailyReview 交互增强",
+            "全选、卡片选择、Copy/Move 到 Today、TaskCreationBus 传递",
+            "实现过完整逻辑并可编译",
+            "期间出现状态类型与作用域问题，已修复过",
+          ],
+          [
+            "4) CreateTaskBottomSheet 提取（首次）",
+            "从 TodayScreen 提取可复用组件",
+            "用户反馈 UI 改动不可接受，要求回滚",
+            "触发“只移动不改样式/逻辑”的严格重做策略",
+          ],
+          [
+            "5) 深度迁移版",
+            "迁移 5 个代码块到 ui/components/CreateTaskBottomSheet.kt",
+            "完成迁移并解决可见性/导入兼容",
+            "保持调用签名兼容，TodayScreen 调用继续可用",
+          ],
+          [
+            "6) TaskCard 点击编辑（多轮）",
+            "点击卡片打开 CreateTaskBottomSheet，并填充 task",
+            "多次尝试后，核心链路问题定位到调用方而非仅弹窗",
+            "关键结论：必须确保 TodayScreen 传入 editingTask -> task 参数",
+          ],
+          [
+            "7) Stop 按钮问题排查",
+            "重复任务编辑时显示 Stop（红色，图标行右侧）",
+            "弹窗内部逻辑多次加固，但根因曾是上游未进入编辑弹窗",
+            "最终转向检查 TodayScreen 点击调用链",
+          ],
+          [
+            "8) 用户要求放弃修改",
+            "撤销“本次和上次修改”",
+            "已执行回滚并按新约束重新推进",
+            "后续所有改动均严格遵守文件范围约束",
+          ],
+          [
+            "9) 全页链路检查",
+            "检查 Today/Daily/Create 的编辑调用链",
+            "Today 完整；Create 为创建页无任务卡片；Daily 按需补齐",
+            "构建命令返回成功（exit code 0）",
+          ],
+          [
+            "10) 最新指令",
+            "详细核对 TodayScreen 调用链并编译",
+            "已确认 4 项检查点全部成立",
+            "用户要求将全过程记录到 canvas（即当前页面）",
+          ],
+          [
+            "基础架构（历史）",
             "已完成",
             "新增 task-model 模块；Task/CreateTaskParam/常量/工具函数沉淀",
             ":task-model:test + :app:assembleDebug",
           ],
           [
-            "文案分层",
+            "文案分层（历史）",
             "已完成",
             "TaskText 从库回迁至 app（strings + provider），避免模型层耦合文案",
             ":app:compileDebugKotlin",
           ],
           [
-            "CreateScreen",
+            "CreateScreen（历史）",
             "已完成",
             "日历、多选/范围/重复规则、键盘上方发送按钮、创建成功反馈",
             ":app:assembleDebug + 手动UI验收",
           ],
           [
-            "重复任务管理",
+            "重复任务管理（历史）",
             "已完成",
             "任务卡片重复标识、详情弹窗、完成今天/停止重复（from target day）",
             "Today 交互验证 + :task-model:test",
           ],
           [
-            "稳定性",
+            "稳定性（持续）",
             "持续中",
             "每轮改动后固定执行 compile + assemble；冲突与IDE假红已建立处理流程",
             "verify-assemble-debug.ps1",
           ],
-          [
-            "导航重构",
-            "已完成",
-            "CreateScreen 从 overlay 升级为独立路由；Today 点击创建可跳转并返回原页",
-            ":app:compileDebugKotlin + 手动导航验收",
-          ],
-          [
-            "按钮组件统一",
-            "已完成",
-            "新增 ArrowButton 并替换 Today/Create 页箭头，删除不稳定 BackButton 实现",
-            ":app:assembleDebug",
-          ],
-          [
-            "Daily Review 页面",
-            "已完成（首版）",
-            "完成昨日任务复盘页结构、分区展示与底部操作按钮，清理重复代码导致的编译雪崩问题",
-            "clean + :app:compileDebugKotlin + :app:assembleDebug",
-          ],
         ]}
       />
 
-      <H2>关键改动清单</H2>
+      <H2>文件级改动/约束记录</H2>
       <Table
-        headers={["模块/文件", "变更类型", "摘要"]}
+        headers={["文件", "本轮动作", "约束与现状"]}
         rows={[
           [
-            "task-model/*",
-            "新增与重构",
-            "Task/参数模型、排序/颜色工具、重复任务批量处理（complete/stop）",
+            "app/src/main/java/com/example/kairosapplication/TodayScreen.kt",
+            "新增 editingTask 链路、卡片点击赋值、CreateTaskBottomSheet(task=...) 调用、onSave 回写",
+            "已验证通过；当前是编辑入口主链路",
           ],
           [
-            "app/ui/CreateScreen.kt",
-            "功能迭代",
-            "日期选择增强、互斥选择逻辑、发送创建链路、键盘工具栏发送按钮",
+            "app/src/main/java/com/example/kairosapplication/DailyReviewScreen.kt",
+            "经历多轮 UI/交互改造与回滚；最终按约束补齐/核对编辑入口",
+            "用户经常限定“仅改单文件”，后续改动需再次显式确认范围",
           ],
           [
-            "app/TodayScreen.kt",
-            "数据流重构",
-            "接入 TaskCreationBus、按 taskDate 分桶显示、详情弹窗动作接入",
+            "app/src/main/java/com/example/kairosapplication/ui/components/CreateTaskBottomSheet.kt",
+            "完成组件提取，后续多轮围绕 wrapper 与 Stop 按钮显示逻辑排查",
+            "当前已被用户标记为“不要再改”，只做调用侧对接",
           ],
           [
-            "app/ui/TaskItemCard.kt",
-            "新增",
-            "重复任务标识展示、卡片详情入口、编译兼容修复（padding/smart cast）",
+            "app/src/main/java/com/example/kairosapplication/ui/TaskItemCard.kt",
+            "曾尝试承载编辑弹窗入口，后按用户范围限制回收/调整",
+            "后续尽量仅作为展示与点击转发组件",
           ],
           [
-            "app/ui/TaskDetailBottomSheet.kt",
-            "新增+迭代",
-            "按钮交互修复、英文文案、按钮简化为 Complete Today/Stop Repeat",
+            "app/src/main/java/com/example/kairosapplication/ui/CreateScreen.kt",
+            "检查确认：创建页无 TaskCard 编辑场景",
+            "不应强行添加 editingTask 逻辑，避免引入伪需求",
           ],
           [
-            "app/ui/components/ButtonLibrary.kt",
-            "新增",
-            "提供 ArrowButton（LEFT/RIGHT、size/tint 可配置），统一页面箭头入口",
-          ],
-          [
-            "app/MainScreen.kt + app/TodayScreen.kt",
-            "导航与刷新链路",
-            "Create 页路由化；Today 在回前台时消费 TaskCreationBus，确保创建后列表刷新",
-          ],
-          [
-            "app/DailyReviewScreen.kt",
-            "重构修复",
-            "多版本残留代码已清理为单一实现；页面结构、分区和按钮完成，当前可稳定编译运行",
+            "Gradle 验证命令",
+            "固定执行 clean / :app:compileDebugKotlin / :app:assembleDebug",
+            "本轮报告中多次返回 exit code 0",
           ],
         ]}
       />
 
-      <H2>对接说明（给协作者）</H2>
+      <H2>回滚与风险点</H2>
       <Table
-        headers={["主题", "当前约定", "协作者需要知道"]}
+        headers={["风险主题", "已发生情况", "后续处理建议"]}
         rows={[
           [
-            "任务创建入口",
-            "CreateScreen 通过 TaskCreationBus 推送新任务",
-            "TodayScreen 会消费总线并刷新，不需要手动注入任务",
+            "范围冲突风险",
+            "多次出现“只允许改指定文件”与“跨页联动修复”冲突",
+            "每次开始改动前先锁定白名单文件并复述",
           ],
           [
-            "重复停止语义",
-            "以被点击任务日期为 cutoff，保留当天，删除未来",
-            "不要再用 LocalDate.now() 作为全局 cutoff",
+            "视觉回归风险",
+            "CreateTaskBottomSheet 提取时曾被判定 UI 变化",
+            "后续仅做代码搬移或逻辑闭环，不做视觉调整",
           ],
           [
-            "文案归属",
-            "业务文案在 app 层；task-model 只放模型与规则",
-            "新增文案优先 strings/provider，不进模型库",
+            "Stop 按钮误判风险",
+            "曾误以为是弹窗内部条件问题，实际是上游未传 task 进入编辑态",
+            "排查顺序固定：调用链 -> 传参 -> 组件内部显示条件",
           ],
           [
-            "验证基线",
-            "每次改动至少过 compile + assemble",
-            "命令固定：clean / :app:compileDebugKotlin / :app:assembleDebug",
-          ],
-          [
-            "Daily Review 当前约束",
-            "先保证单文件可编译，再叠加交互",
-            "若出现大量报错优先检查是否有重复 package/重复整段代码拼接",
+            "误改历史风险",
+            "用户曾要求“放弃本次和上次修改”",
+            "涉及历史功能时先确认是否以 HEAD 还是会话内状态为准",
           ],
         ]}
       />
 
-      <H2>下一步建议</H2>
-      <Text>1) 为重复任务增加 seriesId，替代 title+timeBlock 匹配。</Text>
-      <Text>2) 将 TaskCreationBus 升级为持久化存储（Room）避免进程丢失。</Text>
-      <Text>3) 补齐重复任务 UI 自动化回归用例（停止重复后跨日期验证）。</Text>
+      <H2>后续对接（可直接接手）</H2>
+      <Text>1) 以 TodayScreen 为唯一编辑入口基线：TaskCard -> editingTask -> CreateTaskBottomSheet(task=...).</Text>
+      <Text>2) 若用户继续追“Stop 不显示”，先现场抓取 repeatRule 实际值，再决定改调用侧还是弹窗侧。</Text>
+      <Text>3) 每轮交付附上“修改文件清单 + 三条 Gradle 验证结果 + 是否发生回滚”。</Text>
+      <Text>4) 若用户要求“全自动后续对接”，下一步优先做：编辑保存后的跨页数据一致性回归（Today/Daily/Create）。</Text>
     </Stack>
   );
 }

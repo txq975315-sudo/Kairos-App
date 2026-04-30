@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
+import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
@@ -65,6 +67,7 @@ fun DailyReviewScreen(
     }
     val selectedTaskIds = remember { mutableStateListOf<Int>() }
     val nextTaskId = remember { mutableIntStateOf((tasks.maxOfOrNull { it.id } ?: 1000) + 1) }
+    var editingTask = remember { mutableStateOf<Task?>(null) }
 
     fun toggleSelect(id: Int) {
         if (!selectedTaskIds.add(id)) selectedTaskIds.remove(id)
@@ -133,7 +136,8 @@ fun DailyReviewScreen(
                 allSelected = overdueTasks.isNotEmpty() && overdueTasks.all { selectedTaskIds.contains(it.id) },
                 onSelectAll = { toggleSelectAll(overdueTasks.map { it.id }) },
                 selectable = true,
-                onToggle = ::toggleSelect
+                onToggle = ::toggleSelect,
+                onEdit = { task -> editingTask.value = task }
             )
 
             ReviewSection(
@@ -146,7 +150,8 @@ fun DailyReviewScreen(
                 allSelected = completedTasks.isNotEmpty() && completedTasks.all { selectedTaskIds.contains(it.id) },
                 onSelectAll = { toggleSelectAll(completedTasks.map { it.id }) },
                 selectable = true,
-                onToggle = ::toggleSelect
+                onToggle = ::toggleSelect,
+                onEdit = { task -> editingTask.value = task }
             )
         }
 
@@ -214,6 +219,20 @@ fun DailyReviewScreen(
             }
         }
     }
+
+    editingTask.value?.let { task ->
+        CreateTaskBottomSheet(
+            task = task,
+            onDismiss = { editingTask.value = null },
+            onSave = { updatedTask ->
+                val index = tasks.indexOfFirst { it.id == task.id }
+                if (index != -1) {
+                    tasks[index] = updatedTask.copy(id = task.id, taskDate = task.taskDate)
+                }
+                editingTask.value = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -255,7 +274,8 @@ private fun ReviewSection(
     allSelected: Boolean,
     onSelectAll: () -> Unit,
     selectable: Boolean,
-    onToggle: (Int) -> Unit
+    onToggle: (Int) -> Unit,
+    onEdit: (Task) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -305,7 +325,8 @@ private fun ReviewSection(
                     task = task,
                     selected = selectedIds.contains(task.id),
                     selectable = selectable,
-                    onClick = { onToggle(task.id) }
+                    onToggle = { onToggle(task.id) },
+                    onEdit = { onEdit(task) }
                 )
             }
         }
@@ -317,12 +338,13 @@ private fun DailyTaskCard(
     task: Task,
     selected: Boolean,
     selectable: Boolean,
-    onClick: () -> Unit
+    onToggle: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = selectable, onClick = onClick),
+            .clickable(onClick = onEdit),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -344,7 +366,7 @@ private fun DailyTaskCard(
                 modifier = Modifier
                     .size(22.dp)
                     .clip(CircleShape)
-                    .clickable(enabled = selectable, onClick = onClick)
+                    .clickable(enabled = selectable, onClick = onToggle)
                     .border(
                         width = 2.dp,
                         color = if (!selectable) Color(0xFFB0B0B0) else if (selected) Color(0xFF8A7CF8) else Color(0xFF1A1A1A),
