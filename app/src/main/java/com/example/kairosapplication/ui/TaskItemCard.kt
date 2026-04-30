@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
 import android.widget.ImageView
-import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
@@ -51,7 +50,6 @@ fun TaskItemCard(
     onOpenDetail: () -> Unit
 ) {
     var currentTask by remember(task.id) { mutableStateOf(task) }
-    var showEditSheet by remember(task.id) { mutableStateOf(false) }
     val urgencyColor = TaskUtils.getUrgencyColor(currentTask.urgency)
     val hasDescription = currentTask.description.isNotBlank()
     val hasImage = !currentTask.emojiImage.isNullOrBlank() || !currentTask.localImageUri.isNullOrBlank()
@@ -70,7 +68,7 @@ fun TaskItemCard(
                 spotColor = Color.Black.copy(alpha = 0.2f)
             )
             // 卡片点击仅用于打开详情弹窗；左侧完成按钮独立处理完成状态。
-            .clickable { showEditSheet = true },
+            .clickable { onOpenDetail() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -173,16 +171,6 @@ fun TaskItemCard(
         }
     }
 
-    if (showEditSheet) {
-        CreateTaskBottomSheet(
-            task = currentTask,
-            onDismiss = { showEditSheet = false },
-            onSave = {
-                currentTask = it.copy(id = currentTask.id, taskDate = currentTask.taskDate)
-                showEditSheet = false
-            }
-        )
-    }
 }
 
 private fun formatRepeatRuleTag(repeatRule: String): String {
