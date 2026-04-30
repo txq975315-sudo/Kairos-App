@@ -257,11 +257,13 @@ fun TodayScreen(
             onCreateClick = onCreateClick,
             onDailyReviewClick = onDailyReviewClick
         )
+        Spacer(Modifier.height(6.dp))
         DateSection(
             currentDate = currentDate,
             onPrevious = { currentDate = currentDate.minusDays(1) },
             onNext = { currentDate = currentDate.plusDays(1) }
         )
+        Spacer(Modifier.height(10.dp))
         QuoteSection(onClick = onQuoteClick)
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 

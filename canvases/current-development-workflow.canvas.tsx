@@ -8,7 +8,7 @@ export default function CurrentDevelopmentWorkflow() {
         项目：Kotlin + Jetpack Compose（含 task-model 模块）｜用途：完整记录本轮对话开发过程，并给后续接手方直接对接。
       </Text>
       <Callout tone="info">
-        当前状态：TodayScreen 的任务卡片编辑调用链已闭环并通过编译验证；DailyReview / CreateTaskBottomSheet 曾多轮迭代并发生回滚，已按对话过程完整登记。
+        当前状态：Stop 按钮已可见且已打通“点击后未来任务移除”链路；CreateScreen 正在进行键盘/图标/面板布局收口，最新改动均已按轮次编译验证。
       </Callout>
       <Divider />
 
@@ -77,6 +77,30 @@ export default function CurrentDevelopmentWorkflow() {
             "用户要求将全过程记录到 canvas（即当前页面）",
           ],
           [
+            "11) Stop 不显示 -> 显示修复",
+            "排查重复任务编辑弹窗 Stop 按钮不显示",
+            "修复 repeatRule 判定并加临时 repeatRule 红字调试",
+            "compile/assemble 通过，定位出数据落为 NONE 的链路问题",
+          ],
+          [
+            "12) 数据链路深查与修复",
+            "追踪 CreateScreen -> TaskCreationBus -> TodayScreen -> 编辑回写",
+            "修复 Multi/Range 保存 repeatRule，统一 Stop 触发整链 stopRepeat",
+            "repeatRule 可稳定为 DAILY，Stop 后进入全局列表更新逻辑",
+          ],
+          [
+            "13) Stop 未来任务未消失 -> 根因修复",
+            "修复 Sunday 点击 Stop 后 Monday 仍存在",
+            "移除 TaskItemCard 内部私有编辑弹窗，统一走 TodayScreen 编辑入口",
+            "Stop 操作成功作用于 allTasks，全局未来任务删除生效",
+          ],
+          [
+            "14) CreateScreen 布局收口（持续）",
+            "图标行/发送键位置与键盘交互按用户反馈反复校准",
+            "经历多轮回退与微调（含实验性 API 导入修正）",
+            "当前策略：仅改单文件、每轮 compile 验证、按截图继续微调",
+          ],
+          [
             "基础架构（历史）",
             "已完成",
             "新增 task-model 模块；Task/CreateTaskParam/常量/工具函数沉淀",
@@ -135,8 +159,18 @@ export default function CurrentDevelopmentWorkflow() {
           ],
           [
             "app/src/main/java/com/example/kairosapplication/ui/CreateScreen.kt",
-            "检查确认：创建页无 TaskCard 编辑场景",
-            "不应强行添加 editingTask 逻辑，避免引入伪需求",
+            "新增日期模式-重复规则联动；修复 repeatRule 保存；持续调整键盘/图标/面板布局",
+            "该文件进入高频迭代期：严禁牵连其它页面，保持功能逻辑不变只做布局收口",
+          ],
+          [
+            "task-model/src/main/java/com/example/taskmodel/util/TaskUtils.kt",
+            "stopRepeat 同系列匹配逻辑修正，确保点击 Stop 后删除未来任务",
+            "与 TodayScreen 的全局回写联动后，Sunday->Monday 场景已通过用户截图验证",
+          ],
+          [
+            "app/src/main/java/com/example/kairosapplication/ui/TaskItemCard.kt",
+            "移除卡片内部私有编辑弹窗，统一转发到 TodayScreen 编辑链路",
+            "避免局部状态更新绕过 allTasks，确保 Stop 行为作用于全局任务列表",
           ],
           [
             "Gradle 验证命令",
@@ -174,10 +208,10 @@ export default function CurrentDevelopmentWorkflow() {
       />
 
       <H2>后续对接（可直接接手）</H2>
-      <Text>1) 以 TodayScreen 为唯一编辑入口基线：TaskCard -> editingTask -> CreateTaskBottomSheet(task=...).</Text>
-      <Text>2) 若用户继续追“Stop 不显示”，先现场抓取 repeatRule 实际值，再决定改调用侧还是弹窗侧。</Text>
-      <Text>3) 每轮交付附上“修改文件清单 + 三条 Gradle 验证结果 + 是否发生回滚”。</Text>
-      <Text>4) 若用户要求“全自动后续对接”，下一步优先做：编辑保存后的跨页数据一致性回归（Today/Daily/Create）。</Text>
+      <Text>1) 继续坚持 TodayScreen 唯一编辑入口：TaskItemCard 只转发点击，不再私有弹窗。</Text>
+      <Text>2) CreateScreen 目前唯一未收口模块：按“固定布局 + 无整页滚动 + 图标/键盘共存”继续小步微调。</Text>
+      <Text>3) 若出现回归，先看 repeatRule 红字与 TaskUtils.stopRepeat，再看调用链是否绕开 allTasks。</Text>
+      <Text>4) 每轮改动后固定保留 compile 结果，并在 canvas 同步“改动文件 + 验证结论 + 仍存问题”。</Text>
     </Stack>
   );
 }

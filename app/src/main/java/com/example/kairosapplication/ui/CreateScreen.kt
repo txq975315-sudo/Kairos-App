@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,7 +33,6 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -267,7 +265,11 @@ fun CreateScreen(onBack: () -> Unit) {
 
         InputField(
             value = titleInput,
-            onValueChange = { titleInput = it },
+            onValueChange = {
+                titleInput = it
+                // 输入时收起选项面板，确保键盘与图标行同时可见。
+                activeTool = null
+            },
             placeholder = "What are you doing?",
             modifier = Modifier.padding(top = 20.dp),
             focusRequester = titleFocusRequester,
@@ -278,7 +280,11 @@ fun CreateScreen(onBack: () -> Unit) {
 
         InputField(
             value = descriptionInput,
-            onValueChange = { descriptionInput = it },
+            onValueChange = {
+                descriptionInput = it
+                // 输入时收起选项面板，确保键盘与图标行同时可见。
+                activeTool = null
+            },
             placeholder = "Describe it",
             modifier = Modifier.padding(top = 12.dp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -289,8 +295,7 @@ fun CreateScreen(onBack: () -> Unit) {
 
         ActionIconsRow(
             modifier = Modifier
-                .padding(top = 18.dp)
-                .imePadding(),
+                .padding(top = 18.dp, bottom = 6.dp),
             selectedUrgency = selectedUrgency,
             onTimeClick = {
                 activeTool = CreateTool.TIME
@@ -320,7 +325,8 @@ fun CreateScreen(onBack: () -> Unit) {
                     isRecording = false
                     Toast.makeText(context, "当前设备不支持语音识别", Toast.LENGTH_SHORT).show()
                 }
-            }
+            },
+            onSubmit = submitCreateTask
         )
 
         if (isRecording) {
@@ -441,9 +447,7 @@ fun CreateScreen(onBack: () -> Unit) {
             onUrgencySelected = { selectedUrgency = it },
             onLabelSelected = { selectedLabel = it },
             onStickerSelected = { selectedSticker = it },
-            modifier = Modifier
-                .padding(top = 12.dp)
-                .weight(1f, fill = false)
+            modifier = Modifier.padding(top = 12.dp)
         )
 
         Text(
@@ -467,30 +471,6 @@ fun CreateScreen(onBack: () -> Unit) {
             )
         }
 
-        // 键盘上方工具栏：仅保留发送按钮，避免页面底部额外占位。
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .padding(bottom = 10.dp)
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = submitCreateTask,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1A1A1A))
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send create task",
-                    tint = Color.White
-                )
-            }
-        }
     }
 }
 
@@ -682,42 +662,55 @@ private fun ActionIconsRow(
     onUrgencyClick: () -> Unit,
     onLabelClick: () -> Unit,
     onStickerClick: () -> Unit,
-    onVoiceClick: () -> Unit
+    onVoiceClick: () -> Unit,
+    onSubmit: () -> Unit
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccessTime,
+                contentDescription = "Time",
+                tint = Color(0xFF757575),
+                modifier = Modifier.clickable { onTimeClick() }
+            )
+            Icon(
+                imageVector = Icons.Default.Flag,
+                contentDescription = "Urgency",
+                tint = TaskUtils.getUrgencyColor(selectedUrgency),
+                modifier = Modifier.clickable { onUrgencyClick() }
+            )
+            Icon(
+                imageVector = Icons.Default.Label,
+                contentDescription = "Label",
+                tint = Color(0xFF757575),
+                modifier = Modifier.clickable { onLabelClick() }
+            )
+            Icon(
+                imageVector = Icons.Default.AttachFile,
+                contentDescription = "Sticker",
+                tint = Color(0xFF757575),
+                modifier = Modifier.clickable { onStickerClick() }
+            )
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = "Voice",
+                tint = Color(0xFF757575),
+                modifier = Modifier.clickable { onVoiceClick() }
+            )
+        }
         Icon(
-            imageVector = Icons.Default.AccessTime,
-            contentDescription = "Time",
-            tint = Color(0xFF757575),
-            modifier = Modifier.clickable { onTimeClick() }
-        )
-        Icon(
-            imageVector = Icons.Default.Flag,
-            contentDescription = "Urgency",
-            tint = TaskUtils.getUrgencyColor(selectedUrgency),
-            modifier = Modifier.clickable { onUrgencyClick() }
-        )
-        Icon(
-            imageVector = Icons.Default.Label,
-            contentDescription = "Label",
-            tint = Color(0xFF757575),
-            modifier = Modifier.clickable { onLabelClick() }
-        )
-        Icon(
-            imageVector = Icons.Default.AttachFile,
-            contentDescription = "Sticker",
-            tint = Color(0xFF757575),
-            modifier = Modifier.clickable { onStickerClick() }
-        )
-        Icon(
-            imageVector = Icons.Default.Mic,
-            contentDescription = "Voice",
-            tint = Color(0xFF757575),
-            modifier = Modifier.clickable { onVoiceClick() }
+            imageVector = Icons.AutoMirrored.Filled.Send,
+            contentDescription = "Send create task",
+            tint = Color(0xFF1A1A1A),
+            modifier = Modifier.clickable { onSubmit() }
         )
     }
 }
