@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +45,8 @@ import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.taskmodel.viewmodel.TaskViewModel
 
 private enum class AppTab(val label: String, val icon: ImageVector) {
     Today("Today", Icons.Default.CalendarToday),
@@ -56,6 +60,12 @@ private enum class Overlay { DailyReview }
 
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    val taskViewModel: TaskViewModel = viewModel(
+        factory = TaskViewModel.factory(context.applicationContext)
+    )
+    val taskUiState by taskViewModel.uiState.collectAsState()
+
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     val navController = rememberNavController()
@@ -69,7 +79,14 @@ fun MainScreen() {
             label = "overlay"
         ) { current ->
             when (current) {
-                Overlay.DailyReview -> DailyReviewScreen(onBack = { overlay = null })
+                Overlay.DailyReview -> DailyReviewScreen(
+                    onBack = { overlay = null },
+                    allTasks = taskUiState.tasks,
+                    onTasksCreated = { newTasks ->
+                        taskViewModel.saveTasks(taskUiState.tasks + newTasks)
+                    },
+                    onTaskUpdated = { updated -> taskViewModel.updateTask(updated) }
+                )
                 null -> Unit
             }
         }
@@ -124,11 +141,17 @@ fun MainScreen() {
                         TodayScreen(
                             onCreateClick = { navController.navigate("create") },
                             onDailyReviewClick = { overlay = Overlay.DailyReview },
-                            onQuoteClick = { navController.navigate("quote_settings") }
+                            onQuoteClick = { navController.navigate("quote_settings") },
+                            taskViewModel = taskViewModel
                         )
                     }
                     composable("create") {
-                        CreateScreen(onBack = { navController.popBackStack() })
+                        CreateScreen(
+                            onBack = { navController.popBackStack() },
+                            onTasksCreated = { newTasks ->
+                                taskViewModel.saveTasks(taskUiState.tasks + newTasks)
+                            }
+                        )
                     }
                     composable("quote_settings") {
                         QuoteSettingScreen(onBack = { navController.popBackStack() })

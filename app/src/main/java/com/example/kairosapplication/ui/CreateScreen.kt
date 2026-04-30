@@ -71,7 +71,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun CreateScreen(onBack: () -> Unit) {
+fun CreateScreen(
+    onBack: () -> Unit,
+    onTasksCreated: (List<Task>) -> Unit = { TaskCreationBus.push(it) }
+) {
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedDates by remember { mutableStateOf(setOf(LocalDate.now())) }
@@ -213,7 +216,7 @@ fun CreateScreen(onBack: () -> Unit) {
                     emojiImage = selectedSticker
                 ).toTask(id = nowSeed + index)
             }
-            TaskCreationBus.push(tasks)
+            onTasksCreated(tasks)
             Toast.makeText(context, "Task created!", Toast.LENGTH_SHORT).show()
             resetInputsAfterCreate()
             titleFocusRequester.requestFocus()

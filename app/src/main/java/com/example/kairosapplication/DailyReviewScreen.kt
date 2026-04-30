@@ -52,18 +52,25 @@ import java.time.LocalDate
 @Composable
 fun DailyReviewScreen(
     onBack: () -> Unit,
-    isDialogMode: Boolean = false
+    isDialogMode: Boolean = false,
+    allTasks: List<Task> = emptyList(),
+    onTasksCreated: (List<Task>) -> Unit = { TaskCreationBus.push(it) },
+    onTaskUpdated: (Task) -> Unit = {}
 ) {
     val today = LocalDate.now()
     val yesterday = today.minusDays(1)
-    val tasks = remember {
-        mutableStateListOf(
-            Task(1001, "Sport", timeBlock = TaskConstants.TIME_BLOCK_ANYTIME, urgency = TaskConstants.URGENCY_HIGH, taskDate = yesterday),
-            Task(1002, "Write a PRD", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = TaskConstants.URGENCY_NORMAL, taskDate = yesterday),
-            Task(1003, "Learn SQL", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = TaskConstants.URGENCY_LOW, isCompleted = true, taskDate = yesterday),
-            Task(1004, "READING", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = TaskConstants.URGENCY_LOW, isCompleted = true, taskDate = yesterday),
-            Task(1005, "Learn Figma", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = TaskConstants.URGENCY_NORMAL, isCompleted = true, taskDate = yesterday)
-        )
+    val tasks = remember(allTasks) {
+        if (allTasks.isNotEmpty()) {
+            mutableStateListOf<Task>().apply { addAll(allTasks) }
+        } else {
+            mutableStateListOf(
+                Task(1001, "Sport", timeBlock = TaskConstants.TIME_BLOCK_ANYTIME, urgency = TaskConstants.URGENCY_HIGH, taskDate = yesterday),
+                Task(1002, "Write a PRD", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = TaskConstants.URGENCY_NORMAL, taskDate = yesterday),
+                Task(1003, "Learn SQL", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = TaskConstants.URGENCY_LOW, isCompleted = true, taskDate = yesterday),
+                Task(1004, "READING", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = TaskConstants.URGENCY_LOW, isCompleted = true, taskDate = yesterday),
+                Task(1005, "Learn Figma", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = TaskConstants.URGENCY_NORMAL, isCompleted = true, taskDate = yesterday)
+            )
+        }
     }
     val selectedTaskIds = remember { mutableStateListOf<Int>() }
     val nextTaskId = remember { mutableIntStateOf((tasks.maxOfOrNull { it.id } ?: 1000) + 1) }
@@ -171,7 +178,7 @@ fun DailyReviewScreen(
                             isCompleted = false
                         )
                     }
-                    TaskCreationBus.push(copiedTasks)
+                    onTasksCreated(copiedTasks)
                     selectedTaskIds.clear()
                 },
                 modifier = Modifier.weight(1f),
@@ -202,7 +209,8 @@ fun DailyReviewScreen(
                             movedToToday.add(movedTask)
                         }
                     }
-                    TaskCreationBus.push(movedToToday)
+                    movedToToday.forEach { moved -> onTaskUpdated(moved) }
+                    onTasksCreated(movedToToday)
                     selectedTaskIds.clear()
                 },
                 modifier = Modifier.weight(1f),
@@ -228,6 +236,7 @@ fun DailyReviewScreen(
                 val index = tasks.indexOfFirst { it.id == task.id }
                 if (index != -1) {
                     tasks[index] = updatedTask.copy(id = task.id, taskDate = task.taskDate)
+                    onTaskUpdated(tasks[index])
                 }
                 editingTask.value = null
             }

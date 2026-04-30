@@ -57,7 +57,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -101,17 +100,18 @@ import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
 import java.time.LocalDate
 import android.widget.Toast
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.runtime.collectAsState
+import com.example.taskmodel.viewmodel.TaskViewModel
 
 @Composable
 fun TodayScreen(
     onCreateClick: () -> Unit = {},
     onDailyReviewClick: () -> Unit = {},
-    onQuoteClick: () -> Unit = {}
+    onQuoteClick: () -> Unit = {},
+    taskViewModel: TaskViewModel
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val uiState by taskViewModel.uiState.collectAsState()
+    val allTasks = uiState.tasks
     var anytimeExpanded by remember { mutableStateOf(true) }
     var morningExpanded by remember { mutableStateOf(true) }
     var afternoonExpanded by remember { mutableStateOf(true) }
@@ -119,16 +119,7 @@ fun TodayScreen(
 
     var currentDate by remember { mutableStateOf(LocalDate.now()) }
 
-    val allTasks = remember {
-        mutableStateListOf(
-            Task(1, "Learn Figma", description = "", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = 0, taskDate = LocalDate.now()),
-            Task(2, "Write a PRD", description = "", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = 1, taskDate = LocalDate.now()),
-            Task(3, "Learn SQL", description = "", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = 2, isCompleted = true, taskDate = LocalDate.now()),
-            Task(4, "Reading", description = "", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = 1, taskDate = LocalDate.now()),
-            Task(5, "Practice Kotlin", description = "", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = 3, taskDate = LocalDate.now())
-        )
-    }
-    val anytimeTasks by remember(currentDate, allTasks.size) {
+    val anytimeTasks by remember(currentDate, allTasks) {
         derivedStateOf {
             TaskUtils.sortTasks(
                 allTasks.filter {
@@ -137,7 +128,7 @@ fun TodayScreen(
             )
         }
     }
-    val morningTasks by remember(currentDate, allTasks.size) {
+    val morningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
             TaskUtils.sortTasks(
                 allTasks.filter {
@@ -146,7 +137,7 @@ fun TodayScreen(
             )
         }
     }
-    val afternoonTasks by remember(currentDate, allTasks.size) {
+    val afternoonTasks by remember(currentDate, allTasks) {
         derivedStateOf {
             TaskUtils.sortTasks(
                 allTasks.filter {
@@ -155,7 +146,7 @@ fun TodayScreen(
             )
         }
     }
-    val eveningTasks by remember(currentDate, allTasks.size) {
+    val eveningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
             TaskUtils.sortTasks(
                 allTasks.filter {
@@ -164,35 +155,10 @@ fun TodayScreen(
             )
         }
     }
-    var nextTaskId by remember { mutableStateOf(6) }
-
-    val onTaskCompleteToggle: (Task) -> Unit = { task ->
-        val index = allTasks.indexOfFirst { it.id == task.id }
-        if (index != -1) {
-            val current = allTasks[index]
-            allTasks[index] = current.copy(isCompleted = !current.isCompleted)
-        }
-    }
+    val onTaskCompleteToggle: (Task) -> Unit = { task -> taskViewModel.toggleTaskComplete(task) }
 
     LaunchedEffect(Unit) {
-        val incoming = TaskCreationBus.consumeAll()
-        if (incoming.isNotEmpty()) {
-            allTasks.addAll(incoming)
-        }
-    }
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_START) {
-                val incoming = TaskCreationBus.consumeAll()
-                if (incoming.isNotEmpty()) {
-                    allTasks.addAll(incoming)
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        taskViewModel.syncFromCreationBus()
     }
 
     // 临时调试：跟踪列表中的 repeatRule，定位创建链路是否丢失重复规则。
@@ -237,9 +203,7 @@ fun TodayScreen(
     }
 
     val applyToAllTaskLists: ((List<Task>) -> List<Task>) -> Unit = { updater ->
-        val updated = updater(allTasks.toList())
-        allTasks.clear()
-        allTasks.addAll(updated)
+        taskViewModel.saveTasks(updater(allTasks))
     }
 
     Column(
@@ -267,13 +231,19 @@ fun TodayScreen(
         QuoteSection(onClick = onQuoteClick)
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
-        // 任务区域独立滚动
-        Column(
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
-        ) {
+        if (!uiState.onboardingHandled && allTasks.isEmpty()) {
+            FirstUseOnboarding(
+                onLoadSample = { taskViewModel.markOnboardingChoice(loadSamples = true) },
+                onStartEmpty = { taskViewModel.markOnboardingChoice(loadSamples = false) }
+            )
+        } else {
+            // 任务区域独立滚动
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
+            ) {
 
             TimeBlock(
                 label = TaskConstants.TIME_BLOCK_ANYTIME,
@@ -328,9 +298,10 @@ fun TodayScreen(
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_EVENING) }
             )
 
-            Spacer(Modifier.height(AppSpacing.SectionXLarge))
+                Spacer(Modifier.height(AppSpacing.SectionXLarge))
+            }
         }
-    }
+    } 
 
     createSheetConfig?.let { config ->
         CreateTaskBottomSheet(
@@ -365,6 +336,7 @@ fun TodayScreen(
                 if (trimmedTitle.isEmpty()) {
                     false
                 } else {
+                    val nextTaskId = (allTasks.maxOfOrNull { it.id } ?: 0) + 1
                     val newTask = CreateTaskParam(
                         title = trimmedTitle,
                         description = trimmedDescription,
@@ -374,8 +346,8 @@ fun TodayScreen(
                         emojiImage = meta.emojiImage,
                         localImageUri = meta.localImageUri,
                         taskDate = currentDate
-                    ).toTask(id = nextTaskId++)
-                    allTasks.add(newTask)
+                    ).toTask(id = nextTaskId)
+                    taskViewModel.saveTasks(allTasks + newTask)
                     true
                 }
             }
@@ -394,13 +366,9 @@ fun TodayScreen(
                 if (isStopRepeatAction) {
                     // Stop 需要作用于整条重复链：当天置为 NONE，未来日期同系列任务移除。
                     val updatedTasks = TaskUtils.stopRepeat(allTasks.toList(), task)
-                    allTasks.clear()
-                    allTasks.addAll(updatedTasks)
+                    taskViewModel.saveTasks(updatedTasks)
                 } else {
-                    val index = allTasks.indexOfFirst { it.id == task.id }
-                    if (index != -1) {
-                        allTasks[index] = updated.copy(id = task.id, taskDate = task.taskDate)
-                    }
+                    taskViewModel.updateTask(updated.copy(id = task.id, taskDate = task.taskDate))
                 }
                 editingTask = null
             }
@@ -424,6 +392,62 @@ fun TodayScreen(
                 detailTask = null
             }
         )
+    }
+}
+
+@Composable
+private fun FirstUseOnboarding(
+    onLoadSample: () -> Unit,
+    onStartEmpty: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = "Welcome to Kairos",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.PrimaryText
+            )
+            Text(
+                text = "你现在是首次使用，可选择加载示例任务，或从空白开始。",
+                fontSize = 14.sp,
+                color = AppColors.SecondaryText
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onLoadSample() },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF8A7CF8))
+                ) {
+                    Text(
+                        text = "加载示例数据",
+                        color = Color.White,
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onStartEmpty() },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0))
+                ) {
+                    Text(
+                        text = "保持空白",
+                        color = AppColors.PrimaryText,
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
     }
 }
 
