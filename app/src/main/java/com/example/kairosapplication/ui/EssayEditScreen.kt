@@ -13,11 +13,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -25,7 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -35,7 +38,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,13 +49,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.components.EssayTopicCapsule
 import com.example.taskmodel.constants.EssayConstants
 import com.example.taskmodel.model.Essay
@@ -63,6 +66,28 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+private fun essayTopicEnglish(topic: EssayTopic): String = when (topic) {
+    EssayTopic.SELF_AWARENESS -> "Self-awareness"
+    EssayTopic.INTERPERSONAL -> "Interpersonal"
+    EssayTopic.INTIMACY_FAMILY -> "Intimacy & family"
+    EssayTopic.HEALTH_ENERGY -> "Health & energy"
+    EssayTopic.MEANING_EXPLORATION -> "Meaning"
+}
+
+/** English prompt for the summary strip (same intent as EssayConstants.guideFor). */
+private fun englishGuideFor(topic: EssayTopic): String = when (topic) {
+    EssayTopic.SELF_AWARENESS ->
+        "Behavior summary: Did this help me see myself more clearly?"
+    EssayTopic.INTERPERSONAL ->
+        "Behavior summary: What did I feel, and how did I respond in this interaction?"
+    EssayTopic.INTIMACY_FAMILY ->
+        "Behavior summary: What matters to me in this relationship?"
+    EssayTopic.HEALTH_ENERGY ->
+        "Behavior summary: What signals did my body and mood give me?"
+    EssayTopic.MEANING_EXPLORATION ->
+        "Behavior summary: What does this mean to me?"
+}
 
 @Composable
 fun EssayEditScreen(
@@ -76,7 +101,6 @@ fun EssayEditScreen(
     val isEditing = existing != null
 
     var selectedTopic by remember(existing) { mutableStateOf(existing?.topic) }
-    var topicLocked by remember(isEditing) { mutableStateOf(isEditing) }
     var body by remember(existing) { mutableStateOf(existing?.body.orEmpty()) }
     var imageUris by remember(existing) {
         mutableStateOf(existing?.imageUris.orEmpty().toList())
@@ -87,7 +111,6 @@ fun EssayEditScreen(
     var envExpanded by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
 
-    val keyboard = LocalSoftwareKeyboardController.current
     val bodyFocusRequester = remember { FocusRequester() }
 
     val pickImages = rememberLauncherForActivityResult(
@@ -100,29 +123,31 @@ fun EssayEditScreen(
         }
     )
 
-    LaunchedEffect(selectedTopic) {
-        if (selectedTopic != null && !isEditing) {
-            bodyFocusRequester.requestFocus()
-            keyboard?.show()
+    val englishGuide = selectedTopic?.let { englishGuideFor(it) }.orEmpty()
+    val behaviorSummaryHint = englishGuide.ifEmpty {
+        "Behavior summary: ... (choose a topic above to see the prompt)"
+    }
+    val headerInstant = remember(essayId, existing?.createdAtMillis) {
+        when {
+            existing != null -> Instant.ofEpochMilli(existing.createdAtMillis)
+            else -> Instant.now()
         }
     }
-
-    val guide = selectedTopic?.let { EssayConstants.guideFor(it) }.orEmpty()
-    val now = remember { Instant.now().atZone(ZoneId.systemDefault()) }
-    val headerDate = remember {
-        DateTimeFormatter.ofPattern("MMMM d", Locale.ENGLISH).format(now)
-    }
-    val subTime = remember {
-        DateTimeFormatter.ofPattern("HH:mm EEEE", Locale.ENGLISH).format(now)
+    val headerZone = remember(headerInstant) { headerInstant.atZone(ZoneId.systemDefault()) }
+    val (headerDatePart, headerTimePart) = remember(headerZone) {
+        val month = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH).format(headerZone)
+        val day = headerZone.dayOfMonth
+        val timeWeekday = DateTimeFormatter.ofPattern("HH:mm EEEE", Locale.ENGLISH).format(headerZone)
+        Pair("$month $day", " / $timeWeekday")
     }
 
     fun buildEssay(isDraft: Boolean): Essay? {
         val topic = selectedTopic ?: run {
-            Toast.makeText(context, "请先选择课题", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Please select a topic first.", Toast.LENGTH_SHORT).show()
             return null
         }
         if (!isDraft && body.isBlank()) {
-            Toast.makeText(context, "请填写正文后再保存", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Please add some text before publishing.", Toast.LENGTH_SHORT).show()
             return null
         }
         val id = existing?.id ?: System.currentTimeMillis()
@@ -149,50 +174,85 @@ fun EssayEditScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF9F9F9))
+            .statusBarsPadding()
             .navigationBarsPadding()
     ) {
+        Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .defaultMinSize(minHeight = 64.dp)
+                .padding(
+                    horizontal = AppSpacing.PageHorizontal,
+                    vertical = AppSpacing.SectionMedium
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回",
-                    tint = Color(0xFF1A1A1A)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
+            CommonBackButton(onClick = onBack)
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ) {
                 Text(
-                    text = headerDate,
+                    text = headerDatePart,
                     fontSize = AppScreenHeader.titleSp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A)
+                    fontWeight = AppScreenHeader.titleWeight,
+                    color = AppScreenHeader.titleColor,
+                    maxLines = 1
                 )
                 Text(
-                    text = "/ $subTime",
+                    text = headerTimePart,
                     fontSize = 12.sp,
-                    color = AppColors.SecondaryText
+                    color = Color(0xFF666666),
+                    maxLines = 1
                 )
             }
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "更多", tint = Color(0xFF1A1A1A))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    val eid = existing?.id
-                    if (eid != null && existing?.isDraft == false) {
-                        DropdownMenuItem(
-                            text = { Text("设为每日一句") },
-                            onClick = {
-                                menuOpen = false
-                                taskViewModel.setDailyQuoteFromEssay(eid)
-                                Toast.makeText(context, "已设为每日一句", Toast.LENGTH_SHORT).show()
-                            }
-                        )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                val eid = existing?.id
+                if (eid != null && existing?.isDraft == false) {
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "More options",
+                                tint = Color(0xFF1A1A1A)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Set as daily quote") },
+                                onClick = {
+                                    menuOpen = false
+                                    taskViewModel.setDailyQuoteFromEssay(eid)
+                                    Toast.makeText(context, "Saved as daily quote.", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
                     }
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(
+                    onClick = {
+                        val e = buildEssay(isDraft = false) ?: return@IconButton
+                        taskViewModel.saveEssay(e.copy(isDraft = false))
+                        onBack()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Publish",
+                        tint = Color(0xFF8A7CF8),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }
@@ -201,48 +261,39 @@ fun EssayEditScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = AppSpacing.PageHorizontal)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 EssayTopic.entries.forEach { topic ->
-                    val lockedNew = topicLocked && !isEditing
                     EssayTopicCapsule(
                         topic = topic,
                         selected = selectedTopic == topic,
-                        lockedSelected = lockedNew,
-                        enabled = isEditing || !lockedNew || selectedTopic == topic,
-                        onClick = {
-                            if (isEditing) {
-                                selectedTopic = topic
-                            } else {
-                                selectedTopic = topic
-                                topicLocked = true
-                            }
-                        }
+                        lockedSelected = false,
+                        enabled = true,
+                        labelOverride = essayTopicEnglish(topic),
+                        onClick = { selectedTopic = topic }
                     )
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            if (guide.isNotEmpty()) {
-                Text(
-                    text = guide,
-                    fontSize = 13.sp,
-                    color = Color(0xFF6B5B95),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF3EFFF))
-                        .padding(12.dp)
-                )
-                Spacer(Modifier.height(12.dp))
-            }
+            Text(
+                text = behaviorSummaryHint,
+                fontSize = 13.sp,
+                color = Color(0xFF6B5B95),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF3EFFF))
+                    .padding(12.dp)
+            )
+            Spacer(Modifier.height(12.dp))
 
             BasicTextField(
                 value = body,
@@ -256,9 +307,13 @@ fun EssayEditScreen(
                     color = Color(0xFF1A1A1A)
                 ),
                 decorationBox = { inner ->
-                    if (body.isEmpty() && guide.isNotEmpty()) {
+                    if (body.isEmpty()) {
                         Text(
-                            text = "我做了什么……",
+                            text = if (selectedTopic == null) {
+                                "Select a topic to begin."
+                            } else {
+                                "What did you do?"
+                            },
                             fontSize = 16.sp,
                             color = AppColors.HintText
                         )
@@ -294,7 +349,7 @@ fun EssayEditScreen(
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "添加图片",
+                            contentDescription = "Add image",
                             tint = AppColors.IconNeutral,
                             modifier = Modifier.size(32.dp)
                         )
@@ -304,7 +359,7 @@ fun EssayEditScreen(
 
             Spacer(Modifier.height(20.dp))
             Text(
-                text = if (envExpanded) "环境记录 ▲" else "+ 环境记录",
+                text = if (envExpanded) "Context notes ▲" else "+ Context notes",
                 fontSize = 14.sp,
                 color = Color(0xFF8A7CF8),
                 fontWeight = FontWeight.Medium,
@@ -313,7 +368,7 @@ fun EssayEditScreen(
                     .padding(vertical = 8.dp)
             )
             if (envExpanded) {
-                Text("天气", fontSize = 12.sp, color = AppColors.SecondaryText)
+                Text("Weather", fontSize = 12.sp, color = AppColors.SecondaryText)
                 BasicTextField(
                     value = weather,
                     onValueChange = { weather = it },
@@ -321,12 +376,12 @@ fun EssayEditScreen(
                     textStyle = TextStyle(fontSize = 15.sp, color = Color(0xFF1A1A1A)),
                     decorationBox = { inner ->
                         if (weather.isEmpty()) {
-                            Text("选择天气", color = AppColors.HintText, fontSize = 15.sp)
+                            Text("Optional", color = AppColors.HintText, fontSize = 15.sp)
                         }
                         inner()
                     }
                 )
-                Text("心情", fontSize = 12.sp, color = AppColors.SecondaryText)
+                Text("Mood", fontSize = 12.sp, color = AppColors.SecondaryText)
                 BasicTextField(
                     value = mood,
                     onValueChange = { mood = it },
@@ -334,12 +389,12 @@ fun EssayEditScreen(
                     textStyle = TextStyle(fontSize = 15.sp, color = Color(0xFF1A1A1A)),
                     decorationBox = { inner ->
                         if (mood.isEmpty()) {
-                            Text("选择心情", color = AppColors.HintText, fontSize = 15.sp)
+                            Text("Optional", color = AppColors.HintText, fontSize = 15.sp)
                         }
                         inner()
                     }
                 )
-                Text("位置", fontSize = 12.sp, color = AppColors.SecondaryText)
+                Text("Location", fontSize = 12.sp, color = AppColors.SecondaryText)
                 BasicTextField(
                     value = locationLabel,
                     onValueChange = { locationLabel = it },
@@ -347,7 +402,7 @@ fun EssayEditScreen(
                     textStyle = TextStyle(fontSize = 15.sp, color = Color(0xFF1A1A1A)),
                     decorationBox = { inner ->
                         if (locationLabel.isEmpty()) {
-                            Text("选择位置", color = AppColors.HintText, fontSize = 15.sp)
+                            Text("Optional", color = AppColors.HintText, fontSize = 15.sp)
                         }
                         inner()
                     }
@@ -360,20 +415,20 @@ fun EssayEditScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(horizontal = AppSpacing.PageHorizontal, vertical = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedButton(
                 onClick = {
                     val e = buildEssay(isDraft = true) ?: return@OutlinedButton
                     taskViewModel.saveEssay(e)
-                    Toast.makeText(context, "已存为草稿", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Saved as draft.", Toast.LENGTH_SHORT).show()
                     onBack()
                 },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1A1A1A))
             ) {
-                Text("存为草稿")
+                Text("Save draft")
             }
             Button(
                 onClick = {
@@ -384,7 +439,7 @@ fun EssayEditScreen(
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8A7CF8))
             ) {
-                Text("保存", color = Color.White)
+                Text("Save", color = Color.White)
             }
         }
     }

@@ -238,7 +238,7 @@ fun EssayScreen(
                     .fillMaxWidth()
                     .horizontalScroll(filterScroll)
                     .padding(top = AppSpacing.SectionLarge),
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 EssayTopic.entries.forEach { topic ->
                     EssayTopicCapsule(

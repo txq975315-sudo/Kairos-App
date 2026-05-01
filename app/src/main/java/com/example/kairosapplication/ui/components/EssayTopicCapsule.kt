@@ -43,13 +43,13 @@ fun EssayTopicCapsule(
     Box(
         modifier = modifier
             .clip(shape)
-            .border(1.dp, borderColor, shape)
+            .border(0.5.dp, borderColor, shape)
             .background(bg)
             .then(
                 if (canClick) Modifier.clickable { onClick() }
                 else Modifier
             )
-            .padding(horizontal = 9.dp, vertical = 2.dp),
+            .padding(horizontal = 6.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
