@@ -1,6 +1,7 @@
 package com.example.kairosapplication.core.ui
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -102,6 +103,18 @@ object AppTypography {
     val BodySmall = 14.sp
     val Caption = 12.sp
     val BottomBarLabel = 11.sp
+}
+
+/** Daily Review / Create 等全屏页顶栏标题统一规格 */
+object AppScreenHeader {
+    val titleSp = 24.sp
+    val titleWeight = FontWeight.Bold
+    val titleColor = Color(0xFF1A1A1A)
+}
+
+object AppReviewLayout {
+    /** 单节任务列表最小可视高度（约 4 条 DailyTaskCard） */
+    val minTaskListViewport = 228.dp
 }
 
 object AppInteraction {

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -62,6 +63,7 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
 import java.time.DayOfWeek
@@ -229,6 +231,7 @@ fun CreateScreen(
             .fillMaxSize()
             .background(Color(0xFFF9F9F9))
             .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(horizontal = 20.dp)
     ) {
         Row(
@@ -246,9 +249,9 @@ fun CreateScreen(
             )
             Text(
                 text = "Let's plan!",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A),
+                fontSize = AppScreenHeader.titleSp,
+                fontWeight = AppScreenHeader.titleWeight,
+                color = AppScreenHeader.titleColor,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
@@ -289,7 +292,7 @@ fun CreateScreen(
                 activeTool = null
             },
             placeholder = "Describe it",
-            modifier = Modifier.padding(top = 12.dp),
+            modifier = Modifier.padding(top = 8.dp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
                 onDone = { keyboardController?.hide() }
@@ -298,7 +301,7 @@ fun CreateScreen(
 
         ActionIconsRow(
             modifier = Modifier
-                .padding(top = 18.dp, bottom = 6.dp),
+                .padding(top = 14.dp, bottom = 4.dp),
             selectedUrgency = selectedUrgency,
             onTimeClick = {
                 activeTool = CreateTool.TIME
@@ -534,7 +537,7 @@ private fun CalendarSection(
             )
         }
 
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
             weekTitles.forEach { title ->
                 Text(
                     text = title,
@@ -547,7 +550,7 @@ private fun CalendarSection(
             }
         }
 
-        Column(modifier = Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             monthDays.chunked(7).forEach { week ->
                 Row(modifier = Modifier.fillMaxWidth()) {
                     week.forEach { day ->

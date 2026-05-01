@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
 import com.example.kairosapplication.ui.common.CommonBackButton
@@ -72,6 +73,10 @@ fun MainScreen() {
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val hideBottomBarOnCreate =
+        selectedTab == AppTab.Today && currentRoute == "create"
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -101,33 +106,35 @@ fun MainScreen() {
     Scaffold(
         containerColor = BackgroundColor,
         bottomBar = {
-            NavigationBar(
-                containerColor = Color.White,
-                tonalElevation = 0.dp
-            ) {
-                AppTab.entries.forEach { tab ->
-                    val selected = selectedTab == tab
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { selectedTab = tab },
-                        icon = {
-                            Icon(imageVector = tab.icon, contentDescription = tab.label)
-                        },
-                        label = {
-                            Text(
-                                text = tab.label,
-                                fontSize = 11.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            if (!hideBottomBarOnCreate) {
+                NavigationBar(
+                    containerColor = Color.White,
+                    tonalElevation = 0.dp
+                ) {
+                    AppTab.entries.forEach { tab ->
+                        val selected = selectedTab == tab
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { selectedTab = tab },
+                            icon = {
+                                Icon(imageVector = tab.icon, contentDescription = tab.label)
+                            },
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PrimaryTextColor,
+                                selectedTextColor = PrimaryTextColor,
+                                unselectedIconColor = SecondaryTextColor,
+                                unselectedTextColor = SecondaryTextColor,
+                                indicatorColor = BackgroundColor
                             )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = PrimaryTextColor,
-                            selectedTextColor = PrimaryTextColor,
-                            unselectedIconColor = SecondaryTextColor,
-                            unselectedTextColor = SecondaryTextColor,
-                            indicatorColor = BackgroundColor
                         )
-                    )
+                    }
                 }
             }
         }

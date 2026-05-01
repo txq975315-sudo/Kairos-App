@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.kairosapplication.core.ui.AppReviewLayout
+import com.example.kairosapplication.core.ui.AppScreenHeader
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -105,7 +109,6 @@ fun DailyReviewScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
                 .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -118,9 +121,9 @@ fun DailyReviewScreen(
             )
             Text(
                 text = "Daily Review !",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A),
+                fontSize = AppScreenHeader.titleSp,
+                fontWeight = AppScreenHeader.titleWeight,
+                color = AppScreenHeader.titleColor,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
@@ -130,16 +133,19 @@ fun DailyReviewScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ReviewSection(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 title = "Overdue (${overdueTasks.size})",
                 titleColor = Color(0xFFE53935),
                 backgroundColor = Color(0x40E53935),
                 borderColor = Color.Transparent,
                 tasks = overdueTasks,
-                    selectedIds = selectedTaskIds,
+                selectedIds = selectedTaskIds,
                 allSelected = overdueTasks.isNotEmpty() && overdueTasks.all { selectedTaskIds.contains(it.id) },
                 onSelectAll = { toggleSelectAll(overdueTasks.map { it.id }) },
                 selectable = true,
@@ -148,6 +154,7 @@ fun DailyReviewScreen(
             )
 
             ReviewSection(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 title = "Completed (${completedTasks.size})",
                 titleColor = Color(0xFF1A1A1A),
                 backgroundColor = Color(0x404A74FF),
@@ -161,6 +168,9 @@ fun DailyReviewScreen(
                 onEdit = { task -> editingTask.value = task }
             )
         }
+
+        // 任务区与底部按钮：为 Completed 模块留出间距（相对两节之间 12.dp 的间隔加倍）
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row(
             modifier = Modifier
@@ -252,7 +262,7 @@ private fun QuoteSnapshot(text: String) {
             .padding(horizontal = 2.dp)
     ) {
         HorizontalDivider(color = Color(0xFFE3E3E3), thickness = 1.dp)
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -267,13 +277,14 @@ private fun QuoteSnapshot(text: String) {
             Spacer(modifier = Modifier.size(6.dp))
             Text(text = text, fontSize = 14.sp, color = Color(0xFF5F687A))
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider(color = Color(0xFFE3E3E3), thickness = 1.dp)
     }
 }
 
 @Composable
 private fun ReviewSection(
+    modifier: Modifier = Modifier,
     title: String,
     titleColor: Color,
     backgroundColor: Color,
@@ -287,8 +298,9 @@ private fun ReviewSection(
     onEdit: (Task) -> Unit
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
+            .fillMaxHeight()
             .clip(RoundedCornerShape(14.dp))
             .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .background(backgroundColor)
@@ -324,8 +336,9 @@ private fun ReviewSection(
         Spacer(modifier = Modifier.height(8.dp))
         Column(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .height(160.dp)
+                .heightIn(min = AppReviewLayout.minTaskListViewport)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
