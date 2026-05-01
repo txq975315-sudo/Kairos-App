@@ -13,12 +13,14 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -47,6 +49,7 @@ import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.taskmodel.viewmodel.TaskViewModel
+import java.time.LocalDate
 
 private enum class AppTab(val label: String, val icon: ImageVector) {
     Today("Today", Icons.Default.CalendarToday),
@@ -69,6 +72,8 @@ fun MainScreen() {
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     val navController = rememberNavController()
+    var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
+    var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
 
     if (overlay != null) {
         AnimatedContent(
@@ -149,7 +154,14 @@ fun MainScreen() {
                         CreateScreen(
                             onBack = { navController.popBackStack() },
                             onTasksCreated = { newTasks ->
-                                taskViewModel.saveTasks(taskUiState.tasks + newTasks)
+                                val blockedDate = taskViewModel.firstDateExceedingLimitIfAdded(newTasks)
+                                if (blockedDate != null) {
+                                    createLimitTargetDate = blockedDate
+                                    showCreatePendingLimitDialog = true
+                                } else {
+                                    val cur = taskViewModel.uiState.value.tasks
+                                    taskViewModel.saveTasks(cur + newTasks)
+                                }
                             }
                         )
                     }
@@ -159,6 +171,37 @@ fun MainScreen() {
                 }
             } else {
                 PlaceholderScreen(selectedTab.label)
+            }
+
+            if (showCreatePendingLimitDialog && createLimitTargetDate != null) {
+                val limitDate = createLimitTargetDate!!
+                AlertDialog(
+                    onDismissRequest = {
+                        showCreatePendingLimitDialog = false
+                    },
+                    title = { Text("今日待办已达上限", color = PrimaryTextColor) },
+                    text = {
+                        Text(
+                            "单日未完成待办最多 ${TaskViewModel.DAILY_PENDING_LIMIT} 条。可清理该日任务后继续创建。",
+                            color = SecondaryTextColor
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showCreatePendingLimitDialog = false }) {
+                            Text("我知道", color = PrimaryTextColor)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                taskViewModel.deleteAllTasksForDate(limitDate)
+                                showCreatePendingLimitDialog = false
+                            }
+                        ) {
+                            Text("清理今日任务", color = PrimaryTextColor)
+                        }
+                    }
+                )
             }
         }
     }

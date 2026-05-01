@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
@@ -99,7 +100,8 @@ private fun isRepeatingTask(task: Task): Boolean {
 fun CreateTaskBottomSheet(
     task: Task? = null,
     onDismiss: () -> Unit,
-    onSave: (Task) -> Unit
+    onSave: (Task) -> Unit,
+    onDelete: ((Task) -> Unit)? = null
 ) {
     val shouldShowStopButton = task?.let(::isRepeatingTask) ?: false
     val debugRepeatRuleText = task?.repeatRule
@@ -166,6 +168,15 @@ fun CreateTaskBottomSheet(
             val sourceTask = task ?: draftTask
             onSave(sourceTask.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE))
             onDismiss()
+        },
+        showDeleteButton = task != null && onDelete != null,
+        onDeleteClick = if (task != null && onDelete != null) {
+            {
+                onDelete(task)
+                onDismiss()
+            }
+        } else {
+            null
         }
     )
 }
@@ -185,7 +196,9 @@ internal fun CreateTaskBottomSheet(
     onCreateTask: (title: String, description: String, timeBlock: String, meta: CreateTaskMeta) -> Boolean,
     showStopButton: Boolean = false,
     debugRepeatRuleText: String? = null,
-    onStopClick: (() -> Unit)? = null
+    onStopClick: (() -> Unit)? = null,
+    showDeleteButton: Boolean = false,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     val taskText = rememberTaskTextProvider()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -438,10 +451,32 @@ internal fun CreateTaskBottomSheet(
                     IconButton(onClick = onStopClick) {
                         Icon(
                             imageVector = Icons.Default.Stop,
-                            contentDescription = "Stop 重复",
-                            tint = Color.Red
+                            contentDescription = "停止重复",
+                            tint = Color(0xFFFF9800)
                         )
                     }
+                }
+            }
+
+            if (showDeleteButton && onDeleteClick != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFEBEE),
+                        contentColor = Color(0xFFD32F2F)
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = Color(0xFFD32F2F),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "删除任务", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 

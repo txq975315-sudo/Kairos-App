@@ -8,16 +8,20 @@ import com.example.taskmodel.model.Task
 import com.example.taskmodel.repository.TaskRepository
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class TaskUiState(
     val tasks: List<Task> = emptyList(),
-    val onboardingHandled: Boolean = false
+    val onboardingHandled: Boolean = true
 )
 
 class TaskViewModel(
@@ -25,6 +29,8 @@ class TaskViewModel(
 ) : ViewModel() {
 
     private val refreshingFromBus = MutableStateFlow(0)
+    private val deleteMutex = Mutex()
+    private val lastDeletedForUndo = MutableStateFlow<Task?>(null)
 
     val uiState: StateFlow<TaskUiState> = combine(
         repository.tasksFlow,
@@ -89,7 +95,58 @@ class TaskViewModel(
         }
     }
 
+    fun deleteTask(task: Task) {
+        viewModelScope.launch {
+            deleteMutex.withLock {
+                val current = repository.tasksFlow.first()
+                lastDeletedForUndo.value = task
+                repository.saveTasks(current.filter { it.id != task.id })
+            }
+        }
+    }
+
+    fun undoDeleteTask() {
+        viewModelScope.launch {
+            deleteMutex.withLock {
+                val t = lastDeletedForUndo.value ?: return@launch
+                lastDeletedForUndo.value = null
+                repository.appendTasks(listOf(t))
+            }
+        }
+    }
+
+    fun clearDeleteUndo() {
+        lastDeletedForUndo.value = null
+    }
+
+    fun pendingTaskCountForDate(date: LocalDate): Int =
+        uiState.value.tasks.count { it.taskDate == date && !it.isCompleted }
+
+    fun wouldExceedDailyPendingLimit(date: LocalDate, additionalIncomplete: Int): Boolean =
+        pendingTaskCountForDate(date) + additionalIncomplete > DAILY_PENDING_LIMIT
+
+    fun firstDateExceedingLimitIfAdded(newTasks: List<Task>): LocalDate? {
+        val current = uiState.value.tasks
+        val addsByDate = newTasks.filter { !it.isCompleted }.groupBy { it.taskDate }
+        for ((date, adds) in addsByDate) {
+            val n = current.count { it.taskDate == date && !it.isCompleted }
+            if (n + adds.size > DAILY_PENDING_LIMIT) return date
+        }
+        return null
+    }
+
+    fun deleteAllTasksForDate(date: LocalDate) {
+        viewModelScope.launch {
+            deleteMutex.withLock {
+                val current = repository.tasksFlow.first()
+                repository.saveTasks(current.filter { it.taskDate != date })
+            }
+        }
+    }
+
     companion object {
+        const val DAILY_PENDING_LIMIT = 12
+
         fun factory(appContext: Context): ViewModelProvider.Factory {
             val repository = TaskRepository(appContext)
             return object : ViewModelProvider.Factory {

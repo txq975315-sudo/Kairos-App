@@ -46,13 +46,19 @@ import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -60,11 +66,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
@@ -101,7 +111,10 @@ import com.example.taskmodel.util.TaskUtils
 import java.time.LocalDate
 import android.widget.Toast
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateMapOf
 import com.example.taskmodel.viewmodel.TaskViewModel
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @Composable
 fun TodayScreen(
@@ -121,38 +134,30 @@ fun TodayScreen(
 
     val anytimeTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            TaskUtils.sortTasks(
-                allTasks.filter {
-                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
-                }
-            )
+            allTasks.filter {
+                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
+            }
         }
     }
     val morningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            TaskUtils.sortTasks(
-                allTasks.filter {
-                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
-                }
-            )
+            allTasks.filter {
+                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
+            }
         }
     }
     val afternoonTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            TaskUtils.sortTasks(
-                allTasks.filter {
-                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
-                }
-            )
+            allTasks.filter {
+                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
+            }
         }
     }
     val eveningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            TaskUtils.sortTasks(
-                allTasks.filter {
-                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
-                }
-            )
+            allTasks.filter {
+                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
+            }
         }
     }
     val onTaskCompleteToggle: (Task) -> Unit = { task -> taskViewModel.toggleTaskComplete(task) }
@@ -206,13 +211,48 @@ fun TodayScreen(
         taskViewModel.saveTasks(updater(allTasks))
     }
 
-    Column(
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var showDailyLimitDialog by remember { mutableStateOf(false) }
+
+    val blockBounds = remember { mutableStateMapOf<String, Rect>() }
+    val dragHandleCenterY = remember { mutableStateMapOf<Int, Float>() }
+
+    val handleTaskDragEnd: (Task, Float) -> Unit = dragEnd@{ task, totalDy ->
+        val y0 = dragHandleCenterY[task.id] ?: return@dragEnd
+        val endY = y0 + totalDy
+        val target = resolveTimeBlockAtY(endY, blockBounds)
+        if (target != null && target != task.timeBlock) {
+            val latest = taskViewModel.uiState.value.tasks
+            val t = latest.firstOrNull { it.id == task.id } ?: return@dragEnd
+            taskViewModel.saveTasks(moveTaskToTimeBlock(latest, t, target, currentDate))
+        }
+    }
+
+    val handleSwipeDelete: (Task) -> Unit = { task ->
+        taskViewModel.deleteTask(task)
+        scope.launch {
+            when (
+                snackbarHostState.showSnackbar(
+                    message = "任务已删除",
+                    actionLabel = "撤销",
+                    duration = SnackbarDuration.Short
+                )
+            ) {
+                SnackbarResult.ActionPerformed -> taskViewModel.undoDeleteTask()
+                SnackbarResult.Dismissed -> taskViewModel.clearDeleteUndo()
+            }
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.ScreenBackground)
             .statusBarsPadding()
             .padding(horizontal = AppSpacing.PageHorizontal)
     ) {
+        Column(modifier = Modifier.fillMaxSize()) {
         // 固定头部区域（不随内容滚动）
         Spacer(Modifier.height(AppSpacing.SectionSmall))
         TopBar(
@@ -231,19 +271,20 @@ fun TodayScreen(
         QuoteSection(onClick = onQuoteClick)
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
-        if (!uiState.onboardingHandled && allTasks.isEmpty()) {
-            FirstUseOnboarding(
-                onLoadSample = { taskViewModel.markOnboardingChoice(loadSamples = true) },
-                onStartEmpty = { taskViewModel.markOnboardingChoice(loadSamples = false) }
-            )
-        } else {
-            // 任务区域独立滚动
-            Column(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
-            ) {
+        // 新手引导 UI 临时禁用（软件完成后可恢复下方分支）。
+        // if (!uiState.onboardingHandled && allTasks.isEmpty()) {
+        //     FirstUseOnboarding(
+        //         onLoadSample = { taskViewModel.markOnboardingChoice(loadSamples = true) },
+        //         onStartEmpty = { taskViewModel.markOnboardingChoice(loadSamples = false) }
+        //     )
+        // } else {
+        // 任务区域独立滚动
+        Column(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
+        ) {
 
             TimeBlock(
                 label = TaskConstants.TIME_BLOCK_ANYTIME,
@@ -253,9 +294,14 @@ fun TodayScreen(
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
                 tasks = anytimeTasks,
+                viewDate = currentDate,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
                 // 统一编辑入口：任务卡片点击后仅通过 editingTask 打开编辑弹窗。
                 onOpenDetail = { clickedTask -> editingTask = clickedTask },
+                onSwipeDelete = handleSwipeDelete,
+                onTaskDragEnd = handleTaskDragEnd,
+                onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
+                onBlockBounds = { label, rect -> blockBounds[label] = rect },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME) }
             )
 
@@ -267,8 +313,13 @@ fun TodayScreen(
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
                 tasks = morningTasks,
+                viewDate = currentDate,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
                 onOpenDetail = { clickedTask -> editingTask = clickedTask },
+                onSwipeDelete = handleSwipeDelete,
+                onTaskDragEnd = handleTaskDragEnd,
+                onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
+                onBlockBounds = { label, rect -> blockBounds[label] = rect },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_MORNING) }
             )
 
@@ -280,8 +331,13 @@ fun TodayScreen(
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
                 tasks = afternoonTasks,
+                viewDate = currentDate,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
                 onOpenDetail = { clickedTask -> editingTask = clickedTask },
+                onSwipeDelete = handleSwipeDelete,
+                onTaskDragEnd = handleTaskDragEnd,
+                onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
+                onBlockBounds = { label, rect -> blockBounds[label] = rect },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_AFTERNOON) }
             )
 
@@ -293,15 +349,51 @@ fun TodayScreen(
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
                 tasks = eveningTasks,
+                viewDate = currentDate,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
                 onOpenDetail = { clickedTask -> editingTask = clickedTask },
+                onSwipeDelete = handleSwipeDelete,
+                onTaskDragEnd = handleTaskDragEnd,
+                onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
+                onBlockBounds = { label, rect -> blockBounds[label] = rect },
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_EVENING) }
             )
 
-                Spacer(Modifier.height(AppSpacing.SectionXLarge))
-            }
+            Spacer(Modifier.height(AppSpacing.SectionXLarge))
         }
-    } 
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        )
+    }
+
+    if (showDailyLimitDialog) {
+        AlertDialog(
+            onDismissRequest = { showDailyLimitDialog = false },
+            title = { Text("今日待办已达上限") },
+            text = { Text("单日未完成待办最多 ${TaskViewModel.DAILY_PENDING_LIMIT} 条。可清理该日任务后继续创建。") },
+            confirmButton = {
+                TextButton(onClick = { showDailyLimitDialog = false }) {
+                    Text("我知道")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        taskViewModel.deleteAllTasksForDate(currentDate)
+                        showDailyLimitDialog = false
+                    }
+                ) {
+                    Text("清理今日任务")
+                }
+            }
+        )
+    }
 
     createSheetConfig?.let { config ->
         CreateTaskBottomSheet(
@@ -336,19 +428,24 @@ fun TodayScreen(
                 if (trimmedTitle.isEmpty()) {
                     false
                 } else {
-                    val nextTaskId = (allTasks.maxOfOrNull { it.id } ?: 0) + 1
-                    val newTask = CreateTaskParam(
-                        title = trimmedTitle,
-                        description = trimmedDescription,
-                        timeBlock = timeBlock,
-                        urgency = meta.urgency,
-                        label = meta.label,
-                        emojiImage = meta.emojiImage,
-                        localImageUri = meta.localImageUri,
-                        taskDate = currentDate
-                    ).toTask(id = nextTaskId)
-                    taskViewModel.saveTasks(allTasks + newTask)
-                    true
+                    if (taskViewModel.wouldExceedDailyPendingLimit(currentDate, 1)) {
+                        showDailyLimitDialog = true
+                        false
+                    } else {
+                        val nextTaskId = (allTasks.maxOfOrNull { it.id } ?: 0) + 1
+                        val newTask = CreateTaskParam(
+                            title = trimmedTitle,
+                            description = trimmedDescription,
+                            timeBlock = timeBlock,
+                            urgency = meta.urgency,
+                            label = meta.label,
+                            emojiImage = meta.emojiImage,
+                            localImageUri = meta.localImageUri,
+                            taskDate = currentDate
+                        ).toTask(id = nextTaskId)
+                        taskViewModel.saveTasks(allTasks + newTask)
+                        true
+                    }
                 }
             }
         )
@@ -371,6 +468,22 @@ fun TodayScreen(
                     taskViewModel.updateTask(updated.copy(id = task.id, taskDate = task.taskDate))
                 }
                 editingTask = null
+            },
+            onDelete = { deleted ->
+                taskViewModel.deleteTask(deleted)
+                editingTask = null
+                scope.launch {
+                    when (
+                        snackbarHostState.showSnackbar(
+                            message = "任务已删除",
+                            actionLabel = "撤销",
+                            duration = SnackbarDuration.Short
+                        )
+                    ) {
+                        SnackbarResult.ActionPerformed -> taskViewModel.undoDeleteTask()
+                        SnackbarResult.Dismissed -> taskViewModel.clearDeleteUndo()
+                    }
+                }
             }
         )
     }
@@ -645,6 +758,48 @@ private fun QuoteSection(onClick: () -> Unit) {
     }
 }
 
+private fun resolveTimeBlockAtY(endY: Float, bounds: Map<String, Rect>): String? {
+    if (bounds.isEmpty()) return null
+    bounds.entries.firstOrNull { (_, r) -> endY >= r.top && endY <= r.bottom }?.key?.let { return it }
+    return bounds.minByOrNull { (_, r) ->
+        val mid = (r.top + r.bottom) / 2f
+        abs(endY - mid)
+    }?.key
+}
+
+private fun moveTaskToTimeBlock(
+    allTasks: List<Task>,
+    task: Task,
+    newBlock: String,
+    date: LocalDate
+): List<Task> {
+    val updated = task.copy(timeBlock = newBlock)
+    val firstIdx = allTasks.indexOfFirst { it.taskDate == date }
+    val lastIdx = allTasks.indexOfLast { it.taskDate == date }
+    if (firstIdx == -1) return allTasks
+    val before = allTasks.take(firstIdx)
+    val daySlice = allTasks.slice(firstIdx..lastIdx).filter { it.id != task.id }.toMutableList()
+    val order = TaskConstants.TIME_BLOCKS
+    val newRank = order.indexOf(newBlock)
+    val insertAt = daySlice.indexOfLast { it.timeBlock == newBlock }.let { lastInBlock ->
+        if (lastInBlock == -1) {
+            daySlice.indexOfFirst { order.indexOf(it.timeBlock) > newRank }
+                .let { ix -> if (ix == -1) daySlice.size else ix }
+        } else {
+            lastInBlock + 1
+        }
+    }
+    daySlice.add(insertAt, updated)
+    return before + daySlice + allTasks.drop(lastIdx + 1)
+}
+
+/** 已完成或排期早于今日（逾期）的待办不可直接左滑删除，需先恢复为当日待办。 */
+private fun Task.isSwipeDeletableByPolicy(today: LocalDate = LocalDate.now()): Boolean {
+    if (isCompleted) return false
+    if (taskDate.isBefore(today)) return false
+    return true
+}
+
 @Composable
 private fun TimeBlock(
     label: String,
@@ -654,14 +809,23 @@ private fun TimeBlock(
     expanded: Boolean,
     onToggle: () -> Unit,
     tasks: List<Task>,
+    viewDate: LocalDate,
     onToggleComplete: (Task) -> Unit,
     onOpenDetail: (Task) -> Unit,
+    onSwipeDelete: (Task) -> Unit,
+    onTaskDragEnd: (Task, Float) -> Unit,
+    onDragHandleY: (Int, Float) -> Unit,
+    onBlockBounds: (String, Rect) -> Unit,
     onCreateClick: () -> Unit
 ) {
     val taskText = rememberTaskTextProvider()
     val hasTasks = count > 0
 
-    Column {
+    Column(
+        modifier = Modifier.onGloballyPositioned { coords ->
+            onBlockBounds(label, coords.boundsInRoot())
+        }
+    ) {
         // 用Box包裹头部，确保按钮位置固定
         Box(
             modifier = Modifier.fillMaxWidth()
@@ -752,10 +916,20 @@ private fun TimeBlock(
                 }
 
                 tasks.forEach { task ->
+                    val allowDrag = task.taskDate == viewDate && !task.isCompleted
                     TaskItemCard(
                         task = task,
                         onToggleComplete = { onToggleComplete(task) },
-                        onOpenDetail = { onOpenDetail(task) }
+                        onOpenDetail = { onOpenDetail(task) },
+                        enableSwipeToDelete = task.isSwipeDeletableByPolicy(),
+                        onSwipeDelete = { onSwipeDelete(task) },
+                        showDragHandle = allowDrag,
+                        onDragHandleCenterYRoot = { y -> onDragHandleY(task.id, y) },
+                        onDragVerticalEnd = if (allowDrag) {
+                            { dy -> onTaskDragEnd(task, dy) }
+                        } else {
+                            null
+                        }
                     )
                 }
             }
