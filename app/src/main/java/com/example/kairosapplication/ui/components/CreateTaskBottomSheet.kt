@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
@@ -218,6 +219,8 @@ internal fun CreateTaskBottomSheet(
     var keyboardHeightDp by remember { mutableStateOf(280.dp) }
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val isKeyboardVisible = imeBottomPx > 0
+    /** 图标展开区高度约为键盘高度一半，避免时间块等短列表下留白过大 */
+    val iconSheetPanelHeight = keyboardHeightDp * 0.5f
 
     LaunchedEffect(imeBottomPx) {
         if (imeBottomPx > 0) {
@@ -479,52 +482,66 @@ internal fun CreateTaskBottomSheet(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(keyboardHeightDp)
+                        .height(iconSheetPanelHeight)
                         .clip(RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp))
                         .background(config.backgroundColor)
                         .padding(top = 8.dp)
                 ) {
                     when (type) {
                         IconSheetType.TIME -> {
-                            TaskConstants.TIME_BLOCKS.forEach { option ->
-                                OptionRow(
-                                    text = option,
-                                    leadingIcon = taskText.timeBlockIcons[option] ?: "•",
-                                    selected = config.timeBlock == option,
-                                    onClick = {
-                                        hasSelectedTime = true
-                                        onTimeBlockChange(option)
-                                        closeIconSheetAndRestoreKeyboard()
-                                    }
-                                )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                TaskConstants.TIME_BLOCKS.forEach { option ->
+                                    OptionRow(
+                                        text = option,
+                                        leadingIcon = taskText.timeBlockIcons[option] ?: "•",
+                                        selected = config.timeBlock == option,
+                                        onClick = {
+                                            hasSelectedTime = true
+                                            onTimeBlockChange(option)
+                                            closeIconSheetAndRestoreKeyboard()
+                                        }
+                                    )
+                                }
                             }
                         }
                         IconSheetType.URGENCY -> {
                             val options = TaskConstants.URGENCY_LEVELS
-                            options.entries.forEach { entry ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            hasSelectedUrgency = true
-                                            onMetaChange(meta.copy(urgency = entry.key))
-                                            closeIconSheetAndRestoreKeyboard()
-                                        }
-                                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                options.entries.forEach { entry ->
+                                    Row(
                                         modifier = Modifier
-                                            .size(12.dp)
-                                            .clip(CircleShape)
-                                            .background(TaskUtils.getUrgencyColor(entry.key))
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = entry.value,
-                                        fontSize = 15.sp,
-                                        color = if (meta.urgency == entry.key) AppColors.PrimaryText else AppColors.SecondaryText
-                                    )
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                hasSelectedUrgency = true
+                                                onMetaChange(meta.copy(urgency = entry.key))
+                                                closeIconSheetAndRestoreKeyboard()
+                                            }
+                                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(12.dp)
+                                                .clip(CircleShape)
+                                                .background(TaskUtils.getUrgencyColor(entry.key))
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = entry.value,
+                                            fontSize = 15.sp,
+                                            color = if (meta.urgency == entry.key) AppColors.PrimaryText else AppColors.SecondaryText
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -585,57 +602,71 @@ internal fun CreateTaskBottomSheet(
                             }
                         }
                         IconSheetType.ATTACH -> {
-                            OptionRow(text = taskText.attachEmojiOption, selected = meta.emojiImage != null, onClick = {})
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                taskText.attachEmojis.forEach { emoji ->
-                                    Text(
-                                        text = emoji,
-                                        fontSize = 24.sp,
-                                        modifier = Modifier.clickable {
-                                            onMetaChange(meta.copy(emojiImage = emoji, localImageUri = null))
-                                            closeIconSheetAndRestoreKeyboard()
-                                        }
-                                    )
-                                }
-                            }
-                            OptionRow(
-                                text = taskText.attachLocalOption,
-                                selected = meta.localImageUri != null,
-                                onClick = { iconSheetType = IconSheetType.ATTACH_LOCAL }
-                            )
-                        }
-                        IconSheetType.ATTACH_LOCAL -> {
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = taskText.contentDescBack,
-                                    tint = AppColors.IconNeutral,
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clickable { closeIconSheetAndRestoreKeyboard() }
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = taskText.localImageTitle,
-                                    fontSize = 15.sp,
-                                    color = AppColors.IconNeutral,
-                                    fontWeight = FontWeight.Medium
+                                OptionRow(text = taskText.attachEmojiOption, selected = meta.emojiImage != null, onClick = {})
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    taskText.attachEmojis.forEach { emoji ->
+                                        Text(
+                                            text = emoji,
+                                            fontSize = 24.sp,
+                                            modifier = Modifier.clickable {
+                                                onMetaChange(meta.copy(emojiImage = emoji, localImageUri = null))
+                                                closeIconSheetAndRestoreKeyboard()
+                                            }
+                                        )
+                                    }
+                                }
+                                OptionRow(
+                                    text = taskText.attachLocalOption,
+                                    selected = meta.localImageUri != null,
+                                    onClick = { iconSheetType = IconSheetType.ATTACH_LOCAL }
                                 )
                             }
-                            OptionRow(
-                                text = taskText.openLocalImagePicker,
-                                selected = false,
-                                leadingIcon = taskText.localPickerIcon,
-                                onClick = { imagePickerLauncher.launch(taskText.imagePickerMime) }
-                            )
+                        }
+                        IconSheetType.ATTACH_LOCAL -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = taskText.contentDescBack,
+                                        tint = AppColors.IconNeutral,
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clickable { closeIconSheetAndRestoreKeyboard() }
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = taskText.localImageTitle,
+                                        fontSize = 15.sp,
+                                        color = AppColors.IconNeutral,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                OptionRow(
+                                    text = taskText.openLocalImagePicker,
+                                    selected = false,
+                                    leadingIcon = taskText.localPickerIcon,
+                                    onClick = { imagePickerLauncher.launch(taskText.imagePickerMime) }
+                                )
+                            }
                         }
                     }
                 }
