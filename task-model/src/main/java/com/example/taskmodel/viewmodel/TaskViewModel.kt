@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.taskmodel.model.Essay
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.repository.TaskRepository
 import com.example.taskmodel.store.TaskCreationBus
@@ -21,7 +22,9 @@ import kotlinx.coroutines.sync.withLock
 
 data class TaskUiState(
     val tasks: List<Task> = emptyList(),
-    val onboardingHandled: Boolean = true
+    val onboardingHandled: Boolean = true,
+    val essays: List<Essay> = emptyList(),
+    val dailyQuoteEssayId: Long? = null
 )
 
 class TaskViewModel(
@@ -31,15 +34,21 @@ class TaskViewModel(
     private val refreshingFromBus = MutableStateFlow(0)
     private val deleteMutex = Mutex()
     private val lastDeletedForUndo = MutableStateFlow<Task?>(null)
+    private val essayDeleteMutex = Mutex()
+    private val lastDeletedEssayForUndo = MutableStateFlow<Essay?>(null)
 
     val uiState: StateFlow<TaskUiState> = combine(
         repository.tasksFlow,
         repository.onboardingHandledFlow,
-        refreshingFromBus
-    ) { tasks, onboardingHandled, _ ->
+        refreshingFromBus,
+        repository.essaysFlow,
+        repository.dailyQuoteEssayIdFlow
+    ) { tasks, onboardingHandled, _, essays, dailyQuoteEssayId ->
         TaskUiState(
             tasks = tasks,
-            onboardingHandled = onboardingHandled
+            onboardingHandled = onboardingHandled,
+            essays = essays,
+            dailyQuoteEssayId = dailyQuoteEssayId
         )
     }.stateIn(
         scope = viewModelScope,
@@ -117,6 +126,70 @@ class TaskViewModel(
 
     fun clearDeleteUndo() {
         lastDeletedForUndo.value = null
+    }
+
+    fun saveEssay(essay: Essay) {
+        viewModelScope.launch {
+            val current = repository.essaysFlow.first()
+            val without = current.filter { it.id != essay.id }
+            repository.saveEssays(without + essay)
+        }
+    }
+
+    fun deleteEssay(essay: Essay) {
+        viewModelScope.launch {
+            essayDeleteMutex.withLock {
+                val current = repository.essaysFlow.first()
+                lastDeletedEssayForUndo.value = essay
+                val filtered = current.filter { it.id != essay.id }
+                repository.saveEssays(filtered)
+                val quoteId = repository.dailyQuoteEssayIdFlow.first()
+                if (quoteId == essay.id) {
+                    repository.setDailyQuoteEssayId(null)
+                }
+            }
+        }
+    }
+
+    fun undoDeleteEssay() {
+        viewModelScope.launch {
+            essayDeleteMutex.withLock {
+                val e = lastDeletedEssayForUndo.value ?: return@launch
+                lastDeletedEssayForUndo.value = null
+                val current = repository.essaysFlow.first()
+                repository.saveEssays(current + e)
+            }
+        }
+    }
+
+    fun clearEssayDeleteUndo() {
+        lastDeletedEssayForUndo.value = null
+    }
+
+    fun setDailyQuoteFromEssay(essayId: Long) {
+        viewModelScope.launch {
+            val current = repository.essaysFlow.first()
+            val updated = current.map { it.copy(isDailyQuote = it.id == essayId) }
+            repository.saveEssays(updated)
+            repository.setDailyQuoteEssayId(essayId)
+        }
+    }
+
+    fun clearDailyQuoteFromEssay() {
+        viewModelScope.launch {
+            val current = repository.essaysFlow.first()
+            repository.saveEssays(current.map { it.copy(isDailyQuote = false) })
+            repository.setDailyQuoteEssayId(null)
+        }
+    }
+
+    /** 首页每日一句展示文案：来自选中的 Essay 首行，无则默认文案 */
+    fun dailyQuoteDisplayText(defaultText: String): String {
+        val id = uiState.value.dailyQuoteEssayId ?: return defaultText
+        val essay = uiState.value.essays.find { it.id == id } ?: return defaultText
+        val line = essay.body.trim().lineSequence().firstOrNull()?.trim().orEmpty()
+        if (line.isEmpty()) return defaultText
+        return if (line.length > 200) line.take(200) + "…" else line
     }
 
     fun pendingTaskCountForDate(date: LocalDate): Int =

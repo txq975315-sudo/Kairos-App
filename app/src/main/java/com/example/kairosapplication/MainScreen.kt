@@ -39,11 +39,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.kairosapplication.ui.CreateScreen
+import com.example.kairosapplication.ui.EssayEditScreen
 import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
@@ -73,10 +76,17 @@ fun MainScreen() {
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     val navController = rememberNavController()
+    val essayNavController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val essayNavBackStackEntry by essayNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val hideBottomBarOnCreate =
-        selectedTab == AppTab.Today && currentRoute == "create"
+    val essayRoute = essayNavBackStackEntry?.destination?.route
+    val hideBottomBar =
+        (selectedTab == AppTab.Today && currentRoute == "create") ||
+            (selectedTab == AppTab.Essay && (
+                essayRoute == "essay_new" ||
+                    (essayRoute?.startsWith("essay_edit/") == true)
+                ))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -106,7 +116,7 @@ fun MainScreen() {
     Scaffold(
         containerColor = BackgroundColor,
         bottomBar = {
-            if (!hideBottomBarOnCreate) {
+            if (!hideBottomBar) {
                 NavigationBar(
                     containerColor = Color.White,
                     tonalElevation = 0.dp
@@ -174,6 +184,39 @@ fun MainScreen() {
                     }
                     composable("quote_settings") {
                         QuoteSettingScreen(onBack = { navController.popBackStack() })
+                    }
+                }
+            } else if (selectedTab == AppTab.Essay) {
+                NavHost(
+                    navController = essayNavController,
+                    startDestination = "essay"
+                ) {
+                    composable("essay") {
+                        EssayScreen(
+                            taskViewModel = taskViewModel,
+                            onOpenNew = { essayNavController.navigate("essay_new") },
+                            onOpenEdit = { id -> essayNavController.navigate("essay_edit/$id") }
+                        )
+                    }
+                    composable("essay_new") {
+                        EssayEditScreen(
+                            essayId = null,
+                            taskViewModel = taskViewModel,
+                            onBack = { essayNavController.popBackStack() }
+                        )
+                    }
+                    composable(
+                        route = "essay_edit/{essayId}",
+                        arguments = listOf(navArgument("essayId") { type = NavType.LongType })
+                    ) { entry ->
+                        val eid = entry.arguments?.getLong("essayId")
+                        if (eid != null) {
+                            EssayEditScreen(
+                                essayId = eid,
+                                taskViewModel = taskViewModel,
+                                onBack = { essayNavController.popBackStack() }
+                            )
+                        }
                     }
                 }
             } else {

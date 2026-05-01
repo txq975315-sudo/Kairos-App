@@ -5,9 +5,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.taskmodel.constants.TaskConstants
+import com.example.taskmodel.model.Essay
+import com.example.taskmodel.model.EssayTopic
 import com.example.taskmodel.model.Task
 import java.io.IOException
 import java.time.LocalDate
@@ -24,6 +27,9 @@ class TaskRepository(private val context: Context) {
     private object Keys {
         val tasksJson = stringPreferencesKey("tasks_json")
         val onboardingHandled = booleanPreferencesKey("onboarding_handled")
+        val essaysJson = stringPreferencesKey("essays_json")
+        /** 作为首页每日一句的 Essay id；无则 -1 */
+        val dailyQuoteEssayId = longPreferencesKey("daily_quote_essay_id")
     }
 
     val tasksFlow: Flow<List<Task>> = context.taskDataStore.data
@@ -47,6 +53,21 @@ class TaskRepository(private val context: Context) {
             }
         }
         .map { prefs -> prefs[Keys.onboardingHandled] ?: false }
+
+    val essaysFlow: Flow<List<Essay>> = context.taskDataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { prefs -> parseEssays(prefs) }
+
+    val dailyQuoteEssayIdFlow: Flow<Long?> = context.taskDataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { prefs ->
+            val v = prefs[Keys.dailyQuoteEssayId] ?: -1L
+            if (v < 0) null else v
+        }
 
     suspend fun saveTasks(tasks: List<Task>) {
         context.taskDataStore.edit { prefs ->
@@ -72,6 +93,18 @@ class TaskRepository(private val context: Context) {
         saveTasks(buildSampleTasks())
     }
 
+    suspend fun saveEssays(essays: List<Essay>) {
+        context.taskDataStore.edit { prefs ->
+            prefs[Keys.essaysJson] = encodeEssays(essays)
+        }
+    }
+
+    suspend fun setDailyQuoteEssayId(essayId: Long?) {
+        context.taskDataStore.edit { prefs ->
+            prefs[Keys.dailyQuoteEssayId] = essayId ?: -1L
+        }
+    }
+
     private suspend fun tasksFlowFirst(): List<Task> {
         return tasksFlow.first()
     }
@@ -80,6 +113,12 @@ class TaskRepository(private val context: Context) {
         val encoded = prefs[Keys.tasksJson].orEmpty()
         if (encoded.isBlank()) return emptyList()
         return decodeTasks(encoded)
+    }
+
+    private fun parseEssays(prefs: Preferences): List<Essay> {
+        val encoded = prefs[Keys.essaysJson].orEmpty()
+        if (encoded.isBlank()) return emptyList()
+        return decodeEssays(encoded)
     }
 
     private fun buildSampleTasks(): List<Task> {
@@ -155,6 +194,76 @@ private fun encodeTasks(tasks: List<Task>): String {
         array.put(json)
     }
     return array.toString()
+}
+
+private fun encodeEssays(essays: List<Essay>): String {
+    val array = JSONArray()
+    essays.forEach { e ->
+        val imgs = JSONArray()
+        e.imageUris.forEach { imgs.put(it) }
+        val tags = JSONArray()
+        e.tags.forEach { tags.put(it) }
+        val json = JSONObject().apply {
+            put("id", e.id)
+            put("topic", e.topic.name)
+            put("body", e.body)
+            put("images", imgs)
+            put("tags", tags)
+            put("createdAt", e.createdAtMillis)
+            put("updatedAt", e.updatedAtMillis)
+            put("isDraft", e.isDraft)
+            put("weather", e.weather)
+            put("mood", e.mood)
+            put("location", e.locationLabel)
+            put("isDailyQuote", e.isDailyQuote)
+        }
+        array.put(json)
+    }
+    return array.toString()
+}
+
+private fun decodeEssays(raw: String): List<Essay> {
+    return runCatching {
+        val array = JSONArray(raw)
+        buildList {
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                val topic = EssayTopic.fromKey(obj.optString("topic")) ?: EssayTopic.SELF_AWARENESS
+                val imgs = obj.optJSONArray("images")
+                val imageUris = buildList {
+                    if (imgs != null) {
+                        for (j in 0 until imgs.length()) {
+                            add(imgs.getString(j))
+                        }
+                    }
+                }
+                val tagsArr = obj.optJSONArray("tags")
+                val tags = buildList {
+                    if (tagsArr != null) {
+                        for (j in 0 until tagsArr.length()) {
+                            add(tagsArr.getString(j))
+                        }
+                    }
+                }
+                add(
+                    Essay(
+                        id = obj.optLong("id"),
+                        topic = topic,
+                        body = obj.optString("body"),
+                        imageUris = imageUris,
+                        tags = tags,
+                        createdAtMillis = obj.optLong("createdAt"),
+                        updatedAtMillis = obj.optLong("updatedAt", obj.optLong("createdAt")),
+                        isDraft = obj.optBoolean("isDraft", false),
+                        weather = obj.optString("weather").ifBlank { null },
+                        mood = obj.optString("mood").ifBlank { null },
+                        locationLabel = obj.optString("location").ifBlank { null },
+                        isDailyQuote = obj.optBoolean("isDailyQuote", false)
+                    )
+                )
+            }
+        }
+    }.getOrElse { emptyList() }
 }
 
 private fun decodeTasks(raw: String): List<Task> {

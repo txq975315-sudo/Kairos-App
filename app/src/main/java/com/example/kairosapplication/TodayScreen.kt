@@ -258,7 +258,10 @@ fun TodayScreen(
             onNext = { currentDate = currentDate.plusDays(1) }
         )
         Spacer(Modifier.height(10.dp))
-        QuoteSection(onClick = onQuoteClick)
+        QuoteSection(
+            onClick = onQuoteClick,
+            quoteText = taskViewModel.dailyQuoteDisplayText("纵有疾风起，人生不言弃")
+        )
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
         // 新手引导 UI 临时禁用（软件完成后可恢复下方分支）。
@@ -709,7 +712,7 @@ private fun DateSection(
 }
 
 @Composable
-private fun QuoteSection(onClick: () -> Unit) {
+private fun QuoteSection(onClick: () -> Unit, quoteText: String) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     Column(
@@ -738,7 +741,7 @@ private fun QuoteSection(onClick: () -> Unit) {
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = "纵有疾风起，人生不言弃",
+                text = quoteText,
                 fontSize = 14.sp,
                 color = AppColors.SecondaryText
             )
