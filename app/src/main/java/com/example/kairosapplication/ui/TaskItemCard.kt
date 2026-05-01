@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,10 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,15 +58,13 @@ fun TaskItemCard(
     onOpenDetail: () -> Unit,
     enableSwipeToDelete: Boolean = false,
     onSwipeDelete: () -> Unit = {},
-    showDragHandle: Boolean = false,
-    onDragHandleCenterYRoot: ((Float) -> Unit)? = null,
+    onDragAnchorYRoot: ((Float) -> Unit)? = null,
     onDragVerticalEnd: ((totalDy: Float) -> Unit)? = null
 ) {
-    var currentTask by remember(task.id) { mutableStateOf(task) }
-    val urgencyColor = TaskUtils.getUrgencyColor(currentTask.urgency)
-    val hasDescription = currentTask.description.isNotBlank()
-    val hasImage = !currentTask.emojiImage.isNullOrBlank() || !currentTask.localImageUri.isNullOrBlank()
-    val isRepeating = currentTask.repeatRule != TaskConstants.REPEAT_RULE_NONE
+    val urgencyColor = TaskUtils.getUrgencyColor(task.urgency)
+    val hasDescription = task.description.isNotBlank()
+    val hasImage = !task.emojiImage.isNullOrBlank() || !task.localImageUri.isNullOrBlank()
+    val isRepeating = task.repeatRule != TaskConstants.REPEAT_RULE_NONE
     val baseCardHeight = 48.dp
     val maxCardHeight = if (hasImage && hasDescription) 96.dp else baseCardHeight
     val imageSize = if (hasImage) maxCardHeight else 0.dp
@@ -91,6 +84,24 @@ fun TaskItemCard(
         dismissState.snapTo(SwipeToDismissBoxValue.Settled)
     }
 
+    val dragEnd = onDragVerticalEnd
+    val dragModifier = if (dragEnd != null) {
+        Modifier.pointerInput(task.id, dragEnd) {
+            var totalDy = 0f
+            detectDragGesturesAfterLongPress(
+                onDragStart = { totalDy = 0f },
+                onDrag = { _, dragAmount -> totalDy += dragAmount.y },
+                onDragEnd = {
+                    dragEnd.invoke(totalDy)
+                    totalDy = 0f
+                },
+                onDragCancel = { totalDy = 0f }
+            )
+        }
+    } else {
+        Modifier
+    }
+
     @Composable
     fun TaskCardInner() {
         Card(
@@ -102,8 +113,9 @@ fun TaskItemCard(
                     ambientColor = Color.Black.copy(alpha = 0.2f),
                     spotColor = Color.Black.copy(alpha = 0.2f)
                 )
-                // 卡片点击仅用于打开详情弹窗；左侧完成按钮独立处理完成状态。
-                .clickable { onOpenDetail() },
+                .onGloballyPositioned { lc ->
+                    onDragAnchorYRoot?.invoke(lc.boundsInRoot().center.y)
+                },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -115,50 +127,20 @@ fun TaskItemCard(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                if (showDragHandle) {
-                    val dragModifier = if (onDragVerticalEnd != null) {
-                        Modifier.pointerInput(task.id) {
-                            var totalDy = 0f
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = { totalDy = 0f },
-                                onDrag = { _, dragAmount -> totalDy += dragAmount.y },
-                                onDragEnd = {
-                                    onDragVerticalEnd.invoke(totalDy)
-                                    totalDy = 0f
-                                },
-                                onDragCancel = { totalDy = 0f }
-                            )
-                        }
-                    } else {
-                        Modifier
-                    }
-                    Icon(
-                        imageVector = Icons.Default.DragHandle,
-                        contentDescription = "拖动排序",
-                        tint = Color(0xFF9E9E9E),
-                        modifier = Modifier
-                            .onGloballyPositioned { lc ->
-                                onDragHandleCenterYRoot?.invoke(lc.boundsInRoot().center.y)
-                            }
-                            .then(dragModifier)
-                            .size(22.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                }
                 Box(
                     modifier = Modifier
                         .size(22.dp)
                         .clip(CircleShape)
-                        .background(if (currentTask.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
+                        .background(if (task.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
                         .border(
                             width = 2.dp,
-                            color = if (currentTask.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
+                            color = if (task.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
                             shape = CircleShape
                         )
                         .clickable { onToggleComplete() },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (currentTask.isCompleted) {
+                    if (task.isCompleted) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Completed",
@@ -169,67 +151,77 @@ fun TaskItemCard(
                 }
                 Spacer(Modifier.width(12.dp))
 
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .then(dragModifier)
                 ) {
-                    Text(
-                        text = currentTask.title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (currentTask.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
-                        textDecoration = if (currentTask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                    )
-                    if (hasDescription) {
-                        Text(
-                            text = currentTask.description,
-                            fontSize = 13.sp,
-                            color = Color(0xFF757575),
-                            textDecoration = if (currentTask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                    }
-                    if (isRepeating) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Autorenew,
-                                contentDescription = "Repeat task",
-                                tint = Color(0xFF5C6BC0),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
+                    Row(Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { onOpenDetail() },
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
                             Text(
-                                text = formatRepeatRuleTag(currentTask.repeatRule),
-                                color = Color(0xFF5C6BC0),
-                                fontSize = 12.sp
+                                text = task.title,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
+                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                             )
+                            if (hasDescription) {
+                                Text(
+                                    text = task.description,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF757575),
+                                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                )
+                            }
+                            if (isRepeating) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Autorenew,
+                                        contentDescription = "Repeat task",
+                                        tint = Color(0xFF5C6BC0),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = formatRepeatRuleTag(task.repeatRule),
+                                        color = Color(0xFF5C6BC0),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
                         }
-                    }
-                }
 
-                if (hasImage) {
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(imageSize)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFE0E0E0)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // 通过局部不可变变量进行空安全处理，避免属性智能转换失败。
-                        val emojiImage = currentTask.emojiImage
-                        val localImageUri = currentTask.localImageUri
-                        if (!emojiImage.isNullOrBlank()) {
-                            Text(text = emojiImage, fontSize = 34.sp)
-                        } else if (!localImageUri.isNullOrBlank()) {
-                            AndroidView(
-                                factory = { ctx ->
-                                    ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-                                },
-                                update = { view ->
-                                    view.setImageURI(Uri.parse(localImageUri))
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                        if (hasImage) {
+                            Spacer(Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(imageSize)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFE0E0E0))
+                                    .clickable { onOpenDetail() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val emojiImage = task.emojiImage
+                                val localImageUri = task.localImageUri
+                                if (!emojiImage.isNullOrBlank()) {
+                                    Text(text = emojiImage, fontSize = 34.sp)
+                                } else if (!localImageUri.isNullOrBlank()) {
+                                    AndroidView(
+                                        factory = { ctx ->
+                                            ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+                                        },
+                                        update = { view ->
+                                            view.setImageURI(Uri.parse(localImageUri))
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
                         }
                     }
                 }

@@ -37,8 +37,6 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -447,36 +445,28 @@ internal fun CreateTaskBottomSheet(
                         }
                     }
                 }
-                if (showStopButton && onStopClick != null) {
-                    IconButton(onClick = onStopClick) {
-                        Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = "停止重复",
-                            tint = Color(0xFFFF9800)
-                        )
-                    }
-                }
-            }
-
-            if (showDeleteButton && onDeleteClick != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFEBEE),
-                        contentColor = Color(0xFFD32F2F)
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = Color(0xFFD32F2F),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "删除任务", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    if (showStopButton && onStopClick != null) {
+                        IconButton(onClick = onStopClick) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = "停止重复",
+                                tint = Color(0xFFFF9800)
+                            )
+                        }
+                    }
+                    if (showDeleteButton && onDeleteClick != null) {
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "删除任务",
+                                tint = Color(0xFFD32F2F)
+                            )
+                        }
+                    }
                 }
             }
 

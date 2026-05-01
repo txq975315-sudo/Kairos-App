@@ -173,20 +173,10 @@ fun TodayScreen(
         }
     }
 
-    // TopBar 汇总数据：实时追踪所有任务列表的完成状态（非今天显示 0）
-    val totalCount by remember {
-        derivedStateOf {
-            anytimeTasks.size + morningTasks.size + afternoonTasks.size + eveningTasks.size
-        }
-    }
-    val completedCount by remember {
-        derivedStateOf {
-            anytimeTasks.count { it.isCompleted } +
-                morningTasks.count { it.isCompleted } +
-                afternoonTasks.count { it.isCompleted } +
-                eveningTasks.count { it.isCompleted }
-        }
-    }
+    // TopBar：按当前查看日与 TaskViewModel 列表直接统计，避免无 key 的 remember+derivedStateOf 不刷新导致一直 0/0
+    val todayTasksForTopBar = allTasks.filter { it.taskDate == currentDate }
+    val totalCount = todayTasksForTopBar.size
+    val completedCount = todayTasksForTopBar.count { it.isCompleted }
     var createSheetConfig by remember { mutableStateOf<CreateSheetConfig?>(null) }
     // 弹窗输入内容上提：关闭弹窗时不清空，保留用户已输入文本
     var createTitle by remember { mutableStateOf("") }
@@ -877,31 +867,13 @@ private fun TimeBlock(
 
                 Spacer(Modifier.weight(1f))
 
-                // 仅在有任务时显示右侧 + 按钮；无任务时隐藏
+                // 仅在有任务时显示右侧 + 按钮；无任务时隐藏（样式与 EmptyTaskCard 一致）
                 if (hasTasks) {
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .clip(CircleShape)
-                            .clickable { onCreateClick() }
-                            .padding(2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(16.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.05f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = taskText.contentDescAddTask,
-                                tint = Color.Black.copy(alpha = 0.18f),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
+                    TimeBlockAddTaskButton(
+                        onClick = onCreateClick,
+                        contentDescription = taskText.contentDescAddTask,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
                 }
             }
         }
@@ -923,8 +895,11 @@ private fun TimeBlock(
                         onOpenDetail = { onOpenDetail(task) },
                         enableSwipeToDelete = task.isSwipeDeletableByPolicy(),
                         onSwipeDelete = { onSwipeDelete(task) },
-                        showDragHandle = allowDrag,
-                        onDragHandleCenterYRoot = { y -> onDragHandleY(task.id, y) },
+                        onDragAnchorYRoot = if (allowDrag) {
+                            { y -> onDragHandleY(task.id, y) }
+                        } else {
+                            null
+                        },
                         onDragVerticalEnd = if (allowDrag) {
                             { dy -> onTaskDragEnd(task, dy) }
                         } else {
@@ -969,22 +944,34 @@ private fun EmptyTaskCard(
                 fontSize = 14.sp,
                 color = AppColors.HintText.copy(alpha = 0.6f)
             )
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.05f))
-                    .clickable { onCreateClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = taskText.contentDescAddTask,
-                    tint = Color.Black.copy(alpha = 0.18f),
-                    modifier = Modifier.size(27.dp)
-                )
-            }
+            TimeBlockAddTaskButton(
+                onClick = onCreateClick,
+                contentDescription = taskText.contentDescAddTask
+            )
         }
+    }
+}
+
+@Composable
+private fun TimeBlockAddTaskButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(24.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.05f))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = contentDescription,
+            tint = Color.Black.copy(alpha = 0.18f),
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
