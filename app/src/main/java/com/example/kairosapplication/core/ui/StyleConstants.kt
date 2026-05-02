@@ -18,6 +18,10 @@ object AppColors {
     val ScreenBackground = Color(0xFFF9F9F9)
     val SurfaceWhite = Color(0xFFFFFFFF)
     val Divider = Color(0xFFE0E0E0)
+    /** Essay NoteCard 等白底卡片 */
+    val CardBackground = Color(0xFFFFFFFF)
+    /** 时间轴左侧竖线 */
+    val TimelineLine = Color(0xFFE0E0E0)
 
     // ---------- 文本/图标 ----------
     val PrimaryText = Color(0xFF333333)

@@ -22,8 +22,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,14 +42,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.kairosapplication.ui.CreateScreen
-import com.example.kairosapplication.ui.EssayEditScreen
+import com.example.kairosapplication.ui.EssayNavHost
 import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
@@ -83,10 +84,7 @@ fun MainScreen() {
     val essayRoute = essayNavBackStackEntry?.destination?.route
     val hideBottomBar =
         (selectedTab == AppTab.Today && currentRoute == "create") ||
-            (selectedTab == AppTab.Essay && (
-                essayRoute == "essay_new" ||
-                    (essayRoute?.startsWith("essay_edit/") == true)
-                ))
+            (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main")
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
 
@@ -116,7 +114,11 @@ fun MainScreen() {
     Scaffold(
         containerColor = BackgroundColor,
         bottomBar = {
-            if (!hideBottomBar) {
+            AnimatedVisibility(
+                visible = !hideBottomBar,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it })
+            ) {
                 NavigationBar(
                     containerColor = Color.White,
                     tonalElevation = 0.dp
@@ -187,38 +189,10 @@ fun MainScreen() {
                     }
                 }
             } else if (selectedTab == AppTab.Essay) {
-                NavHost(
+                EssayNavHost(
                     navController = essayNavController,
-                    startDestination = "essay"
-                ) {
-                    composable("essay") {
-                        EssayScreen(
-                            taskViewModel = taskViewModel,
-                            onOpenNew = { essayNavController.navigate("essay_new") },
-                            onOpenEdit = { id -> essayNavController.navigate("essay_edit/$id") }
-                        )
-                    }
-                    composable("essay_new") {
-                        EssayEditScreen(
-                            essayId = null,
-                            taskViewModel = taskViewModel,
-                            onBack = { essayNavController.popBackStack() }
-                        )
-                    }
-                    composable(
-                        route = "essay_edit/{essayId}",
-                        arguments = listOf(navArgument("essayId") { type = NavType.LongType })
-                    ) { entry ->
-                        val eid = entry.arguments?.getLong("essayId")
-                        if (eid != null) {
-                            EssayEditScreen(
-                                essayId = eid,
-                                taskViewModel = taskViewModel,
-                                onBack = { essayNavController.popBackStack() }
-                            )
-                        }
-                    }
-                }
+                    taskViewModel = taskViewModel
+                )
             } else {
                 PlaceholderScreen(selectedTab.label)
             }
