@@ -1,5 +1,12 @@
 package com.example.kairosapplication
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -25,7 +32,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -36,14 +42,17 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -55,6 +64,8 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppInteraction
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.ui.components.EssayItemCard
+import com.example.kairosapplication.ui.components.EssaySearchHistorySection
+import com.example.kairosapplication.ui.components.EssaySearchTopBar
 import com.example.kairosapplication.ui.components.EssayTopicCapsule
 import com.example.taskmodel.model.EssayTopic
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -117,10 +128,28 @@ fun EssayScreen(
     var topicFilter by remember { mutableStateOf<EssayTopic?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    val searchHistory = remember { mutableStateListOf<String>() }
+    var historyEditMode by remember { mutableStateOf(false) }
     var menuOpen by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val filterScroll = rememberScrollState()
+    val searchFocusRequester = remember { FocusRequester() }
+
+    fun commitSearch(raw: String) {
+        val t = raw.trim()
+        if (t.isEmpty()) return
+        searchHistory.remove(t)
+        searchHistory.add(0, t)
+        while (searchHistory.size > 20) {
+            searchHistory.removeAt(searchHistory.lastIndex)
+        }
+    }
+
+    LaunchedEffect(searchOpen) {
+        if (searchOpen) searchFocusRequester.requestFocus()
+        else historyEditMode = false
+    }
 
     val filtered = remember(essays, topicFilter, searchQuery) {
         essays
@@ -168,70 +197,98 @@ fun EssayScreen(
                 .padding(horizontal = AppSpacing.PageHorizontal)
         ) {
             Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = headerDate,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1A1A1A)
+            AnimatedContent(
+                targetState = searchOpen,
+                transitionSpec = {
+                    (
+                        slideInVertically(animationSpec = tween(280)) { full -> -full } +
+                            fadeIn(animationSpec = tween(280))
+                        ).togetherWith(
+                        slideOutVertically(animationSpec = tween(280)) { full -> -full } +
+                            fadeOut(animationSpec = tween(280))
                     )
-                    Text(
-                        text = " ▼",
-                        fontSize = 14.sp,
-                        color = Color(0xFF757575)
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    EssayCircleIconButton(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        onClick = { searchOpen = !searchOpen }
-                    )
-                    Box {
-                        EssayCircleIconButton(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options",
-                            onClick = { menuOpen = true }
+                },
+                label = "essaySearchTopBar"
+            ) { searching ->
+                if (searching) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        EssaySearchTopBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            onBackClick = { searchOpen = false },
+                            focusRequester = searchFocusRequester,
+                            placeholderText = "Search body or topic",
+                            onSearchImeClick = { commitSearch(searchQuery) },
+                            onSearchButtonClick = { commitSearch(searchQuery) },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text("All topics") },
-                                onClick = {
-                                    topicFilter = null
-                                    menuOpen = false
-                                }
+                        EssaySearchHistorySection(
+                            history = searchHistory,
+                            historyEditMode = historyEditMode,
+                            onHistoryEditModeChange = { historyEditMode = it },
+                            onSelectHistory = { searchQuery = it },
+                            onRemoveHistory = { entry -> searchHistory.remove(entry) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = AppSpacing.SectionMedium)
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = headerDate,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1A1A1A)
                             )
-                            EssayTopic.entries.forEach { t ->
-                                DropdownMenuItem(
-                                    text = { Text(essayTopicEnglish(t)) },
-                                    onClick = {
-                                        topicFilter = t
-                                        menuOpen = false
-                                    }
+                            Text(
+                                text = " ▼",
+                                fontSize = 14.sp,
+                                color = Color(0xFF757575)
+                            )
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            EssayCircleIconButton(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                onClick = { searchOpen = true }
+                            )
+                            Box {
+                                EssayCircleIconButton(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "More options",
+                                    onClick = { menuOpen = true }
                                 )
+                                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text("All topics") },
+                                        onClick = {
+                                            topicFilter = null
+                                            menuOpen = false
+                                        }
+                                    )
+                                    EssayTopic.entries.forEach { t ->
+                                        DropdownMenuItem(
+                                            text = { Text(essayTopicEnglish(t)) },
+                                            onClick = {
+                                                topicFilter = t
+                                                menuOpen = false
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (searchOpen) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = AppSpacing.SectionMedium),
-                    placeholder = { Text("Search body or topic") },
-                    singleLine = true
-                )
             }
             Row(
                 modifier = Modifier
