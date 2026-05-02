@@ -3,12 +3,14 @@ package com.example.kairosapplication.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,7 +19,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +55,12 @@ fun NoteCardProject(
         "$projectTitle · $summary"
     }
     val projectCount = note.projectIds.size
+    val categoryLabel = remember(note.primaryCategory) {
+        NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
+    }
+    val emoji = remember(note.primaryCategory) {
+        NoteCardConstants.categoryEmoji(note.primaryCategory)
+    }
 
     Card(
         modifier = modifier
@@ -66,14 +76,38 @@ fun NoteCardProject(
                 .fillMaxWidth()
                 .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
         ) {
-            Text(
-                text = headline,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.PrimaryText,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AppColors.MorningBackground.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = emoji,
+                        fontSize = 20.sp
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = categoryLabel,
+                        fontSize = 12.sp,
+                        color = AppColors.HintText
+                    )
+                    Text(
+                        text = headline,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.PrimaryText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
             Spacer(Modifier.height(6.dp))
             Text(
                 text = note.body.ifBlank { " " },
@@ -85,7 +119,7 @@ fun NoteCardProject(
             )
             if (note.imageUris.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                NoteImageRow(imageUris = note.imageUris)
+                NoteImageRow(imageUris = note.imageUris, maxImages = 4)
             }
             if (note.sceneTags.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
@@ -110,7 +144,7 @@ fun NoteCardProject(
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "更新 $updatedStr · 关联项目 $projectCount",
+                text = "Updated $updatedStr · Topics $projectCount",
                 fontSize = 12.sp,
                 color = AppColors.HintText
             )

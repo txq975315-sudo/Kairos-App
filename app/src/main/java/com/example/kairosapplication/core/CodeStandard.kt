@@ -1,6 +1,8 @@
 package com.example.kairosapplication.core
 
 import kotlin.RequiresOptIn
+import kotlin.annotation.AnnotationRetention
+import kotlin.annotation.Retention
 
 /**
  * Kairos 编码规范声明：
@@ -55,6 +57,7 @@ object CommentTemplate {
  * 标记“临时允许硬编码样式”的代码。
  * 默认不建议使用：样式应收敛到 core/ui/StyleConstants.kt。
  */
+@Retention(AnnotationRetention.BINARY)
 @RequiresOptIn(
     message = "Do not hardcode styles directly. Use StyleConstants/AppColors/AppSpacing/AppSize.",
     level = RequiresOptIn.Level.WARNING

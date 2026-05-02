@@ -38,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,7 +97,8 @@ fun EssayEditScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val essays = taskViewModel.uiState.value.essays
+    val uiState by taskViewModel.uiState.collectAsState()
+    val essays = uiState.essays
     val existing = essayId?.let { id -> essays.find { it.id == id } }
     val isEditing = existing != null
 

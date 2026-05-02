@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,25 +39,30 @@ import java.util.Locale
 fun NoteCardTimeline(
     note: Note,
     onNoteClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    projectsById: Map<Long, String> = emptyMap()
 ) {
     val zone = ZoneId.systemDefault()
-    val dayOfMonth = remember(note.recordedDate) { note.recordedDate.dayOfMonth.toString() }
-    val monthLabel = remember(note.recordedDate) {
-        DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH).format(note.recordedDate)
-    }
     val timeStr = remember(note.createdAt) {
         val z = Instant.ofEpochMilli(note.createdAt).atZone(zone)
         DateTimeFormatter.ofPattern("HH:mm").format(z)
     }
-    val categoryLabel = NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
-    val titleLine = remember(note.behaviorSummary, categoryLabel) {
-        if (note.behaviorSummary.isNotBlank()) "$categoryLabel · ${note.behaviorSummary}"
-        else categoryLabel
+    val categoryColor = remember(note.primaryCategory) {
+        NoteCardConstants.categoryColor(note.primaryCategory)
+    }
+    val categoryLabel = remember(note.primaryCategory) {
+        NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
+    }
+    val secondaryLine = remember(note.secondaryCategory) {
+        note.secondaryCategory.ifBlank { "" }
     }
     val tagsPreview = remember(note.sceneTags) {
         note.sceneTags.take(3).joinToString(" · ")
     }
+    val projectFirstName = remember(note.projectIds, projectsById) {
+        note.projectIds.firstOrNull()?.let { projectsById[it] }
+    }
+    val projectCount = note.projectIds.size
 
     Row(
         modifier = modifier
@@ -69,15 +75,9 @@ fun NoteCardTimeline(
             modifier = Modifier.width(40.dp)
         ) {
             Text(
-                text = dayOfMonth,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.PrimaryText
-            )
-            Text(
-                text = monthLabel,
-                fontSize = 11.sp,
-                color = AppColors.SecondaryText
+                text = timeStr,
+                fontSize = 12.sp,
+                color = AppColors.HintText
             )
             Spacer(Modifier.height(4.dp))
             Box(
@@ -101,12 +101,45 @@ fun NoteCardTimeline(
                     .fillMaxWidth()
                     .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
             ) {
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(categoryColor)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = categoryLabel,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.PrimaryText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (secondaryLine.isNotBlank()) {
+                            Text(
+                                text = secondaryLine,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = AppColors.SecondaryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    text = titleLine,
+                    text = note.behaviorSummary.ifBlank { "—" },
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = AppColors.PrimaryText,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(6.dp))
@@ -114,13 +147,13 @@ fun NoteCardTimeline(
                     text = note.body.ifBlank { " " },
                     fontSize = 14.sp,
                     color = AppColors.SecondaryText,
-                    maxLines = 4,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 20.sp
                 )
                 if (note.imageUris.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
-                    NoteImageRow(imageUris = note.imageUris)
+                    NoteImageRow(imageUris = note.imageUris, maxImages = 4)
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(
@@ -144,10 +177,21 @@ fun NoteCardTimeline(
                             )
                         }
                     }
+                }
+                if (projectCount > 0) {
+                    Spacer(Modifier.height(4.dp))
+                    val assoc = buildString {
+                        append(projectFirstName ?: "Project")
+                        append(" · ")
+                        append(projectCount)
+                        append(" linked")
+                    }
                     Text(
-                        text = timeStr,
+                        text = assoc,
                         fontSize = 12.sp,
-                        color = AppColors.HintText
+                        color = AppColors.HintText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

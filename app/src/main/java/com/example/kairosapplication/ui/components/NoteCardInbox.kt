@@ -76,7 +76,7 @@ fun NoteCardInbox(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (statusText.isNotBlank()) {
                             Icon(
-                                imageVector = Icons.Default.WarningAmber,
+                                imageVector = Icons.Filled.WarningAmber,
                                 contentDescription = null,
                                 tint = AppColors.High,
                                 modifier = Modifier.padding(end = 4.dp)
@@ -100,44 +100,29 @@ fun NoteCardInbox(
                 Spacer(Modifier.height(10.dp))
             }
             Text(
-                text = note.behaviorSummary.ifBlank { "（无摘要）" },
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.PrimaryText,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = note.body.ifBlank { " " },
+                text = note.body.ifBlank { "（无正文）" },
                 fontSize = 14.sp,
-                color = AppColors.SecondaryText,
+                color = AppColors.PrimaryText,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 20.sp
             )
             if (note.imageUris.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                NoteImageRow(imageUris = note.imageUris)
+                NoteImageRow(imageUris = note.imageUris, maxImages = 4)
             }
             Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = {
-                    onQuickAction(NoteAction.Classify(note.id))
-                }) {
+                TextButton(onClick = { onQuickAction(NoteAction.Classify(note.id)) }) {
                     Text("分类", fontSize = 13.sp, color = AppColors.PrimaryText)
                 }
-                TextButton(onClick = {
-                    onQuickAction(NoteAction.Tag(note.id))
-                }) {
+                TextButton(onClick = { onQuickAction(NoteAction.Tag(note.id)) }) {
                     Text("标签", fontSize = 13.sp, color = AppColors.PrimaryText)
                 }
-                TextButton(onClick = {
-                    onQuickAction(NoteAction.LinkProject(note.id))
-                }) {
+                TextButton(onClick = { onQuickAction(NoteAction.LinkProject(note.id)) }) {
                     Text("项目", fontSize = 13.sp, color = AppColors.PrimaryText)
                 }
             }
@@ -150,13 +135,11 @@ private fun inboxDeadlineLabel(
     today: LocalDate,
     needsManual: Boolean
 ): String {
-    if (deadline == null) {
-        return if (needsManual) "待分类" else ""
-    }
+    if (deadline == null) return if (needsManual) "待分类" else ""
     val days = ChronoUnit.DAYS.between(today, deadline)
     return when {
-        days > 0 -> "${days}天后"
+        days > 0 -> "${days}天后自动转杂记"
         days == 0L -> "今天到期"
-        else -> "已逾期 ${-days} 天"
+        else -> "⚠️ 已逾期"
     }
 }

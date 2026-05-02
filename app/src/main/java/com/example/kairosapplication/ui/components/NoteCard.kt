@@ -32,7 +32,8 @@ fun NoteCard(
         NoteCardVariant.TIMELINE -> NoteCardTimeline(
             note = note,
             onNoteClick = onNoteClick,
-            modifier = modifier
+            modifier = modifier,
+            projectsById = projectsById
         )
         NoteCardVariant.TOPIC -> NoteCardTopic(
             note = note,

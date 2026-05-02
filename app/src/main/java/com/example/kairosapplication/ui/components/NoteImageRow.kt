@@ -16,21 +16,22 @@ import coil.compose.AsyncImage
 @Composable
 fun NoteImageRow(
     imageUris: List<String>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    maxImages: Int = 4
 ) {
     if (imageUris.isEmpty()) return
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        imageUris.take(4).forEach { uriString ->
+        imageUris.take(maxImages).forEach { uriString ->
             AsyncImage(
                 model = Uri.parse(uriString),
                 contentDescription = "Note image",
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
         }
