@@ -41,7 +41,7 @@ fun NoteCardInbox(
     modifier: Modifier = Modifier
 ) {
     val statusText = remember(note.needsManualClassification) {
-        if (note.needsManualClassification) "需要分类" else ""
+        if (note.needsManualClassification) "Needs classification" else ""
     }
     val deadlineText = remember(note.deadline, today, note.needsManualClassification) {
         inboxDeadlineLabel(note.deadline, today, note.needsManualClassification)
@@ -100,7 +100,7 @@ fun NoteCardInbox(
                 Spacer(Modifier.height(10.dp))
             }
             Text(
-                text = note.body.ifBlank { "（无正文）" },
+                text = note.body.ifBlank { "(No body)" },
                 fontSize = 14.sp,
                 color = AppColors.PrimaryText,
                 maxLines = 2,
@@ -117,13 +117,13 @@ fun NoteCardInbox(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 TextButton(onClick = { onQuickAction(NoteAction.Classify(note.id)) }) {
-                    Text("分类", fontSize = 13.sp, color = AppColors.PrimaryText)
+                    Text("Classify", fontSize = 13.sp, color = AppColors.PrimaryText)
                 }
                 TextButton(onClick = { onQuickAction(NoteAction.Tag(note.id)) }) {
-                    Text("标签", fontSize = 13.sp, color = AppColors.PrimaryText)
+                    Text("Tags", fontSize = 13.sp, color = AppColors.PrimaryText)
                 }
                 TextButton(onClick = { onQuickAction(NoteAction.LinkProject(note.id)) }) {
-                    Text("项目", fontSize = 13.sp, color = AppColors.PrimaryText)
+                    Text("Project", fontSize = 13.sp, color = AppColors.PrimaryText)
                 }
             }
         }
@@ -135,11 +135,15 @@ private fun inboxDeadlineLabel(
     today: LocalDate,
     needsManual: Boolean
 ): String {
-    if (deadline == null) return if (needsManual) "待分类" else ""
+    if (deadline == null) return if (needsManual) "Pending classification" else ""
     val days = ChronoUnit.DAYS.between(today, deadline)
     return when {
-        days > 0 -> "${days}天后自动转杂记"
-        days == 0L -> "今天到期"
-        else -> "⚠️ 已逾期"
+        days > 0 -> if (days == 1L) {
+            "Moves to freestyle in 1 day"
+        } else {
+            "Moves to freestyle in $days days"
+        }
+        days == 0L -> "Due today"
+        else -> "⚠️ Overdue"
     }
 }

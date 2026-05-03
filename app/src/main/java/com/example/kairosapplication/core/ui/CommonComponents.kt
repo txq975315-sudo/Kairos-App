@@ -36,11 +36,10 @@ import androidx.compose.ui.unit.dp
 import com.example.kairosapplication.ui.common.CommonBackButton as LegacyCommonBackButton
 
 /**
- * 全局可复用通用组件库。
+ * Shared UI building blocks.
  *
- * 注意：
- * - 为了兼容现有页面，CommonBackButton 复用已存在的实现；
- * - 页面迁移时优先从本文件引用，避免组件分散。
+ * - CommonBackButton delegates to the legacy implementation for compatibility.
+ * - Prefer importing from here when migrating screens to avoid scattered copies.
  */
 
 @Composable

@@ -166,19 +166,19 @@ fun TodayScreen(
         taskViewModel.syncFromCreationBus()
     }
 
-    // 临时调试：跟踪列表中的 repeatRule，定位创建链路是否丢失重复规则。
+    // Debug: log repeatRule per task to trace creation pipeline.
     LaunchedEffect(allTasks.size) {
         allTasks.forEach { task ->
             println("TodayScreen task='${task.title}', date=${task.taskDate}, repeatRule='${task.repeatRule}'")
         }
     }
 
-    // TopBar：按当前查看日与 TaskViewModel 列表直接统计，避免无 key 的 remember+derivedStateOf 不刷新导致一直 0/0
+    // TopBar counts from TaskViewModel for the viewed date (stable refresh vs keyless remember).
     val todayTasksForTopBar = allTasks.filter { it.taskDate == currentDate }
     val totalCount = todayTasksForTopBar.size
     val completedCount = todayTasksForTopBar.count { it.isCompleted }
     var createSheetConfig by remember { mutableStateOf<CreateSheetConfig?>(null) }
-    // 弹窗输入内容上提：关闭弹窗时不清空，保留用户已输入文本
+    // Create sheet fields: keep text when sheet closes.
     var createTitle by remember { mutableStateOf("") }
     var createDescription by remember { mutableStateOf("") }
     var createUrgency by remember { mutableStateOf(3) }
@@ -188,7 +188,7 @@ fun TodayScreen(
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var detailTask by remember { mutableStateOf<Task?>(null) }
 
-    // 统一时间块创建入口：按点击块动态切换弹窗标题与配色
+    // Single create entry: time block drives sheet title and colors.
     val showCreateSheet: (String) -> Unit = { timeBlock ->
         createSheetConfig = CreateSheetConfig(
             timeBlock = timeBlock,
@@ -224,8 +224,8 @@ fun TodayScreen(
         scope.launch {
             when (
                 snackbarHostState.showSnackbar(
-                    message = "任务已删除",
-                    actionLabel = "撤销",
+                    message = "Task deleted",
+                    actionLabel = "Undo",
                     duration = SnackbarDuration.Short
                 )
             ) {
@@ -243,7 +243,7 @@ fun TodayScreen(
             .padding(horizontal = AppSpacing.PageHorizontal)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-        // 固定头部区域（不随内容滚动）
+        // Fixed header (does not scroll with task list)
         Spacer(Modifier.height(AppSpacing.SectionSmall))
         TopBar(
             completed = completedCount,
@@ -260,18 +260,18 @@ fun TodayScreen(
         Spacer(Modifier.height(10.dp))
         QuoteSection(
             onClick = onQuoteClick,
-            quoteText = taskViewModel.dailyQuoteDisplayText("纵有疾风起，人生不言弃")
+            quoteText = taskViewModel.dailyQuoteDisplayText("The wind rises; I keep going.")
         )
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
-        // 新手引导 UI 临时禁用（软件完成后可恢复下方分支）。
+        // First-run onboarding UI temporarily disabled (restore when product-ready).
         // if (!uiState.onboardingHandled && allTasks.isEmpty()) {
         //     FirstUseOnboarding(
         //         onLoadSample = { taskViewModel.markOnboardingChoice(loadSamples = true) },
         //         onStartEmpty = { taskViewModel.markOnboardingChoice(loadSamples = false) }
         //     )
         // } else {
-        // 任务区域独立滚动
+        // Task area scrolls independently
         Column(
             modifier = Modifier
                 .weight(1f, fill = false)
@@ -289,7 +289,7 @@ fun TodayScreen(
                 tasks = anytimeTasks,
                 viewDate = currentDate,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
-                // 统一编辑入口：任务卡片点击后仅通过 editingTask 打开编辑弹窗。
+                // Edit path: card tap sets editingTask to open the bottom sheet.
                 onOpenDetail = { clickedTask -> editingTask = clickedTask },
                 onSwipeDelete = handleSwipeDelete,
                 onTaskDragEnd = handleTaskDragEnd,
@@ -368,11 +368,11 @@ fun TodayScreen(
     if (showDailyLimitDialog) {
         AlertDialog(
             onDismissRequest = { showDailyLimitDialog = false },
-            title = { Text("今日待办已达上限") },
-            text = { Text("单日未完成待办最多 ${TaskViewModel.DAILY_PENDING_LIMIT} 条。可清理该日任务后继续创建。") },
+            title = { Text("Daily to-do limit reached") },
+            text = { Text("You can have at most ${TaskViewModel.DAILY_PENDING_LIMIT} incomplete tasks per day. Clear tasks for that day to add more.") },
             confirmButton = {
                 TextButton(onClick = { showDailyLimitDialog = false }) {
-                    Text("我知道")
+                    Text("Got it")
                 }
             },
             dismissButton = {
@@ -382,7 +382,7 @@ fun TodayScreen(
                         showDailyLimitDialog = false
                     }
                 ) {
-                    Text("清理今日任务")
+                    Text("Clear today's tasks")
                 }
             }
         )
@@ -454,7 +454,7 @@ fun TodayScreen(
                         updated.repeatRule == TaskConstants.REPEAT_RULE_NONE
 
                 if (isStopRepeatAction) {
-                    // Stop 需要作用于整条重复链：当天置为 NONE，未来日期同系列任务移除。
+                    // Stop repeat: clear series from this day; drop future same-series rows.
                     val updatedTasks = TaskUtils.stopRepeat(allTasks.toList(), task)
                     taskViewModel.saveTasks(updatedTasks)
                 } else {
@@ -468,8 +468,8 @@ fun TodayScreen(
                 scope.launch {
                     when (
                         snackbarHostState.showSnackbar(
-                            message = "任务已删除",
-                            actionLabel = "撤销",
+                            message = "Task deleted",
+                            actionLabel = "Undo",
                             duration = SnackbarDuration.Short
                         )
                     ) {
@@ -519,7 +519,7 @@ private fun FirstUseOnboarding(
                 color = AppColors.PrimaryText
             )
             Text(
-                text = "你现在是首次使用，可选择加载示例任务，或从空白开始。",
+                text = "Welcome. Load sample tasks to explore, or start from an empty list.",
                 fontSize = 14.sp,
                 color = AppColors.SecondaryText
             )
@@ -532,7 +532,7 @@ private fun FirstUseOnboarding(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF8A7CF8))
                 ) {
                     Text(
-                        text = "加载示例数据",
+                        text = "Load sample data",
                         color = Color.White,
                         modifier = Modifier.padding(vertical = 10.dp),
                         textAlign = TextAlign.Center
@@ -546,7 +546,7 @@ private fun FirstUseOnboarding(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0))
                 ) {
                     Text(
-                        text = "保持空白",
+                        text = "Start empty",
                         color = AppColors.PrimaryText,
                         modifier = Modifier.padding(vertical = 10.dp),
                         textAlign = TextAlign.Center
@@ -565,7 +565,7 @@ private fun TopBar(
     onDailyReviewClick: () -> Unit
 ) {
     val taskText = rememberTaskTextProvider()
-    // 统一阴影参数：Blur≈8, Y偏移≈2, Black 5%
+    // Shadow: ~8 blur, ~2dp Y, black 5%
     val shadowElevation = 4.dp
     val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
 
@@ -573,7 +573,7 @@ private fun TopBar(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 左侧：任务数汇总卡片（加阴影）
+        // Left: summary card with shadow
         Card(
             modifier = Modifier.shadow(
                 elevation = shadowElevation,
@@ -607,7 +607,7 @@ private fun TopBar(
 
         Spacer(Modifier.weight(1f))
 
-        // 中间：创建按钮（白底、黑色图标、加阴影）
+        // Center: create FAB (white, black icon, shadow)
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -632,7 +632,7 @@ private fun TopBar(
 
         Spacer(Modifier.width(8.dp))
 
-        // 右侧：Daily Review 入口（加阴影）
+        // Right: Daily Review entry (shadow)
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -786,7 +786,7 @@ private fun moveTaskToTimeBlock(
     return before + daySlice + allTasks.drop(lastIdx + 1)
 }
 
-/** 已完成或排期早于今日（逾期）的待办不可直接左滑删除，需先恢复为当日待办。 */
+/** Completed or overdue (before today) tasks cannot swipe-delete until moved back to today. */
 private fun Task.isSwipeDeletableByPolicy(today: LocalDate = LocalDate.now()): Boolean {
     if (isCompleted) return false
     if (taskDate.isBefore(today)) return false
@@ -819,7 +819,7 @@ private fun TimeBlock(
             onBlockBounds(label, coords.boundsInRoot())
         }
     ) {
-        // 用Box包裹头部，确保按钮位置固定
+        // Box keeps header layout stable
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -870,7 +870,7 @@ private fun TimeBlock(
 
                 Spacer(Modifier.weight(1f))
 
-                // 仅在有任务时显示右侧 + 按钮；无任务时隐藏（样式与 EmptyTaskCard 一致）
+                // Show trailing + only when the block has tasks (matches EmptyTaskCard)
                 if (hasTasks) {
                     TimeBlockAddTaskButton(
                         onClick = onCreateClick,
@@ -938,7 +938,7 @@ private fun EmptyTaskCard(
                     color = AppColors.SecondaryText.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(12.dp)
                 )
-                .padding(horizontal = 16.dp), // 左右padding统一
+                .padding(horizontal = 16.dp), // symmetric horizontal padding
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

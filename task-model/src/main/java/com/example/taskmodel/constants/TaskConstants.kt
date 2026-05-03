@@ -19,10 +19,10 @@ object TaskConstants {
     const val URGENCY_LOW = 3
 
     val URGENCY_LEVELS = mapOf(
-        URGENCY_URGENT to "紧急",
-        URGENCY_HIGH to "重要",
-        URGENCY_NORMAL to "普通",
-        URGENCY_LOW to "低优先级"
+        URGENCY_URGENT to "Urgent",
+        URGENCY_HIGH to "High",
+        URGENCY_NORMAL to "Normal",
+        URGENCY_LOW to "Low priority"
     )
 
     const val LABEL_NONE = "None"

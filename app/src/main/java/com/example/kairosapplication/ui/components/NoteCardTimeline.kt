@@ -17,8 +17,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.example.taskmodel.constants.NoteStatus
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +42,11 @@ fun NoteCardTimeline(
     note: Note,
     onNoteClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
-    projectsById: Map<Long, String> = emptyMap()
+    projectsById: Map<Long, String> = emptyMap(),
+    expandable: Boolean = false,
+    expanded: Boolean = false,
+    onToggleExpand: () -> Unit = {},
+    publishedActions: PublishedNoteCardActions? = null
 ) {
     val zone = ZoneId.systemDefault()
     val timeStr = remember(note.createdAt) {
@@ -64,10 +70,13 @@ fun NoteCardTimeline(
     }
     val projectCount = note.projectIds.size
 
+    val bodyMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onNoteClick(note.id) },
+            .clickable {
+                if (expandable) onToggleExpand() else onNoteClick(note.id)
+            },
         verticalAlignment = Alignment.Top
     ) {
         Column(
@@ -147,7 +156,7 @@ fun NoteCardTimeline(
                     text = note.body.ifBlank { " " },
                     fontSize = 14.sp,
                     color = AppColors.SecondaryText,
-                    maxLines = 3,
+                    maxLines = bodyMaxLines,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 20.sp
                 )
@@ -193,6 +202,22 @@ fun NoteCardTimeline(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+                if (expandable && expanded) {
+                    Spacer(Modifier.height(10.dp))
+                    if (publishedActions != null && note.status == NoteStatus.PUBLISHED) {
+                        PublishedNoteActionsRow(
+                            actions = publishedActions,
+                            hasProjects = note.projectIds.isNotEmpty()
+                        )
+                    } else {
+                        TextButton(
+                            onClick = { onNoteClick(note.id) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Edit", color = AppColors.PrimaryText)
+                        }
+                    }
                 }
             }
         }

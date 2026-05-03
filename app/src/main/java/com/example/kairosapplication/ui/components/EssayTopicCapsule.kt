@@ -26,7 +26,7 @@ fun EssayTopicCapsule(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     lockedSelected: Boolean = false,
-    /** 若提供则替代默认中文课题名（如 Essay 列表英文化） */
+    /** When set, overrides the default topic label (e.g. English list copy) */
     labelOverride: String? = null
 ) {
     val shape = RoundedCornerShape(8.dp)

@@ -1,14 +1,14 @@
 package com.example.taskmodel.model
 
 /**
- * 今日记录（Essay）实体。
+ * Journal entry (Essay) model.
  */
 data class Essay(
     val id: Long,
     val topic: EssayTopic,
-    /** 正文 */
+    /** Body text */
     val body: String,
-    /** 本地图片 URI，最多 [com.example.taskmodel.constants.EssayConstants.MAX_IMAGES] 张 */
+    /** Local image URIs, at most [com.example.taskmodel.constants.EssayConstants.MAX_IMAGES] */
     val imageUris: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
     val createdAtMillis: Long,
@@ -17,7 +17,7 @@ data class Essay(
     val weather: String? = null,
     val mood: String? = null,
     val locationLabel: String? = null,
-    /** 是否被设为首页/小组件「每日一句」来源（全局仅一条有效，由 ViewModel 维护） */
+    /** When true, this essay feeds the home/widget daily quote (one active id; ViewModel owns it) */
     val isDailyQuote: Boolean = false
 )
 

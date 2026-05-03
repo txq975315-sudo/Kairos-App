@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -89,7 +90,7 @@ private enum class IconSheetType {
     TIME, URGENCY, LABEL, ATTACH, ATTACH_LOCAL
 }
 
-/** 统一重复任务判断：非空且非 NONE 才视为重复任务。 */
+/** Treat as repeating only when non-blank and not NONE. */
 private fun isRepeatingTask(task: Task): Boolean {
     return task.repeatRule.isNotBlank() &&
         task.repeatRule.trim().uppercase() != TaskConstants.REPEAT_RULE_NONE
@@ -219,7 +220,7 @@ internal fun CreateTaskBottomSheet(
     var keyboardHeightDp by remember { mutableStateOf(280.dp) }
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val isKeyboardVisible = imeBottomPx > 0
-    /** 图标展开区高度约为键盘高度一半，避免时间块等短列表下留白过大 */
+    /** Icon panel height ~ half keyboard to avoid huge empty space on short lists */
     val iconSheetPanelHeight = keyboardHeightDp * 0.5f
 
     LaunchedEffect(imeBottomPx) {
@@ -257,14 +258,14 @@ internal fun CreateTaskBottomSheet(
             titleFocusRequester.requestFocus()
             keyboardController?.show()
         } else {
-            // 用户取消本地图片选择时，恢复到主输入状态，避免停留在附件选择态
+            // User cancelled local picker: return to main input, not stuck in attachment mode
             iconSheetType = null
             titleFocusRequester.requestFocus()
             keyboardController?.show()
         }
     }
 
-    // 弹窗出现时自动聚焦主输入框并拉起系统键盘
+    // Focus main field and show IME when sheet opens
     LaunchedEffect(Unit) {
         titleFocusRequester.requestFocus()
         keyboardController?.show()
@@ -285,6 +286,7 @@ internal fun CreateTaskBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .imePadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
@@ -456,7 +458,7 @@ internal fun CreateTaskBottomSheet(
                         IconButton(onClick = onStopClick) {
                             Icon(
                                 imageVector = Icons.Default.Stop,
-                                contentDescription = "停止重复",
+                                contentDescription = "Stop repeating",
                                 tint = Color(0xFFFF9800)
                             )
                         }
@@ -465,7 +467,7 @@ internal fun CreateTaskBottomSheet(
                         IconButton(onClick = onDeleteClick) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "删除任务",
+                                contentDescription = "Delete task",
                                 tint = Color(0xFFD32F2F)
                             )
                         }
@@ -478,7 +480,7 @@ internal fun CreateTaskBottomSheet(
             }
 
             iconSheetType?.let { type ->
-                // 图标选项区域替代键盘显示，保持主弹窗尺寸不变
+                // Icon strip replaces keyboard without resizing the sheet
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

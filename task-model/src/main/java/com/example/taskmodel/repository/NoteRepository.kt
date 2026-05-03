@@ -202,6 +202,21 @@ class NoteRepository private constructor(
     suspend fun getNotesByPrimaryCategoryOnce(category: String): List<Note> =
         noteDao.getNotesByPrimaryCategory(category).first().map { it.toDomain() }
 
+    suspend fun insertProject(name: String): Long {
+        val trimmed = name.trim()
+        require(trimmed.isNotEmpty()) { "Project name cannot be empty" }
+        val now = System.currentTimeMillis()
+        val entity = ProjectEntity(
+            id = 0L,
+            name = trimmed,
+            description = null,
+            coverImageUri = null,
+            createdAt = now,
+            updatedAt = now
+        )
+        return projectDao.insert(entity)
+    }
+
     private fun validateLinked(note: Note) {
         if (note.linkedCategories.any { it == NotePrimaryCategory.FREESTYLE }) {
             throw NoteValidationException("linked_categories cannot contain freestyle")

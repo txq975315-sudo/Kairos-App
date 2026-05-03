@@ -1,8 +1,10 @@
 package com.example.kairosapplication.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.example.kairosapplication.core.ui.AppColors
 
-val BackgroundColor = Color(0xFFF9F9F9)
+/** Page chrome background; same as Today ([AppColors.ScreenBackground]). */
+val BackgroundColor = AppColors.ScreenBackground
 val PrimaryTextColor = Color(0xFF333333)
 val SecondaryTextColor = Color(0xFF666666)
 val AnytimeBackground = Color(0xFFF2EEE6)

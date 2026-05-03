@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.kairosapplication.ui.editor.NoteEditorScreen
+import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.kairosapplication.ui.inbox.InboxListScreen
 import com.example.kairosapplication.ui.project.ProjectTimelineScreen
 import com.example.kairosapplication.ui.search.SearchScreen
@@ -55,6 +56,9 @@ fun EssayNavHost(
                 onNavigateToSearch = onNavigateToSearch,
                 onNavigateToTrash = onNavigateToTrash,
                 onNavigateToEditor = onNavigateToEditor,
+                onNavigateToNewNoteFromTopic = { primaryKey ->
+                    navController.navigate("essay_editor/new_locked/$primaryKey")
+                },
                 onNavigateToProject = onNavigateToProject
             )
         }
@@ -79,7 +83,22 @@ fun EssayNavHost(
             SearchScreen(
                 taskViewModel = taskViewModel,
                 onBackClick = onBack,
-                onNoteClick = { noteId -> onNavigateToEditor(noteId) }
+                onNoteClick = { noteId -> onNavigateToEditor(noteId) },
+                onNavigateToNewNote = { onNavigateToEditor(null) }
+            )
+        }
+        composable(
+            route = "essay_editor/new_locked/{primaryKey}",
+            arguments = listOf(navArgument("primaryKey") { type = NavType.StringType })
+        ) { entry ->
+            val raw = entry.arguments?.getString("primaryKey").orEmpty()
+            val lockPrimary = raw.takeIf { NotePrimaryCategory.isTopic(it) }
+            NoteEditorScreen(
+                noteId = null,
+                taskViewModel = taskViewModel,
+                onBackClick = onBack,
+                onSaveComplete = onSaveEditor,
+                lockedPrimaryCategory = lockPrimary
             )
         }
         composable("essay_editor/new") {
@@ -87,7 +106,8 @@ fun EssayNavHost(
                 noteId = null,
                 taskViewModel = taskViewModel,
                 onBackClick = onBack,
-                onSaveComplete = onSaveEditor
+                onSaveComplete = onSaveEditor,
+                lockedPrimaryCategory = null
             )
         }
         composable(
@@ -113,7 +133,8 @@ fun EssayNavHost(
                 projectId = projectId,
                 taskViewModel = taskViewModel,
                 onBack = onBack,
-                onNoteClick = { id -> onNavigateToEditor(id) }
+                onNoteClick = { id -> onNavigateToEditor(id) },
+                onNavigateToNewNote = { onNavigateToEditor(null) }
             )
         }
     }

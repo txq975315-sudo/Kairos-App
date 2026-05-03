@@ -8,12 +8,14 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Essay
 import com.example.taskmodel.model.EssayTopic
 import com.example.taskmodel.model.Task
 import java.io.IOException
 import java.time.LocalDate
+import java.util.Locale
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlinx.coroutines.flow.Flow
@@ -28,8 +30,9 @@ class TaskRepository(private val context: Context) {
         val tasksJson = stringPreferencesKey("tasks_json")
         val onboardingHandled = booleanPreferencesKey("onboarding_handled")
         val essaysJson = stringPreferencesKey("essays_json")
-        /** 作为首页每日一句的 Essay id；无则 -1 */
+        /** Essay id used as home daily quote; -1 if none */
         val dailyQuoteEssayId = longPreferencesKey("daily_quote_essay_id")
+        val noteCustomSecondariesJson = stringPreferencesKey("note_custom_secondary_categories_v1")
     }
 
     val tasksFlow: Flow<List<Task>> = context.taskDataStore.data
@@ -68,6 +71,29 @@ class TaskRepository(private val context: Context) {
             val v = prefs[Keys.dailyQuoteEssayId] ?: -1L
             if (v < 0) null else v
         }
+
+    val customSecondaryCategoriesFlow: Flow<Map<String, List<String>>> = context.taskDataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { prefs ->
+            decodeSecondaryCategoriesMap(prefs[Keys.noteCustomSecondariesJson].orEmpty())
+        }
+
+    suspend fun addCustomSecondaryCategory(primary: String, label: String) {
+        val trimmed = label.trim()
+        if (trimmed.isBlank()) return
+        context.taskDataStore.edit { prefs ->
+            val current = decodeSecondaryCategoriesMap(prefs[Keys.noteCustomSecondariesJson].orEmpty())
+            val defaults = NoteSecondaryCategories.defaults[primary].orEmpty()
+            val prevCustom = current[primary].orEmpty()
+            val distinctLower = (defaults + prevCustom).map { it.lowercase(Locale.US) }.toMutableSet()
+            if (distinctLower.size >= 8) return@edit
+            if (trimmed.lowercase(Locale.US) in distinctLower) return@edit
+            val nextCustom = prevCustom + trimmed
+            prefs[Keys.noteCustomSecondariesJson] = encodeSecondaryCategoriesMap(current + (primary to nextCustom))
+        }
+    }
 
     suspend fun saveTasks(tasks: List<Task>) {
         context.taskDataStore.edit { prefs ->
@@ -265,6 +291,37 @@ private fun decodeEssays(raw: String): List<Essay> {
         }
     }.getOrElse { emptyList() }
 }
+
+private fun encodeSecondaryCategoriesMap(map: Map<String, List<String>>): String {
+    val o = JSONObject()
+    map.forEach { (k, v) ->
+        val arr = JSONArray()
+        v.forEach { arr.put(it) }
+        o.put(k, arr)
+    }
+    return o.toString()
+}
+
+private fun decodeSecondaryCategoriesMap(raw: String): Map<String, List<String>> =
+    runCatching {
+        if (raw.isBlank()) return emptyMap()
+        val o = JSONObject(raw)
+        val names = o.names() ?: return emptyMap()
+        buildMap {
+            for (i in 0 until names.length()) {
+                val key = names.getString(i)
+                val arr = o.getJSONArray(key)
+                put(
+                    key,
+                    buildList {
+                        for (j in 0 until arr.length()) {
+                            add(arr.getString(j))
+                        }
+                    }
+                )
+            }
+        }
+    }.getOrElse { emptyMap() }
 
 private fun decodeTasks(raw: String): List<Task> {
     return runCatching {

@@ -243,7 +243,7 @@ fun TaskItemCard(
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     Text(
-                        text = "删除",
+                        text = "Delete",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
@@ -261,8 +261,8 @@ fun TaskItemCard(
 
 private fun formatRepeatRuleTag(repeatRule: String): String {
     return when {
-        repeatRule.startsWith("WEEKLY_") -> "每周${repeatRule.removePrefix("WEEKLY_")}"
-        repeatRule == TaskConstants.REPEAT_RULE_NONE -> "不重复"
+        repeatRule.startsWith("WEEKLY_") -> "Weekly · ${repeatRule.removePrefix("WEEKLY_")}"
+        repeatRule == TaskConstants.REPEAT_RULE_NONE -> "Does not repeat"
         else -> repeatRule
     }
 }

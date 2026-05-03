@@ -17,8 +17,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.example.taskmodel.constants.NoteStatus
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +42,11 @@ fun NoteCardProject(
     note: Note,
     onNoteClick: (Long) -> Unit,
     projectsById: Map<Long, String>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    expandable: Boolean = false,
+    expanded: Boolean = false,
+    onToggleExpand: () -> Unit = {},
+    publishedActions: PublishedNoteCardActions? = null
 ) {
     val zone = ZoneId.systemDefault()
     val updatedStr = remember(note.updatedAt) {
@@ -61,12 +67,15 @@ fun NoteCardProject(
     val emoji = remember(note.primaryCategory) {
         NoteCardConstants.categoryEmoji(note.primaryCategory)
     }
+    val bodyMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp))
-            .clickable { onNoteClick(note.id) },
+            .clickable {
+                if (expandable) onToggleExpand() else onNoteClick(note.id)
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -148,6 +157,22 @@ fun NoteCardProject(
                 fontSize = 12.sp,
                 color = AppColors.HintText
             )
+            if (expandable && expanded) {
+                Spacer(Modifier.height(8.dp))
+                if (publishedActions != null && note.status == NoteStatus.PUBLISHED) {
+                    PublishedNoteActionsRow(
+                        actions = publishedActions,
+                        hasProjects = note.projectIds.isNotEmpty()
+                    )
+                } else {
+                    TextButton(
+                        onClick = { onNoteClick(note.id) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Edit", color = AppColors.PrimaryText)
+                    }
+                }
+            }
         }
     }
 }

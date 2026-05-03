@@ -6,20 +6,25 @@ object EssayConstants {
     const val MAX_IMAGES = 4
 
     val TOPIC_LABEL: Map<EssayTopic, String> = mapOf(
-        EssayTopic.SELF_AWARENESS to "自我认知",
-        EssayTopic.INTERPERSONAL to "人际互动",
-        EssayTopic.INTIMACY_FAMILY to "亲密与家庭",
-        EssayTopic.HEALTH_ENERGY to "健康与能量",
-        EssayTopic.MEANING_EXPLORATION to "意义探索"
+        EssayTopic.SELF_AWARENESS to "Self-awareness",
+        EssayTopic.INTERPERSONAL to "Interpersonal",
+        EssayTopic.INTIMACY_FAMILY to "Intimacy & family",
+        EssayTopic.HEALTH_ENERGY to "Health & energy",
+        EssayTopic.MEANING_EXPLORATION to "Meaning & exploration"
     )
 
-    /** 选中课题后正文区引导占位（行为摘要） */
+    /** Placeholder for the behavior-summary field when a topic is selected. */
     val TOPIC_GUIDE_PLACEHOLDER: Map<EssayTopic, String> = mapOf(
-        EssayTopic.SELF_AWARENESS to "行为摘要：这件事是否让我重新认识自己？",
-        EssayTopic.INTERPERSONAL to "行为摘要：互动中我的感受与回应是什么？",
-        EssayTopic.INTIMACY_FAMILY to "行为摘要：这段关系里我在意的是什么？",
-        EssayTopic.HEALTH_ENERGY to "行为摘要：身体与情绪给出了什么信号？",
-        EssayTopic.MEANING_EXPLORATION to "行为摘要：这件事对我意味着什么？"
+        EssayTopic.SELF_AWARENESS to
+            "Behavior summary: What did this help me see about myself?",
+        EssayTopic.INTERPERSONAL to
+            "Behavior summary: What did I feel and how did I respond in this interaction?",
+        EssayTopic.INTIMACY_FAMILY to
+            "Behavior summary: What matters to me in this relationship?",
+        EssayTopic.HEALTH_ENERGY to
+            "Behavior summary: What signals did my body and mood give?",
+        EssayTopic.MEANING_EXPLORATION to
+            "Behavior summary: What might this mean for me?"
     )
 
     fun topicLabel(topic: EssayTopic): String = TOPIC_LABEL[topic] ?: topic.name

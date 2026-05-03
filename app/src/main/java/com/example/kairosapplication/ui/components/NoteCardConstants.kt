@@ -15,16 +15,17 @@ import androidx.compose.material.icons.filled.Spa
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.taskmodel.constants.NotePrimaryCategory
+import com.example.taskmodel.constants.NoteSecondaryCategories
 
 object NoteCardConstants {
 
     val TOPIC_TAB_ENGLISH_LABEL: Map<String, String> = mapOf(
-        NotePrimaryCategory.FREESTYLE to "Freestyle",
-        NotePrimaryCategory.SELF_AWARENESS to "Self-Awareness",
-        NotePrimaryCategory.INTERPERSONAL to "Interpersonal",
-        NotePrimaryCategory.INTIMACY_FAMILY to "Intimacy & Family",
-        NotePrimaryCategory.SOMATIC_ENERGY to "Health & Energy",
-        NotePrimaryCategory.MEANING to "Meaning"
+        NotePrimaryCategory.FREESTYLE to "Free Recall",
+        NotePrimaryCategory.SELF_AWARENESS to "Self Schema",
+        NotePrimaryCategory.INTERPERSONAL to "Social Bond",
+        NotePrimaryCategory.INTIMACY_FAMILY to "Intimate Tie",
+        NotePrimaryCategory.SOMATIC_ENERGY to "Somatic Energy",
+        NotePrimaryCategory.MEANING to "Existential Quest"
     )
 
     val PRIMARY_CATEGORY_LABEL: Map<String, String> = TOPIC_TAB_ENGLISH_LABEL
@@ -54,6 +55,14 @@ object NoteCardConstants {
         "angry" to Icons.Filled.SentimentVeryDissatisfied,
         "excited" to Icons.Filled.EmojiEvents
     )
+
+    val secondaryCategories: Map<String, List<String>> = NoteSecondaryCategories.defaults
+
+    fun mergedSecondaryLabels(primary: String, custom: Map<String, List<String>>): List<String> {
+        val base = secondaryCategories[primary].orEmpty()
+        val extra = custom[primary].orEmpty()
+        return base + extra.filter { e -> base.none { it.equals(e, ignoreCase = true) } }
+    }
 
     fun topicTabEnglishLabel(key: String): String =
         TOPIC_TAB_ENGLISH_LABEL[key] ?: key

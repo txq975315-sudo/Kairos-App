@@ -5,6 +5,14 @@ import androidx.compose.ui.Modifier
 import com.example.taskmodel.model.Note
 import java.time.LocalDate
 
+/** Actions shown when a published note card is expanded (topic / project or continue / delete). */
+data class PublishedNoteCardActions(
+    val onChangeTopic: () -> Unit,
+    val onChangeProject: () -> Unit,
+    val onContinueCreate: () -> Unit,
+    val onDelete: () -> Unit
+)
+
 enum class NoteCardVariant {
     TIMELINE,
     TOPIC,
@@ -26,19 +34,32 @@ fun NoteCard(
     onQuickAction: (NoteAction) -> Unit = {},
     modifier: Modifier = Modifier,
     projectsById: Map<Long, String> = emptyMap(),
-    today: LocalDate = LocalDate.now()
+    today: LocalDate = LocalDate.now(),
+    expandable: Boolean = false,
+    expanded: Boolean = false,
+    onToggleExpand: () -> Unit = {},
+    /** When non-null for a published note, expanded area shows topic/project/delete instead of Edit. */
+    publishedActions: PublishedNoteCardActions? = null
 ) {
     when (variant) {
         NoteCardVariant.TIMELINE -> NoteCardTimeline(
             note = note,
             onNoteClick = onNoteClick,
             modifier = modifier,
-            projectsById = projectsById
+            projectsById = projectsById,
+            expandable = expandable,
+            expanded = expanded,
+            onToggleExpand = onToggleExpand,
+            publishedActions = publishedActions
         )
         NoteCardVariant.TOPIC -> NoteCardTopic(
             note = note,
             onNoteClick = onNoteClick,
-            modifier = modifier
+            modifier = modifier,
+            expandable = expandable,
+            expanded = expanded,
+            onToggleExpand = onToggleExpand,
+            publishedActions = publishedActions
         )
         NoteCardVariant.INBOX -> NoteCardInbox(
             note = note,
@@ -51,7 +72,11 @@ fun NoteCard(
             note = note,
             onNoteClick = onNoteClick,
             projectsById = projectsById,
-            modifier = modifier
+            modifier = modifier,
+            expandable = expandable,
+            expanded = expanded,
+            onToggleExpand = onToggleExpand,
+            publishedActions = publishedActions
         )
     }
 }

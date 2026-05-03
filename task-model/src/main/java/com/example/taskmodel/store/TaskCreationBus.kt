@@ -3,7 +3,7 @@ package com.example.taskmodel.store
 import com.example.taskmodel.model.Task
 
 /**
- * 简单进程内任务创建总线：CreateScreen 推送，TodayScreen 消费。
+ * In-process task creation bus: CreateScreen pushes, TodayScreen consumes.
  */
 object TaskCreationBus {
     private val pendingTasks = mutableListOf<Task>()

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.taskmodel.constants.NotePrimaryCategory
+import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Essay
 import com.example.taskmodel.model.Note
@@ -26,8 +27,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withLock
 
 data class TaskUiState(
@@ -42,13 +45,27 @@ data class TaskUiState(
     /** Essay module (Room) — user projects */
     val noteProjects: List<Project> = emptyList(),
     /** Essay module (Room) — soft-deleted notes (Trash) */
-    val noteTrash: List<Note> = emptyList()
+    val noteTrash: List<Note> = emptyList(),
+    val customSecondaryCategories: Map<String, List<String>> = emptyMap()
 )
 
 class TaskViewModel(
     private val repository: TaskRepository,
     private val noteRepository: NoteRepository
 ) : ViewModel() {
+
+    @Volatile
+    private var pendingNewNoteProjectIds: List<Long>? = null
+
+    fun setPendingNewNoteProjectIds(ids: List<Long>) {
+        pendingNewNoteProjectIds = ids.toList()
+    }
+
+    fun takePendingNewNoteProjectIds(): List<Long>? {
+        val v = pendingNewNoteProjectIds
+        pendingNewNoteProjectIds = null
+        return v
+    }
 
     private val refreshingFromBus = MutableStateFlow(0)
     private val deleteMutex = Mutex()
@@ -69,8 +86,9 @@ class TaskViewModel(
         },
         repository.essaysFlow,
         repository.dailyQuoteEssayIdFlow,
-        noteRepository.observeNoteRoomState()
-    ) { taskPair, essays, dailyQuoteEssayId, noteRoom: NoteRoomState ->
+        noteRepository.observeNoteRoomState(),
+        repository.customSecondaryCategoriesFlow
+    ) { taskPair, essays, dailyQuoteEssayId, noteRoom: NoteRoomState, customSecondaries ->
         val (tasks, onboardingHandled) = taskPair
         TaskUiState(
             tasks = tasks,
@@ -80,7 +98,8 @@ class TaskViewModel(
             notePublished = noteRoom.published,
             noteInbox = noteRoom.inbox,
             noteProjects = noteRoom.projects,
-            noteTrash = noteRoom.trash
+            noteTrash = noteRoom.trash,
+            customSecondaryCategories = customSecondaries
         )
     }.stateIn(
         scope = viewModelScope,
@@ -223,7 +242,7 @@ class TaskViewModel(
         }
     }
 
-    /** 首页每日一句展示文案：来自选中的 Essay 首行，无则默认文案 */
+    /** Home daily quote: first line of selected Essay, or [defaultText] if none. */
     fun dailyQuoteDisplayText(defaultText: String): String {
         val id = uiState.value.dailyQuoteEssayId ?: return defaultText
         val essay = uiState.value.essays.find { it.id == id } ?: return defaultText
@@ -353,6 +372,41 @@ class TaskViewModel(
         }
     }
 
+    /**
+     * Continue flow: create project, attach note, then [onReadyNavigate] to editor with [setPendingNewNoteProjectIds].
+     */
+    fun attachNewProjectToNoteAndPrepareEditor(
+        noteId: Long,
+        projectName: String,
+        onReadyNavigate: (List<Long>) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val pid = noteRepository.insertProject(projectName)
+                val note = uiState.value.notePublished.find { it.id == noteId } ?: return@launch
+                val now = System.currentTimeMillis()
+                val updated = note.copy(
+                    projectIds = (note.projectIds + pid).distinct(),
+                    updatedAt = now
+                )
+                noteRepository.updateNote(updated)
+                withContext(Dispatchers.Main) {
+                    onReadyNavigate(listOf(pid))
+                }
+            } catch (e: NoteValidationException) {
+                _noteValidationErrors.emit(e.message ?: "Validation failed")
+            } catch (e: IllegalArgumentException) {
+                _noteValidationErrors.emit(e.message ?: "Failed to create project")
+            }
+        }
+    }
+
+    fun addCustomSecondaryCategory(primary: String, label: String) {
+        viewModelScope.launch {
+            repository.addCustomSecondaryCategory(primary, label)
+        }
+    }
+
     fun firstDateExceedingLimitIfAdded(newTasks: List<Task>): LocalDate? {
         val current = uiState.value.tasks
         val addsByDate = newTasks.filter { !it.isCompleted }.groupBy { it.taskDate }
@@ -413,11 +467,5 @@ private fun Note.toPublishedFromInbox(primaryCategory: String): Note {
     )
 }
 
-private fun defaultSecondaryForInboxQuickPublish(primary: String): String = when (primary) {
-    NotePrimaryCategory.SELF_AWARENESS -> "Emotional Trigger Event"
-    NotePrimaryCategory.INTERPERSONAL -> "Friend Interaction"
-    NotePrimaryCategory.INTIMACY_FAMILY -> "Partner Conflict"
-    NotePrimaryCategory.SOMATIC_ENERGY -> "Fatigue Signal"
-    NotePrimaryCategory.MEANING -> "Career Questioning"
-    else -> "Daily Note"
-}
+private fun defaultSecondaryForInboxQuickPublish(primary: String): String =
+    NoteSecondaryCategories.firstForQuickPublish(primary)

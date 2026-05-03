@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppReviewLayout
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import androidx.compose.ui.graphics.Color
@@ -102,7 +103,7 @@ fun DailyReviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9F9F9))
+            .background(AppColors.ScreenBackground)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
     ) {
@@ -129,7 +130,7 @@ fun DailyReviewScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        QuoteSnapshot(text = "纵有疾风起，人生不言弃")
+        QuoteSnapshot(text = "The wind rises; I keep going.")
         Spacer(modifier = Modifier.height(18.dp))
 
         Column(
@@ -169,7 +170,7 @@ fun DailyReviewScreen(
             )
         }
 
-        // 任务区与底部按钮：为 Completed 模块留出间距（相对两节之间 12.dp 的间隔加倍）
+        // Task lists vs bottom actions: extra gap before Completed (2× the 12.dp section gap)
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(

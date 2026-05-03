@@ -203,16 +203,16 @@ fun MainScreen() {
                     onDismissRequest = {
                         showCreatePendingLimitDialog = false
                     },
-                    title = { Text("今日待办已达上限", color = PrimaryTextColor) },
+                    title = { Text("Daily to-do limit reached", color = PrimaryTextColor) },
                     text = {
                         Text(
-                            "单日未完成待办最多 ${TaskViewModel.DAILY_PENDING_LIMIT} 条。可清理该日任务后继续创建。",
+                            "You can have at most ${TaskViewModel.DAILY_PENDING_LIMIT} incomplete tasks per day. Clear tasks for that day to add more.",
                             color = SecondaryTextColor
                         )
                     },
                     confirmButton = {
                         TextButton(onClick = { showCreatePendingLimitDialog = false }) {
-                            Text("我知道", color = PrimaryTextColor)
+                            Text("Got it", color = PrimaryTextColor)
                         }
                     },
                     dismissButton = {
@@ -222,7 +222,7 @@ fun MainScreen() {
                                 showCreatePendingLimitDialog = false
                             }
                         ) {
-                            Text("清理今日任务", color = PrimaryTextColor)
+                            Text("Clear today's tasks", color = PrimaryTextColor)
                         }
                     }
                 )
@@ -236,7 +236,7 @@ private fun QuoteSettingScreen(onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9F9F9))
+            .background(BackgroundColor)
             .statusBarsPadding()
     ) {
         CommonBackButton(onClick = onBack)

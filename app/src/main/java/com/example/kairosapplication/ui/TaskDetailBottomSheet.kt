@@ -32,7 +32,7 @@ fun TaskDetailBottomSheet(
     onCloseAll: () -> Unit,
     onStopRepeat: () -> Unit
 ) {
-    // 使用稳定的 sheetState，并避免半展开态减少手势冲突。
+    // Stable sheet state; avoid half-expanded to reduce gesture conflicts.
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(

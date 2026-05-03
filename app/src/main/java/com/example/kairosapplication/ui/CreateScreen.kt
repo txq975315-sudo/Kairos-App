@@ -13,8 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -31,12 +35,12 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +67,7 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
@@ -114,6 +119,7 @@ fun CreateScreen(
         emojiImage = selectedSticker
     )
     var isRecording by remember { mutableStateOf(false) }
+    val createScreenScrollState = rememberScrollState()
     val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         isRecording = false
         val matches = result.data?.getStringArrayListExtra("android.speech.extra.RESULTS")
@@ -121,7 +127,7 @@ fun CreateScreen(
         if (speechText.isNotEmpty()) {
             titleInput = speechText
         } else {
-            Toast.makeText(context, "未识别到语音", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No speech recognized", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -130,7 +136,7 @@ fun CreateScreen(
         keyboardController?.show()
     }
 
-    // 根据时间选择模式处理日期点击逻辑，支持单选/多选/范围选择。
+    // Date taps depend on selection mode: single / multi / range.
     val onCalendarDateSelected: (LocalDate) -> Unit = { clickedDate ->
         when (dateSelectionMode) {
             DateSelectionMode.SINGLE -> {
@@ -182,7 +188,7 @@ fun CreateScreen(
         )
     }
 
-    // 创建成功后的输入重置：保留日历与选择上下文，仅清空输入文本，方便连续创建。
+    // After create: keep calendar/selection, clear text for rapid entry.
     val resetInputsAfterCreate: () -> Unit = {
         titleInput = ""
         descriptionInput = ""
@@ -190,7 +196,7 @@ fun CreateScreen(
 
     val submitCreateTask: () -> Unit = {
         if (titleInput.isBlank()) {
-            Toast.makeText(context, "请输入任务标题", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Enter a task title", Toast.LENGTH_SHORT).show()
         } else {
             val dates = resolveCreateDates(
                 selectedDate = selectedDate,
@@ -229,14 +235,14 @@ fun CreateScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9F9F9))
+            .background(AppColors.ScreenBackground)
             .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 20.dp)
+            .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 20.dp)
                 .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -256,6 +262,18 @@ fun CreateScreen(
             )
         }
 
+        // Keyboard shrinks viewport; top bar fixed, middle scrolls.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(createScreenScrollState)
+        ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
         CalendarSection(
             currentMonth = currentMonth,
             selectedDate = selectedDate,
@@ -273,7 +291,7 @@ fun CreateScreen(
             value = titleInput,
             onValueChange = {
                 titleInput = it
-                // 输入时收起选项面板，确保键盘与图标行同时可见。
+                // While typing, collapse options so keyboard + icon row stay visible.
                 activeTool = null
             },
             placeholder = "What are you doing?",
@@ -288,7 +306,7 @@ fun CreateScreen(
             value = descriptionInput,
             onValueChange = {
                 descriptionInput = it
-                // 输入时收起选项面板，确保键盘与图标行同时可见。
+                // While typing, collapse options so keyboard + icon row stay visible.
                 activeTool = null
             },
             placeholder = "Describe it",
@@ -299,162 +317,14 @@ fun CreateScreen(
             )
         )
 
-        ActionIconsRow(
-            modifier = Modifier
-                .padding(top = 14.dp, bottom = 4.dp),
-            selectedUrgency = selectedUrgency,
-            onTimeClick = {
-                activeTool = CreateTool.TIME
-                keyboardController?.hide()
-            },
-            onUrgencyClick = {
-                activeTool = CreateTool.URGENCY
-                keyboardController?.hide()
-            },
-            onLabelClick = {
-                activeTool = CreateTool.LABEL
-                keyboardController?.hide()
-            },
-            onStickerClick = {
-                activeTool = CreateTool.STICKER
-                keyboardController?.hide()
-            },
-            onVoiceClick = {
-                isRecording = true
-                val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
-                    putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
-                    putExtra("android.speech.extra.PROMPT", "请说出任务标题")
-                }
-                try {
-                    speechLauncher.launch(intent)
-                } catch (_: Exception) {
-                    isRecording = false
-                    Toast.makeText(context, "当前设备不支持语音识别", Toast.LENGTH_SHORT).show()
-                }
-            },
-            onSubmit = submitCreateTask
-        )
-
         if (isRecording) {
             Text(
-                text = "录音中...",
+                text = "Recording…",
                 color = Color(0xFFFF4444),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
-
-        CreateToolPanel(
-            activeTool = activeTool,
-            dateSelectionMode = dateSelectionMode,
-            repeatRule = repeatRule,
-            repeatRange = repeatRange,
-            customRepeatRule = customRepeatRule,
-            customRepeatEndDate = customRepeatEndDate,
-            selectedTimeBlock = selectedTimeBlock,
-            selectedUrgency = selectedUrgency,
-            selectedLabel = selectedLabel,
-            selectedSticker = selectedSticker,
-            selectedDates = selectedDates,
-            rangeStartDate = rangeStartDate,
-            rangeEndDate = rangeEndDate,
-            labelOptions = availableLabels,
-            onSelectionModeChanged = { mode ->
-                // 日期选择模式与重复规则联动：
-                // Single -> NONE；Multi/Range -> 至少 DAILY。
-                dateSelectionMode = if (dateSelectionMode == mode) null else mode
-                if (dateSelectionMode != null) {
-                    repeatRange = null
-                    customRepeatEndDate = null
-                }
-                when (dateSelectionMode) {
-                    DateSelectionMode.SINGLE -> {
-                        repeatRule = TaskConstants.REPEAT_RULE_NONE
-                    }
-                    DateSelectionMode.MULTI, DateSelectionMode.RANGE -> {
-                        val currentRule = repeatRule?.trim().orEmpty()
-                        if (currentRule.isEmpty() || currentRule == TaskConstants.REPEAT_RULE_NONE) {
-                            repeatRule = TaskConstants.REPEAT_RULE_DAILY
-                        }
-                    }
-                    null -> {
-                        if (repeatRule == null) {
-                            repeatRule = TaskConstants.REPEAT_RULE_NONE
-                        }
-                    }
-                }
-                when (dateSelectionMode) {
-                    DateSelectionMode.SINGLE -> {
-                        selectedDates = setOf(selectedDate)
-                        rangeStartDate = null
-                        rangeEndDate = null
-                    }
-                    DateSelectionMode.MULTI -> {
-                        selectedDates = if (selectedDates.isEmpty()) setOf(selectedDate) else selectedDates
-                        rangeStartDate = null
-                        rangeEndDate = null
-                    }
-                    DateSelectionMode.RANGE -> {
-                        selectedDates = setOf(selectedDate)
-                        rangeStartDate = selectedDate
-                        rangeEndDate = null
-                    }
-                    null -> {
-                        selectedDates = emptySet()
-                        rangeStartDate = null
-                        rangeEndDate = null
-                    }
-                }
-            },
-            onRepeatRuleChanged = { rule ->
-                // 允许用户先选规则再选范围：若范围为空则自动兜底为无限范围，避免 repeatRule 丢失为 NONE。
-                if (repeatRange == null) {
-                    repeatRange = RepeatRange.UNLIMITED
-                }
-                repeatRule = if (repeatRule == rule) null else rule
-            },
-            onRepeatRangeChanged = { range ->
-                // 互斥逻辑：启用 Repeat Range 时，清空 Date Selection。
-                repeatRange = if (repeatRange == range) null else range
-                if (repeatRange != null) {
-                    dateSelectionMode = null
-                    selectedDates = emptySet()
-                    rangeStartDate = null
-                    rangeEndDate = null
-                } else {
-                    repeatRule = null
-                    customRepeatEndDate = null
-                }
-                when (repeatRange) {
-                    RepeatRange.UNLIMITED -> {
-                        customRepeatEndDate = null
-                    }
-                    RepeatRange.NEXT_1_WEEK -> {
-                        customRepeatEndDate = null
-                    }
-                    RepeatRange.NEXT_2_WEEKS -> {
-                        customRepeatEndDate = null
-                    }
-                    RepeatRange.NEXT_4_WEEKS -> {
-                        customRepeatEndDate = null
-                    }
-                    RepeatRange.THIS_MONTH -> {
-                        customRepeatEndDate = null
-                    }
-                    RepeatRange.CUSTOM_END_DATE -> {
-                        customRepeatEndDate = selectedDate
-                    }
-                    null -> Unit
-                }
-            },
-            onCustomRepeatRuleChanged = { customRepeatRule = it },
-            onCustomRepeatEndDateChanged = { customRepeatEndDate = it },
-            onTimeSelected = { selectedTimeBlock = it },
-            onUrgencySelected = { selectedUrgency = it },
-            onLabelSelected = { selectedLabel = it },
-            onStickerSelected = { selectedSticker = it },
-            modifier = Modifier.padding(top = 12.dp)
-        )
 
         Text(
             text = buildDraftSummary(
@@ -477,6 +347,159 @@ fun CreateScreen(
             )
         }
 
+        }
+        }
+
+        val dockedTool = activeTool
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(if (dockedTool != null) Color.White else AppColors.ScreenBackground)
+        ) {
+            if (dockedTool != null) {
+                HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+                CreateToolPanel(
+                    activeTool = dockedTool,
+                    dateSelectionMode = dateSelectionMode,
+                    repeatRule = repeatRule,
+                    repeatRange = repeatRange,
+                    customRepeatRule = customRepeatRule,
+                    customRepeatEndDate = customRepeatEndDate,
+                    selectedTimeBlock = selectedTimeBlock,
+                    selectedUrgency = selectedUrgency,
+                    selectedLabel = selectedLabel,
+                    selectedSticker = selectedSticker,
+                    selectedDates = selectedDates,
+                    rangeStartDate = rangeStartDate,
+                    rangeEndDate = rangeEndDate,
+                    labelOptions = availableLabels,
+                    onSelectionModeChanged = { mode ->
+                        dateSelectionMode = if (dateSelectionMode == mode) null else mode
+                        if (dateSelectionMode != null) {
+                            repeatRange = null
+                            customRepeatEndDate = null
+                        }
+                        when (dateSelectionMode) {
+                            DateSelectionMode.SINGLE -> {
+                                repeatRule = TaskConstants.REPEAT_RULE_NONE
+                            }
+                            DateSelectionMode.MULTI, DateSelectionMode.RANGE -> {
+                                val currentRule = repeatRule?.trim().orEmpty()
+                                if (currentRule.isEmpty() || currentRule == TaskConstants.REPEAT_RULE_NONE) {
+                                    repeatRule = TaskConstants.REPEAT_RULE_DAILY
+                                }
+                            }
+                            null -> {
+                                if (repeatRule == null) {
+                                    repeatRule = TaskConstants.REPEAT_RULE_NONE
+                                }
+                            }
+                        }
+                        when (dateSelectionMode) {
+                            DateSelectionMode.SINGLE -> {
+                                selectedDates = setOf(selectedDate)
+                                rangeStartDate = null
+                                rangeEndDate = null
+                            }
+                            DateSelectionMode.MULTI -> {
+                                selectedDates = if (selectedDates.isEmpty()) setOf(selectedDate) else selectedDates
+                                rangeStartDate = null
+                                rangeEndDate = null
+                            }
+                            DateSelectionMode.RANGE -> {
+                                selectedDates = setOf(selectedDate)
+                                rangeStartDate = selectedDate
+                                rangeEndDate = null
+                            }
+                            null -> {
+                                selectedDates = emptySet()
+                                rangeStartDate = null
+                                rangeEndDate = null
+                            }
+                        }
+                    },
+                    onRepeatRuleChanged = { rule ->
+                        if (repeatRange == null) {
+                            repeatRange = RepeatRange.UNLIMITED
+                        }
+                        repeatRule = if (repeatRule == rule) null else rule
+                    },
+                    onRepeatRangeChanged = { range ->
+                        repeatRange = if (repeatRange == range) null else range
+                        if (repeatRange != null) {
+                            dateSelectionMode = null
+                            selectedDates = emptySet()
+                            rangeStartDate = null
+                            rangeEndDate = null
+                        } else {
+                            repeatRule = null
+                            customRepeatEndDate = null
+                        }
+                        when (repeatRange) {
+                            RepeatRange.UNLIMITED -> {
+                                customRepeatEndDate = null
+                            }
+                            RepeatRange.NEXT_1_WEEK -> {
+                                customRepeatEndDate = null
+                            }
+                            RepeatRange.NEXT_2_WEEKS -> {
+                                customRepeatEndDate = null
+                            }
+                            RepeatRange.NEXT_4_WEEKS -> {
+                                customRepeatEndDate = null
+                            }
+                            RepeatRange.THIS_MONTH -> {
+                                customRepeatEndDate = null
+                            }
+                            RepeatRange.CUSTOM_END_DATE -> {
+                                customRepeatEndDate = selectedDate
+                            }
+                            null -> Unit
+                        }
+                    },
+                    onCustomRepeatRuleChanged = { customRepeatRule = it },
+                    onCustomRepeatEndDateChanged = { customRepeatEndDate = it },
+                    onTimeSelected = { selectedTimeBlock = it },
+                    onUrgencySelected = { selectedUrgency = it },
+                    onLabelSelected = { selectedLabel = it },
+                    onStickerSelected = { selectedSticker = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+            }
+            ActionIconsRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 0.dp),
+            selectedUrgency = selectedUrgency,
+            onTimeClick = {
+                activeTool = if (activeTool == CreateTool.TIME) null else CreateTool.TIME
+            },
+            onUrgencyClick = {
+                activeTool = if (activeTool == CreateTool.URGENCY) null else CreateTool.URGENCY
+            },
+            onLabelClick = {
+                activeTool = if (activeTool == CreateTool.LABEL) null else CreateTool.LABEL
+            },
+            onStickerClick = {
+                activeTool = if (activeTool == CreateTool.STICKER) null else CreateTool.STICKER
+            },
+            onVoiceClick = {
+                isRecording = true
+                val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
+                    putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
+                    putExtra("android.speech.extra.PROMPT", "Say your task title")
+                }
+                try {
+                    speechLauncher.launch(intent)
+                } catch (_: Exception) {
+                    isRecording = false
+                    Toast.makeText(context, "Voice input is not supported on this device", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onSubmit = submitCreateTask
+        )
+        }
     }
 }
 
@@ -723,7 +746,7 @@ private fun ActionIconsRow(
 
 @Composable
 private fun CreateToolPanel(
-    activeTool: CreateTool?,
+    activeTool: CreateTool,
     dateSelectionMode: DateSelectionMode?,
     repeatRule: String?,
     repeatRange: RepeatRange?,
@@ -748,21 +771,15 @@ private fun CreateToolPanel(
     onStickerSelected: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (activeTool == null) return
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 120.dp, max = 220.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
+    // Full-width footer + flat card: same white shell as icon row, tight spacing.
+    key(activeTool) {
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
+                .heightIn(max = 220.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             when (activeTool) {
                 CreateTool.TIME -> {
@@ -836,17 +853,17 @@ private fun CreateToolPanel(
                     if (repeatRange == RepeatRange.CUSTOM_END_DATE) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             SelectionChip(
-                                text = "今天",
+                                text = "Today",
                                 selected = customRepeatEndDate == LocalDate.now(),
                                 onClick = { onCustomRepeatEndDateChanged(LocalDate.now()) }
                             )
                             SelectionChip(
-                                text = "7天后",
+                                text = "In 7 days",
                                 selected = customRepeatEndDate == LocalDate.now().plusDays(7),
                                 onClick = { onCustomRepeatEndDateChanged(LocalDate.now().plusDays(7)) }
                             )
                             SelectionChip(
-                                text = "30天后",
+                                text = "In 30 days",
                                 selected = customRepeatEndDate == LocalDate.now().plusDays(30),
                                 onClick = { onCustomRepeatEndDateChanged(LocalDate.now().plusDays(30)) }
                             )
@@ -963,7 +980,7 @@ private fun OptionPill(
             .clip(RoundedCornerShape(10.dp))
             .background(if (selected) Color(0xFFEFEFEF) else Color.Transparent)
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(start = 10.dp, end = 10.dp, top = 1.dp, bottom = 1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (leadingEmoji != null) {
@@ -1008,7 +1025,7 @@ private fun SelectionChip(
             .clip(RoundedCornerShape(14.dp))
             .background(backgroundColor)
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(start = 10.dp, end = 10.dp, top = 1.dp, bottom = 1.dp)
     ) {
         Text(
             text = text,
@@ -1173,7 +1190,7 @@ private fun normalizeRepeatRuleForSave(
     }
 
     if (dateSelectionMode == DateSelectionMode.MULTI || dateSelectionMode == DateSelectionMode.RANGE) {
-        // Multi/Range 一律按重复任务保存，默认 DAILY。
+        // Multi/range selections save as repeating; default DAILY.
         val modeRule = repeatRule?.trim().orEmpty()
         if (modeRule.isEmpty() || modeRule == TaskConstants.REPEAT_RULE_NONE) {
             return TaskConstants.REPEAT_RULE_DAILY
@@ -1189,7 +1206,7 @@ private fun normalizeRepeatRuleForSave(
 
     val normalizedRule = repeatRule?.trim().orEmpty()
     if (normalizedRule.isEmpty()) {
-        // 选择了重复范围但未显式选择规则时，默认按每日重复保存，避免落成 NONE。
+        // Range chosen without explicit repeat rule → default daily repeat (avoid NONE).
         return TaskConstants.REPEAT_RULE_DAILY
     }
 

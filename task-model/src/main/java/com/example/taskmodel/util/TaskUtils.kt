@@ -49,7 +49,7 @@ object TaskUtils {
     }
 
     /**
-     * 仅完成当天实例：用于规律任务“完成今天”按钮。
+     * Complete only today's instance (recurring tasks "Complete today").
      */
     fun completeToday(tasks: List<Task>, target: Task): List<Task> {
         return tasks.map { task ->
@@ -58,7 +58,7 @@ object TaskUtils {
     }
 
     /**
-     * 关闭同一规律任务的全部实例：用于“关闭全部”。
+     * Complete every occurrence in the same recurring series (“Close all”).
      */
     fun closeAllOccurrences(tasks: List<Task>, target: Task): List<Task> {
         return tasks.map { task ->
@@ -67,9 +67,9 @@ object TaskUtils {
     }
 
     /**
-     * 停止重复（从目标任务当天起）：
-     * 1) 删除同系列且日期在目标日期之后的任务；
-     * 2) 保留目标日期及以前的任务，并将目标日期这一条的 repeatRule 置为 NONE。
+     * Stop repeating from the target task’s day onward:
+     * 1) Remove later-dated tasks in the same series.
+     * 2) Keep same-day and earlier; set that day’s row repeatRule to NONE.
      */
     fun stopRepeat(tasks: List<Task>, target: Task): List<Task> {
         val cutoffDate = target.taskDate
@@ -93,7 +93,7 @@ object TaskUtils {
 
     private fun isSameSeries(task: Task, target: Task): Boolean {
         if (target.repeatRule == TaskConstants.REPEAT_RULE_NONE) {
-            // 无 repeatRule 的跨天任务，按标题+时间段识别同系列。
+            // Cross-day tasks without repeatRule: same series = same title + time block.
             return task.title == target.title &&
                 task.timeBlock == target.timeBlock
         }

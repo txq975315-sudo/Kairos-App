@@ -49,8 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Essay 搜索顶栏：对齐 Figma「返回 + 渐变胶囊输入 + 右侧放大镜」布局。
- * 颜色与高度均可通过参数调整；输入区为真实文本框（非 SVG 轮廓字），便于无障碍与输入法。
+ * Essay search top bar: back + gradient pill field + search icon (Figma-aligned).
+ * Colors and height are tunable; the field is a real TextField for a11y and IME.
  */
 @Composable
 fun EssaySearchTopBar(
@@ -189,7 +189,7 @@ fun EssaySearchTopBar(
 }
 
 /**
- * 搜索历史：横向标签；长按任一标签进入编辑模式，可点按删除移除记录。
+ * Search history as horizontal chips; long-press a chip to enter edit mode and tap delete to remove.
  */
 @Composable
 fun EssaySearchHistorySection(
@@ -202,7 +202,7 @@ fun EssaySearchHistorySection(
 ) {
     if (history.isEmpty() && !historyEditMode) return
 
-    // 原 8dp 圆角，整体缩小约 0.6 后 ≈5dp
+    // Was 8dp radius; scaled ~0.6 → ~5dp
     val chipShape = RoundedCornerShape(5.dp)
     val scroll = rememberScrollState()
 
@@ -215,7 +215,7 @@ fun EssaySearchHistorySection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "历史记录:",
+                text = "History:",
                 fontSize = 14.sp,
                 color = Color(0xFF757575),
                 modifier = Modifier
@@ -225,7 +225,7 @@ fun EssaySearchHistorySection(
             )
             if (historyEditMode) {
                 Text(
-                    text = "完成",
+                    text = "Done",
                     fontSize = 14.sp,
                     color = Color(0xFF8A7CF8),
                     modifier = Modifier.clickable { onHistoryEditModeChange(false) }
@@ -254,8 +254,8 @@ fun EssaySearchHistorySection(
 }
 
 /**
- * Uiverse 风格；尺寸：先将上下内边距相对原 12dp 减半为 6dp，再整体按 [historyChipVisualScale]
- *（约 0.6，即缩小约 40%，落在缩小 1/3～1/2 之间）等比例缩小文字、圆角、图标与内边距。
+ * Uiverse-style chip: halve vertical padding from 12dp to 6dp, then scale type, radius, icon, and padding
+ * by [historyChipVisualScale] (~0.6, ~40% smaller).
  */
 private const val historyChipVisualScale = 0.6f
 
@@ -269,7 +269,7 @@ private fun HistoryChip(
     onDelete: () -> Unit,
 ) {
     val s = historyChipVisualScale
-    // 原 12dp 垂直内边距先减半 → 6dp，再乘 s
+    // Halve 12dp vertical padding → 6dp, then multiply by s
     val padV = (6f * s).dp
     val padH = (16f * s).dp
     val gap = (8f * s).dp

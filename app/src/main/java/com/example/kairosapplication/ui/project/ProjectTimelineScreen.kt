@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.project
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -37,9 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.ui.PublishedNoteActionDialogsHost
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardVariant
+import com.example.kairosapplication.ui.components.PublishedNoteCardActions
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -56,7 +62,8 @@ fun ProjectTimelineScreen(
     projectId: Long,
     taskViewModel: TaskViewModel,
     onBack: () -> Unit,
-    onNoteClick: (Long) -> Unit
+    onNoteClick: (Long) -> Unit,
+    onNavigateToNewNote: () -> Unit
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
     val projectName = uiState.noteProjects.find { it.id == projectId }?.name ?: "Project"
@@ -76,6 +83,12 @@ fun ProjectTimelineScreen(
     val years = remember(projectNotes) {
         projectNotes.map { it.recordedDate.year }.distinct().sortedDescending()
     }
+    val essayCountByYear = remember(projectNotes) {
+        projectNotes.groupingBy { it.recordedDate.year }.eachCount()
+    }
+    val essayCountByYearMonth = remember(projectNotes) {
+        projectNotes.groupingBy { it.recordedDate.year to it.recordedDate.monthValue }.eachCount()
+    }
 
     var expandedYears by remember(projectNotes) {
         mutableStateOf(projectNotes.map { it.recordedDate.year }.toSet())
@@ -85,6 +98,33 @@ fun ProjectTimelineScreen(
             projectNotes.map { it.recordedDate.year to it.recordedDate.monthValue }.toSet()
         )
     }
+    var expandedPublishedNoteId by remember { mutableStateOf<Long?>(null) }
+    var changeTopicNoteId by remember { mutableStateOf<Long?>(null) }
+    var changeProjectNoteId by remember { mutableStateOf<Long?>(null) }
+    var continueCreateNoteId by remember { mutableStateOf<Long?>(null) }
+    var deleteConfirmNoteId by remember { mutableStateOf<Long?>(null) }
+
+    PublishedNoteActionDialogsHost(
+        resolveNote = { id ->
+            projectNotes.find { it.id == id }
+                ?: uiState.notePublished.find { it.id == id }
+        },
+        noteProjects = uiState.noteProjects,
+        customSecondaryCategories = uiState.customSecondaryCategories,
+        taskViewModel = taskViewModel,
+        onNavigateToNewNote = onNavigateToNewNote,
+        changeTopicNoteId = changeTopicNoteId,
+        onChangeTopicNoteId = { changeTopicNoteId = it },
+        changeProjectNoteId = changeProjectNoteId,
+        onChangeProjectNoteId = { changeProjectNoteId = it },
+        continueCreateNoteId = continueCreateNoteId,
+        onContinueCreateNoteId = { continueCreateNoteId = it },
+        deleteConfirmNoteId = deleteConfirmNoteId,
+        onDeleteConfirmNoteId = { deleteConfirmNoteId = it },
+        onNoteDeleted = { nid ->
+            if (expandedPublishedNoteId == nid) expandedPublishedNoteId = null
+        }
+    )
 
     Scaffold(
         containerColor = BackgroundColor,
@@ -92,7 +132,7 @@ fun ProjectTimelineScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = projectName,
+                        text = "$projectName (${projectNotes.size})",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = PrimaryTextColor
@@ -116,7 +156,7 @@ fun ProjectTimelineScreen(
                 .fillMaxSize()
                 .padding(padding),
             contentPadding = PaddingValues(horizontal = AppSpacing.PageHorizontal),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.SectionLarge)
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             if (projectNotes.isEmpty()) {
                 item(key = "empty") {
@@ -129,9 +169,11 @@ fun ProjectTimelineScreen(
             } else {
                 years.forEach { year ->
                     val yearExpanded = year in expandedYears
+                    val yearEssayCount = essayCountByYear[year] ?: 0
                     item(key = "year_$year") {
                         YearHeader(
                             year = year,
+                            essayCount = yearEssayCount,
                             isExpanded = yearExpanded,
                             onToggle = {
                                 expandedYears = if (year in expandedYears) {
@@ -152,9 +194,11 @@ fun ProjectTimelineScreen(
                         monthsInYear.forEach { month ->
                             val monthKey = year to month
                             val monthExpanded = monthKey in expandedMonths
+                            val monthEssayCount = essayCountByYearMonth[year to month] ?: 0
                             item(key = "month_${year}_$month") {
                                 MonthHeader(
                                     month = month,
+                                    essayCount = monthEssayCount,
                                     isExpanded = monthExpanded,
                                     onToggle = {
                                         expandedMonths = if (monthKey in expandedMonths) {
@@ -183,15 +227,49 @@ fun ProjectTimelineScreen(
                                         items = dayNotes.sortedByDescending { it.createdAt },
                                         key = { it.id }
                                     ) { note ->
-                                        NoteCard(
-                                            note = note,
-                                            variant = NoteCardVariant.PROJECT,
-                                            onNoteClick = onNoteClick,
-                                            projectsById = projectsById,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(bottom = AppSpacing.BlockGap)
-                                        )
+                                        ProjectTimelineGutterRow {
+                                            NoteCard(
+                                                note = note,
+                                                variant = NoteCardVariant.PROJECT,
+                                                onNoteClick = onNoteClick,
+                                                projectsById = projectsById,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = AppSpacing.BlockGap),
+                                                expandable = true,
+                                                expanded = note.id == expandedPublishedNoteId,
+                                                onToggleExpand = {
+                                                    expandedPublishedNoteId =
+                                                        if (expandedPublishedNoteId == note.id) {
+                                                            null
+                                                        } else {
+                                                            note.id
+                                                        }
+                                                },
+                                                publishedActions = if (note.status == NoteStatus.PUBLISHED) {
+                                                    PublishedNoteCardActions(
+                                                        onChangeTopic = {
+                                                            changeTopicNoteId = note.id
+                                                            expandedPublishedNoteId = null
+                                                        },
+                                                        onChangeProject = {
+                                                            changeProjectNoteId = note.id
+                                                            expandedPublishedNoteId = null
+                                                        },
+                                                        onContinueCreate = {
+                                                            continueCreateNoteId = note.id
+                                                            expandedPublishedNoteId = null
+                                                        },
+                                                        onDelete = {
+                                                            deleteConfirmNoteId = note.id
+                                                            expandedPublishedNoteId = null
+                                                        }
+                                                    )
+                                                } else {
+                                                    null
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -204,58 +282,93 @@ fun ProjectTimelineScreen(
 }
 
 @Composable
+private fun ProjectTimelineGutterRow(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+    ) {
+        Box(
+            modifier = Modifier
+                .width(14.dp)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(2.dp)
+                    .fillMaxHeight()
+                    .background(AppColors.TimelineLine)
+            )
+        }
+        Box(modifier = Modifier.weight(1f)) {
+            content()
+        }
+    }
+}
+
+@Composable
 private fun YearHeader(
     year: Int,
+    essayCount: Int,
     isExpanded: Boolean,
     onToggle: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(vertical = AppSpacing.SectionSmall),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = year.toString(),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = PrimaryTextColor
-        )
-        Icon(
-            imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = SecondaryTextColor
-        )
+    ProjectTimelineGutterRow {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle)
+                .padding(vertical = AppSpacing.SectionSmall),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "${year} ($essayCount)",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryTextColor
+            )
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = SecondaryTextColor
+            )
+        }
     }
 }
 
 @Composable
 private fun MonthHeader(
     month: Int,
+    essayCount: Int,
     isExpanded: Boolean,
     onToggle: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(start = 16.dp, top = AppSpacing.SectionSmall, bottom = AppSpacing.SectionSmall),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = monthName(month),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = PrimaryTextColor
-        )
-        Icon(
-            imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = SecondaryTextColor
-        )
+    ProjectTimelineGutterRow {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle)
+                .padding(start = 8.dp, top = AppSpacing.SectionSmall, bottom = AppSpacing.SectionSmall),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "${monthName(month)} ($essayCount)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = PrimaryTextColor
+            )
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = SecondaryTextColor
+            )
+        }
     }
 }
 
@@ -280,20 +393,22 @@ private fun ProjectTimelineDateHeader(date: LocalDate) {
     val dateStr = remember(date) {
         DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH).format(date)
     }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 24.dp, top = AppSpacing.SectionSmall, bottom = AppSpacing.SectionSmall),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = "📅", fontSize = 14.sp)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = dateStr,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = PrimaryTextColor
-        )
+    ProjectTimelineGutterRow {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, top = AppSpacing.SectionSmall, bottom = AppSpacing.SectionSmall),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = "📅", fontSize = 14.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = dateStr,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = PrimaryTextColor
+            )
+        }
     }
 }
 
