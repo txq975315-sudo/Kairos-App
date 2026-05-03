@@ -39,7 +39,8 @@ fun NoteCard(
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
     /** When non-null for a published note, expanded area shows topic/project/delete instead of Edit. */
-    publishedActions: PublishedNoteCardActions? = null
+    publishedActions: PublishedNoteCardActions? = null,
+    topicPeekWhenCollapsed: Boolean = false,
 ) {
     when (variant) {
         NoteCardVariant.TIMELINE -> NoteCardTimeline(
@@ -59,7 +60,8 @@ fun NoteCard(
             expandable = expandable,
             expanded = expanded,
             onToggleExpand = onToggleExpand,
-            publishedActions = publishedActions
+            publishedActions = publishedActions,
+            topicPeekWhenCollapsed = topicPeekWhenCollapsed,
         )
         NoteCardVariant.INBOX -> NoteCardInbox(
             note = note,

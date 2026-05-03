@@ -43,7 +43,8 @@ fun NoteCardTopic(
     expandable: Boolean = false,
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
-    publishedActions: PublishedNoteCardActions? = null
+    publishedActions: PublishedNoteCardActions? = null,
+    topicPeekWhenCollapsed: Boolean = false,
 ) {
     val zone = ZoneId.systemDefault()
     val timeStr = remember(note.createdAt) {
@@ -56,7 +57,14 @@ fun NoteCardTopic(
         if (secondary.isNotBlank()) "$primary · $secondary" else primary
     }
 
-    val bodyMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE
+    val peekOnlySummaryBody =
+        topicPeekWhenCollapsed && expandable && !expanded
+    val bodyMaxLines = when {
+        !expandable || expanded -> Int.MAX_VALUE
+        peekOnlySummaryBody && note.behaviorSummary.isBlank() -> 4
+        expandable && !expanded -> 2
+        else -> Int.MAX_VALUE
+    }
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -73,15 +81,19 @@ fun NoteCardTopic(
                 .fillMaxWidth()
                 .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
         ) {
-            Text(
-                text = topicLabelLine,
-                fontSize = 12.sp,
-                color = AppColors.HintText,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (!peekOnlySummaryBody) {
+                Text(
+                    text = topicLabelLine,
+                    fontSize = 12.sp,
+                    color = AppColors.HintText,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             if (note.behaviorSummary.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
+                if (!peekOnlySummaryBody) {
+                    Spacer(Modifier.height(4.dp))
+                }
                 Text(
                     text = note.behaviorSummary,
                     fontSize = 15.sp,
@@ -91,7 +103,15 @@ fun NoteCardTopic(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.height(if (note.behaviorSummary.isNotBlank()) 8.dp else 6.dp))
+            Spacer(
+                Modifier.height(
+                    when {
+                        note.behaviorSummary.isBlank() -> if (peekOnlySummaryBody) 0.dp else 6.dp
+                        peekOnlySummaryBody -> 6.dp
+                        else -> 8.dp
+                    },
+                ),
+            )
             Text(
                 text = note.body.ifBlank { " " },
                 fontSize = 14.sp,
@@ -100,42 +120,44 @@ fun NoteCardTopic(
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 20.sp
             )
-            if (note.imageUris.isNotEmpty()) {
+            if (note.imageUris.isNotEmpty() && !peekOnlySummaryBody) {
                 Spacer(Modifier.height(8.dp))
                 NoteImageRow(imageUris = note.imageUris, maxImages = 4)
             }
-            Spacer(Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                if (note.sceneTags.isNotEmpty()) {
-                    LazyRow(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        itemsIndexed(note.sceneTags) { _, tag ->
-                            Text(
-                                text = tag,
-                                fontSize = 12.sp,
-                                color = AppColors.HintText,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(AppColors.BottomBarSelectedContainer)
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
+            if (!peekOnlySummaryBody) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (note.sceneTags.isNotEmpty()) {
+                        LazyRow(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(note.sceneTags) { _, tag ->
+                                Text(
+                                    text = tag,
+                                    fontSize = 12.sp,
+                                    color = AppColors.HintText,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(AppColors.BottomBarSelectedContainer)
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
                         }
+                        Spacer(Modifier.width(8.dp))
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
-                    Spacer(Modifier.width(8.dp))
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = timeStr,
+                        fontSize = 12.sp,
+                        color = AppColors.HintText
+                    )
                 }
-                Text(
-                    text = timeStr,
-                    fontSize = 12.sp,
-                    color = AppColors.HintText
-                )
             }
             if (expandable && expanded) {
                 Spacer(Modifier.height(8.dp))

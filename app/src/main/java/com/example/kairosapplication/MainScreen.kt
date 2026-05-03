@@ -48,6 +48,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
 import com.example.kairosapplication.ui.EssayNavHost
+import com.example.kairosapplication.ui.view.ViewScreen
 import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
@@ -87,6 +88,7 @@ fun MainScreen() {
             (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main")
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
+    var essayOpenTopicPrimary by remember { mutableStateOf<String?>(null) }
 
     if (overlay != null) {
         AnimatedContent(
@@ -191,7 +193,18 @@ fun MainScreen() {
             } else if (selectedTab == AppTab.Essay) {
                 EssayNavHost(
                     navController = essayNavController,
-                    taskViewModel = taskViewModel
+                    taskViewModel = taskViewModel,
+                    openTopicTabWithPrimary = essayOpenTopicPrimary,
+                    onOpenTopicTabConsumed = { essayOpenTopicPrimary = null },
+                )
+            } else if (selectedTab == AppTab.View) {
+                ViewScreen(
+                    onRequestOpenToday = { selectedTab = AppTab.Today },
+                    onRequestOpenEssay = { selectedTab = AppTab.Essay },
+                    onRequestOpenEssayTopic = { primary ->
+                        essayOpenTopicPrimary = primary
+                        selectedTab = AppTab.Essay
+                    },
                 )
             } else {
                 PlaceholderScreen(selectedTab.label)

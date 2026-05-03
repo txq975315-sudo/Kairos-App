@@ -25,7 +25,9 @@ private const val EssayMainRoute = "essay_main"
 fun EssayNavHost(
     navController: NavHostController,
     taskViewModel: TaskViewModel,
-    startDestination: String = EssayMainRoute
+    startDestination: String = EssayMainRoute,
+    openTopicTabWithPrimary: String? = null,
+    onOpenTopicTabConsumed: () -> Unit = {},
 ) {
     val onNavigateToInbox = { navController.navigate("essay_inbox") }
     val onNavigateToSearch = { navController.navigate("essay_search") }
@@ -59,7 +61,9 @@ fun EssayNavHost(
                 onNavigateToNewNoteFromTopic = { primaryKey ->
                     navController.navigate("essay_editor/new_locked/$primaryKey")
                 },
-                onNavigateToProject = onNavigateToProject
+                onNavigateToProject = onNavigateToProject,
+                openTopicTabWithPrimary = openTopicTabWithPrimary,
+                onOpenTopicTabConsumed = onOpenTopicTabConsumed,
             )
         }
         composable("essay_trash") {

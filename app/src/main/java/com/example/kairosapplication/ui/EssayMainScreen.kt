@@ -134,7 +134,9 @@ fun EssayMainScreen(
     onNavigateToEditor: (Long?) -> Unit,
     /** Topic tab: create essay with this primary (non-freestyle); editor locks primary. */
     onNavigateToNewNoteFromTopic: (String) -> Unit,
-    onNavigateToProject: (Long) -> Unit
+    onNavigateToProject: (Long) -> Unit,
+    openTopicTabWithPrimary: String? = null,
+    onOpenTopicTabConsumed: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf(EssayTab.TIMELINE) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -145,6 +147,7 @@ fun EssayMainScreen(
     var changeProjectNoteId by remember { mutableStateOf<Long?>(null) }
     var continueCreateNoteId by remember { mutableStateOf<Long?>(null) }
     var deleteConfirmNoteId by remember { mutableStateOf<Long?>(null) }
+    var topicPrimaryFilter by remember { mutableStateOf<String?>(null) }
 
     val uiState by taskViewModel.uiState.collectAsState()
     val inboxCount = uiState.noteInbox.size
@@ -168,6 +171,15 @@ fun EssayMainScreen(
 
     LaunchedEffect(selectedTab) {
         expandedNoteId = null
+    }
+
+    LaunchedEffect(openTopicTabWithPrimary) {
+        val p = openTopicTabWithPrimary ?: return@LaunchedEffect
+        if (p in topicTabCategoryOrder) {
+            selectedTab = EssayTab.TOPIC
+            topicPrimaryFilter = p
+            onOpenTopicTabConsumed()
+        }
     }
 
     if (showDatePicker) {
@@ -422,7 +434,9 @@ fun EssayMainScreen(
                                     expandedNoteId = null
                                 }
                             )
-                        }
+                        },
+                        primaryFilter = topicPrimaryFilter,
+                        onPrimaryFilterChange = { topicPrimaryFilter = it },
                     )
                     EssayTab.PROJECT -> ProjectTabContent(
                         projects = uiState.noteProjects.sortedByDescending { it.updatedAt },
@@ -571,7 +585,9 @@ private fun TopicTabContent(
     expandedNoteId: Long?,
     onToggleExpand: (Long) -> Unit,
     onOpenNoteEditor: (Long) -> Unit,
-    publishedNoteActions: (Note) -> PublishedNoteCardActions
+    publishedNoteActions: (Note) -> PublishedNoteCardActions,
+    primaryFilter: String?,
+    onPrimaryFilterChange: (String?) -> Unit,
 ) {
     if (allNotes.isEmpty()) {
         EmptyTopicState(modifier = Modifier.fillMaxSize())
@@ -592,7 +608,6 @@ private fun TopicTabContent(
     var collapsedSecondaries by remember {
         mutableStateOf(emptySet<String>())
     }
-    var primaryFilter by remember { mutableStateOf<String?>(null) }
 
     val visiblePrimaries = primaryFilter?.let { listOf(it) } ?: topicTabCategoryOrder
 
@@ -601,7 +616,7 @@ private fun TopicTabContent(
             TopicPrimarySixRow(
                 selectedPrimaryFilter = primaryFilter,
                 onSelectPrimary = { key ->
-                    primaryFilter = if (primaryFilter == key) null else key
+                    onPrimaryFilterChange(if (primaryFilter == key) null else key)
                 },
                 modifier = Modifier.fillMaxWidth()
             )
