@@ -29,12 +29,18 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.notification.NotificationHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +54,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
 import com.example.kairosapplication.ui.EssayNavHost
+import com.example.kairosapplication.ui.mine.MineScreen
+import com.example.kairosapplication.ui.mine.MineViewModel
+import com.example.kairosapplication.ui.mine.MoodCalendarScreen
+import com.example.kairosapplication.ui.mine.settings.DataExportScreen
+import com.example.kairosapplication.ui.mine.settings.DataImportScreen
+import com.example.kairosapplication.ui.mine.settings.LanguageSettingsScreen
+import com.example.kairosapplication.ui.mine.settings.MiscSettingsScreen
+import com.example.kairosapplication.ui.mine.settings.MoodSettingsScreen
+import com.example.kairosapplication.ui.mine.settings.NotificationSettingsScreen
+import com.example.kairosapplication.ui.mine.settings.PrivacySettingsScreen
+import com.example.kairosapplication.ui.mine.settings.SettingsScreen
+import com.example.kairosapplication.ui.mine.settings.SettingsViewModel
+import com.example.kairosapplication.ui.mine.settings.ThemeSettingsScreen
+import com.example.kairosapplication.ui.mine.settings.WidgetSettingsScreen
+import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.kairosapplication.ui.view.ViewScreen
 import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
@@ -70,13 +91,35 @@ private enum class Overlay { DailyReview }
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
+    val dataStoreManager = remember(context) { DataStoreManager(context.applicationContext) }
+    val localizationManager = remember { LocalizationManager(dataStoreManager) }
+    val notificationHelper = remember(context) { NotificationHelper(context.applicationContext) }
+    LaunchedEffect(Unit) { localizationManager.loadLanguage() }
+    val languageState = localizationManager.currentLanguage.collectAsState()
     val taskViewModel: TaskViewModel = viewModel(
         factory = TaskViewModel.factory(context.applicationContext)
+    )
+    val mineViewModel: MineViewModel = viewModel(
+        factory = MineViewModel.factory(context.applicationContext, taskViewModel.uiState)
+    )
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = SettingsViewModel.factory(context.applicationContext, taskViewModel.uiState)
     )
     val taskUiState by taskViewModel.uiState.collectAsState()
 
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
+    var showMoodCalendar by remember { mutableStateOf(false) }
+    var showSettingsScreen by remember { mutableStateOf(false) }
+    var showExportScreen by remember { mutableStateOf(false) }
+    var showImportScreen by remember { mutableStateOf(false) }
+    var showNotificationSettings by remember { mutableStateOf(false) }
+    var showThemeSettings by remember { mutableStateOf(false) }
+    var showMoodSettings by remember { mutableStateOf(false) }
+    var showWidgetSettings by remember { mutableStateOf(false) }
+    var showLanguageSettings by remember { mutableStateOf(false) }
+    var showPrivacySettings by remember { mutableStateOf(false) }
+    var showMiscSettings by remember { mutableStateOf(false) }
     val navController = rememberNavController()
     val essayNavController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -85,11 +128,32 @@ fun MainScreen() {
     val essayRoute = essayNavBackStackEntry?.destination?.route
     val hideBottomBar =
         (selectedTab == AppTab.Today && currentRoute == "create") ||
-            (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main")
+            (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main") ||
+            (selectedTab == AppTab.Mine &&
+                (showMoodCalendar || showSettingsScreen || showExportScreen || showImportScreen ||
+                    showNotificationSettings || showThemeSettings || showMoodSettings ||
+                    showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
     var essayOpenTopicPrimary by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(selectedTab) {
+        if (selectedTab != AppTab.Mine) {
+            showMoodCalendar = false
+            showSettingsScreen = false
+            showExportScreen = false
+            showImportScreen = false
+            showNotificationSettings = false
+            showThemeSettings = false
+            showMoodSettings = false
+            showWidgetSettings = false
+            showLanguageSettings = false
+            showPrivacySettings = false
+            showMiscSettings = false
+        }
+    }
+
+    CompositionLocalProvider(LocalCurrentLanguage provides languageState) {
     if (overlay != null) {
         AnimatedContent(
             targetState = overlay,
@@ -110,7 +174,7 @@ fun MainScreen() {
                 null -> Unit
             }
         }
-        return
+        return@CompositionLocalProvider
     }
 
     Scaffold(
@@ -206,6 +270,128 @@ fun MainScreen() {
                         selectedTab = AppTab.Essay
                     },
                 )
+            } else if (selectedTab == AppTab.Mine) {
+                when {
+                    showMoodCalendar -> MoodCalendarScreen(
+                        mineViewModel = mineViewModel,
+                        onBack = { showMoodCalendar = false }
+                    )
+                    showExportScreen -> DataExportScreen(
+                        viewModel = settingsViewModel,
+                        onBack = {
+                            settingsViewModel.clearExportState()
+                            showExportScreen = false
+                            showSettingsScreen = true
+                        }
+                    )
+                    showImportScreen -> DataImportScreen(
+                        viewModel = settingsViewModel,
+                        onBack = {
+                            showImportScreen = false
+                            showSettingsScreen = true
+                        }
+                    )
+                    showNotificationSettings -> NotificationSettingsScreen(
+                        onBack = {
+                            showNotificationSettings = false
+                            showSettingsScreen = true
+                        },
+                        viewModel = settingsViewModel,
+                        notificationHelper = notificationHelper
+                    )
+                    showThemeSettings -> ThemeSettingsScreen(
+                        viewModel = settingsViewModel,
+                        onBack = {
+                            showThemeSettings = false
+                            showSettingsScreen = true
+                        }
+                    )
+                    showMoodSettings -> MoodSettingsScreen(
+                        onBack = {
+                            showMoodSettings = false
+                            showSettingsScreen = true
+                        },
+                        viewModel = settingsViewModel,
+                        notificationHelper = notificationHelper
+                    )
+                    showWidgetSettings -> WidgetSettingsScreen(
+                        onBack = {
+                            showWidgetSettings = false
+                            showSettingsScreen = true
+                        }
+                    )
+                    showLanguageSettings -> LanguageSettingsScreen(
+                        onBack = {
+                            showLanguageSettings = false
+                            showSettingsScreen = true
+                        },
+                        localizationManager = localizationManager
+                    )
+                    showPrivacySettings -> PrivacySettingsScreen(
+                        onBack = {
+                            showPrivacySettings = false
+                            showSettingsScreen = true
+                        }
+                    )
+                    showMiscSettings -> MiscSettingsScreen(
+                        viewModel = settingsViewModel,
+                        onBack = {
+                            showMiscSettings = false
+                            showSettingsScreen = true
+                        }
+                    )
+                    showSettingsScreen -> SettingsScreen(
+                        onBack = { showSettingsScreen = false },
+                        localizationManager = localizationManager,
+                        viewModel = settingsViewModel,
+                        onNavigateToExport = {
+                            showSettingsScreen = false
+                            showExportScreen = true
+                        },
+                        onNavigateToImport = {
+                            showSettingsScreen = false
+                            showImportScreen = true
+                        },
+                        onNavigateToNotification = {
+                            showSettingsScreen = false
+                            showNotificationSettings = true
+                        },
+                        onNavigateToTheme = {
+                            showSettingsScreen = false
+                            showThemeSettings = true
+                        },
+                        onNavigateToMood = {
+                            showSettingsScreen = false
+                            showMoodSettings = true
+                        },
+                        onNavigateToWidget = {
+                            showSettingsScreen = false
+                            showWidgetSettings = true
+                        },
+                        onNavigateToLanguage = {
+                            showSettingsScreen = false
+                            showLanguageSettings = true
+                        },
+                        onNavigateToPrivacy = {
+                            showSettingsScreen = false
+                            showPrivacySettings = true
+                        },
+                        onNavigateToMisc = {
+                            showSettingsScreen = false
+                            showMiscSettings = true
+                        },
+                        onOpenEssayTopics = {
+                            essayOpenTopicPrimary = NotePrimaryCategory.SELF_AWARENESS
+                            selectedTab = AppTab.Essay
+                            showSettingsScreen = false
+                        }
+                    )
+                    else -> MineScreen(
+                        mineViewModel = mineViewModel,
+                        onNavigateToMoodCalendar = { showMoodCalendar = true },
+                        onOpenSettings = { showSettingsScreen = true }
+                    )
+                }
             } else {
                 PlaceholderScreen(selectedTab.label)
             }
@@ -241,6 +427,7 @@ fun MainScreen() {
                 )
             }
         }
+    }
     }
 }
 

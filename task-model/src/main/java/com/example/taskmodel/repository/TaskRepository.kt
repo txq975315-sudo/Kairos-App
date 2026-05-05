@@ -113,6 +113,8 @@ class TaskRepository(private val context: Context) {
         saveTasks(current + newTasks)
     }
 
+    suspend fun getTasksSnapshot(): List<Task> = tasksFlowFirst()
+
     suspend fun loadSampleTasksIfNeeded() {
         val current = tasksFlowFirst()
         if (current.isNotEmpty()) return

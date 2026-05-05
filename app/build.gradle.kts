@@ -39,6 +39,23 @@ android {
     }
 }
 
+val renameInvalidSw512Drawable by tasks.registering {
+    doLast {
+        val from = file("src/main/res/drawable-sw512")
+        val to = file("src/main/res/drawable-sw512dp")
+        if (from.exists()) {
+            if (to.exists()) {
+                to.deleteRecursively()
+            }
+            check(from.renameTo(to)) { "rename drawable-sw512 failed" }
+        }
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(renameInvalidSw512Drawable)
+}
+
 dependencies {
     implementation(project(":task-model"))
     implementation(libs.androidx.core.ktx)

@@ -112,4 +112,22 @@ abstract class NoteDao {
     open suspend fun getNotesByProjectId(projectId: Long): List<NoteEntity> {
         return getAllNotesOnce().filter { it.status != NoteStatus.DELETED && projectId in it.projectIds }
     }
+
+    @Query("DELETE FROM notes")
+    abstract suspend fun deleteAllNotesForImport()
+
+    @Transaction
+    open suspend fun replaceAllNotesForImport(entities: List<NoteEntity>) {
+        deleteAllNotesForImport()
+        if (entities.isNotEmpty()) insertNotes(entities)
+    }
+
+    @Transaction
+    open suspend fun mergeNotesById(entities: List<NoteEntity>) {
+        for (e in entities) {
+            if (getByIdAnyStatus(e.id) == null) {
+                insertNote(e)
+            }
+        }
+    }
 }

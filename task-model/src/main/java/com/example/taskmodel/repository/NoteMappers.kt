@@ -6,7 +6,7 @@ import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Project
 import java.time.LocalDate
 
-internal fun NoteEntity.toDomain(): Note =
+fun NoteEntity.toDomain(): Note =
     Note(
         id = id,
         primaryCategory = primaryCategory,
@@ -26,7 +26,7 @@ internal fun NoteEntity.toDomain(): Note =
         needsManualClassification = needsManualClassification
     )
 
-internal fun Note.toEntity(): NoteEntity =
+fun Note.toEntity(): NoteEntity =
     NoteEntity(
         id = id,
         primaryCategory = primaryCategory,

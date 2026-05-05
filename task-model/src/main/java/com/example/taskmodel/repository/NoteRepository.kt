@@ -189,6 +189,14 @@ class NoteRepository private constructor(
         noteDao.deleteRowById(noteId)
     }
 
+    suspend fun replaceAllNotesForImport(notes: List<Note>) {
+        noteDao.replaceAllNotesForImport(notes.map { it.toEntity() })
+    }
+
+    suspend fun mergeImportedNotesById(notes: List<Note>) {
+        noteDao.mergeNotesById(notes.map { it.toEntity() })
+    }
+
     suspend fun emptyTrash() {
         noteDao.deleteAllDeleted()
     }
