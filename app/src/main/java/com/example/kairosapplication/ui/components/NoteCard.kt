@@ -2,6 +2,8 @@ package com.example.kairosapplication.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.example.taskmodel.model.Note
 import java.time.LocalDate
 
@@ -41,6 +43,10 @@ fun NoteCard(
     /** When non-null for a published note, expanded area shows topic/project/delete instead of Edit. */
     publishedActions: PublishedNoteCardActions? = null,
     topicPeekWhenCollapsed: Boolean = false,
+    /** Used only for [NoteCardVariant.TIMELINE]: vertical line length under the time dot (use shorter values in stacked lists). */
+    timelineRailExtensionBelowDot: Dp = 100.dp,
+    /** Used only for [NoteCardVariant.TIMELINE]: collapsed card uses one line each for topic, summary, body. */
+    timelineCompactThreeLines: Boolean = false,
 ) {
     when (variant) {
         NoteCardVariant.TIMELINE -> NoteCardTimeline(
@@ -51,7 +57,9 @@ fun NoteCard(
             expandable = expandable,
             expanded = expanded,
             onToggleExpand = onToggleExpand,
-            publishedActions = publishedActions
+            publishedActions = publishedActions,
+            railExtensionBelowDot = timelineRailExtensionBelowDot,
+            timelineCompactThreeLines = timelineCompactThreeLines,
         )
         NoteCardVariant.TOPIC -> NoteCardTopic(
             note = note,

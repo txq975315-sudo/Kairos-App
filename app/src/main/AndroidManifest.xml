@@ -60,8 +60,23 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".widget.Widget3x1WeekInteractionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.kairosapplication.action.WIDGET_3X1_WEEK_PREV" />
+                <action android:name="com.example.kairosapplication.action.WIDGET_3X1_WEEK_NEXT" />
+                <action android:name="com.example.kairosapplication.action.WIDGET_3X1_WEEK_SELECT_DAY" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".widget.WidgetRemoteViewsService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <service
+            android:name=".widget.Widget3x3CalendarRemoteViewsService"
             android:exported="false"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
@@ -115,6 +130,10 @@
 
         <receiver
             android:name=".widget.WidgetAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".widget.WidgetTaskToggleReceiver"
             android:exported="false" />
     </application>
 

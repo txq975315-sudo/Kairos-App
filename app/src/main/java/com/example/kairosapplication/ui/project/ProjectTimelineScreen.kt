@@ -63,7 +63,9 @@ fun ProjectTimelineScreen(
     taskViewModel: TaskViewModel,
     onBack: () -> Unit,
     onNoteClick: (Long) -> Unit,
-    onNavigateToNewNote: () -> Unit
+    onNavigateToNewNote: () -> Unit,
+    /** When true: no [Scaffold] top bar; use under Essay tabs with external navigation. */
+    embedded: Boolean = false,
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
     val projectName = uiState.noteProjects.find { it.id == projectId }?.name ?: "Project"
@@ -126,36 +128,14 @@ fun ProjectTimelineScreen(
         }
     )
 
-    Scaffold(
-        containerColor = BackgroundColor,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "$projectName (${projectNotes.size})",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = PrimaryTextColor
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = PrimaryTextColor
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
-            )
-        }
-    ) { padding ->
+    val listContent: @Composable (Modifier) -> Unit = { mod ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(horizontal = AppSpacing.PageHorizontal),
+            modifier = mod,
+            contentPadding = if (embedded) {
+                PaddingValues(bottom = 12.dp)
+            } else {
+                PaddingValues(horizontal = AppSpacing.PageHorizontal)
+            },
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             if (projectNotes.isEmpty()) {
@@ -277,6 +257,74 @@ fun ProjectTimelineScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (embedded) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = PrimaryTextColor
+                    )
+                }
+                Text(
+                    text = "$projectName (${projectNotes.size})",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = PrimaryTextColor,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            listContent(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(
+                        start = 8.dp,
+                        end = AppSpacing.PageHorizontal,
+                        top = 4.dp,
+                    )
+            )
+        }
+    } else {
+        Scaffold(
+            containerColor = BackgroundColor,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "$projectName (${projectNotes.size})",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimaryTextColor
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = PrimaryTextColor
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
+                )
+            }
+        ) { padding ->
+            listContent(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            )
         }
     }
 }

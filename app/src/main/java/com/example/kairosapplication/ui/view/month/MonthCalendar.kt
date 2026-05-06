@@ -7,19 +7,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,11 +41,12 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 private val DateNumberMuted = Color(0xFF9E9E9E)
-private val BarText = Color(0xFF1A1A1A)
-private val NoteEmptyBg = Color(0xFFF5F0F0)
-private val NoteEmptyDot = Color(0xFF9E9E9E)
-private val TaskEmptyBg = Color(0xFFF5F5F5)
+private val NoteEmptyBg = Color(0xFFF0F0F0)
+private val TaskEmptyBg = Color(0xFFF0F0F0)
 private val TodayCellBg = Color(0xFFF0F4FF)
+private val SummaryCardText = Color(0xFF1A1A1A)
+private val SummaryCardRadius = 3.dp
+private val SummaryCardHeight = 9.dp
 
 private val WeekdayOrder = listOf(
     DayOfWeek.MONDAY,
@@ -166,115 +166,80 @@ private fun CalendarDayCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val taskBg = if (data.taskCount > 0 && data.dominantTaskTimeBlock != null) {
-        TaskUtils.getTimeBlockColor(data.dominantTaskTimeBlock).copy(alpha = 0.2f)
-    } else {
-        TaskEmptyBg
-    }
     val taskText = if (data.taskCount > 0) {
         "${data.taskCompletedCount}/${data.taskCount}"
     } else {
         "—"
     }
     val noteCat = data.dominantNoteCategory
-    val noteBg = if (data.noteCount > 0 && noteCat != null) {
-        NoteCardConstants.categoryColor(noteCat).copy(alpha = 0.2f)
+    val taskTint = if (data.taskCount > 0) {
+        TaskUtils.getUrgencyColor(data.dominantTaskUrgency ?: TaskConstants.URGENCY_LOW)
+    } else {
+        Color(0xFFBDBDBD)
+    }
+    val noteTint = if (data.noteCount > 0 && noteCat != null) {
+        NoteCardConstants.categoryColor(noteCat)
+    } else {
+        Color(0xFFBDBDBD)
+    }
+    val taskCardBg = if (data.taskCount > 0) {
+        taskTint.copy(alpha = 0.28f)
+    } else {
+        TaskEmptyBg
+    }
+    val noteCardBg = if (data.noteCount > 0 && noteCat != null) {
+        noteTint.copy(alpha = 0.28f)
     } else {
         NoteEmptyBg
     }
-    val dotColor = if (data.noteCount > 0 && noteCat != null) {
-        NoteCardConstants.categoryColor(noteCat)
-    } else {
-        NoteEmptyDot
-    }
-    val urgencyStripe = if (data.taskCount > 0) {
-        TaskUtils.getUrgencyColor(data.dominantTaskUrgency ?: TaskConstants.URGENCY_LOW)
-    } else {
-        Color.Transparent
-    }
-    Row(
+    Column(
         modifier = modifier
             .fillMaxSize()
             .viewClickable(onClick)
             .background(if (isToday) TodayCellBg else Color.Transparent)
-            .padding(2.dp),
+            .padding(horizontal = 3.dp, vertical = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (data.taskCount > 0) {
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .background(urgencyStripe),
-            )
-        }
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxSize()
-                .padding(start = if (data.taskCount > 0) 2.dp else 0.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                color = if (isToday) AppScreenHeader.titleColor else DateNumberMuted,
-                fontSize = 12.sp,
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(taskBg)
-                    .padding(horizontal = 2.dp, vertical = 2.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = taskText,
-                    color = BarText,
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(noteBg)
-                    .padding(horizontal = 2.dp, vertical = 2.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (data.noteCount > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .background(dotColor, CircleShape),
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = data.noteCount.toString(),
-                            color = BarText,
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "—",
-                        color = BarText,
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-        }
+        Text(
+            text = date.dayOfMonth.toString(),
+            color = if (isToday) AppScreenHeader.titleColor else DateNumberMuted,
+            fontSize = 12.sp,
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        MonthDaySummaryCard(
+            text = taskText,
+            backgroundColor = taskCardBg,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        MonthDaySummaryCard(
+            text = if (data.noteCount > 0) data.noteCount.toString() else "—",
+            backgroundColor = noteCardBg,
+        )
+    }
+}
+
+@Composable
+private fun MonthDaySummaryCard(
+    text: String,
+    backgroundColor: Color,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(SummaryCardHeight)
+            .clip(RoundedCornerShape(SummaryCardRadius))
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = SummaryCardText,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+        )
     }
 }

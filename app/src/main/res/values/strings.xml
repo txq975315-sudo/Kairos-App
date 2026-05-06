@@ -8,7 +8,7 @@
     <string name="widget_picker_label_3x3">Kairos · 3×3</string>
     <string name="widget_picker_description_1x1">Compact summary: date, progress, optional quote, or Todo layout (1×1 Todo) in settings.</string>
     <string name="widget_picker_description_2x2">Date, task list, and daily quote. Configure layout and background in widget settings.</string>
-    <string name="widget_picker_description_3x1">Wide strip: pick Todo, stats, or week overview layouts in settings.</string>
+    <string name="widget_picker_description_3x1">Wide strip: yesterday / today (four time-block cards) / tomorrow; other layouts in settings.</string>
     <string name="widget_picker_description_3x3">Month heatmap and tasks. Choose today-only or full-month mode in settings.</string>
     <string name="task_content_desc_add_task">Add task</string>
     <string name="task_content_desc_time_icon">Time icon</string>

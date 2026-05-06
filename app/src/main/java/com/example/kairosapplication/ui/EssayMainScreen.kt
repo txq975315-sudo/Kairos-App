@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,11 +14,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.*
@@ -73,6 +76,7 @@ import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.components.NoteCardVariant
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
+import com.example.kairosapplication.ui.project.ProjectTimelineScreen
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -134,7 +138,6 @@ fun EssayMainScreen(
     onNavigateToEditor: (Long?) -> Unit,
     /** Topic tab: create essay with this primary (non-freestyle); editor locks primary. */
     onNavigateToNewNoteFromTopic: (String) -> Unit,
-    onNavigateToProject: (Long) -> Unit,
     openTopicTabWithPrimary: String? = null,
     onOpenTopicTabConsumed: () -> Unit = {},
 ) {
@@ -148,6 +151,7 @@ fun EssayMainScreen(
     var continueCreateNoteId by remember { mutableStateOf<Long?>(null) }
     var deleteConfirmNoteId by remember { mutableStateOf<Long?>(null) }
     var topicPrimaryFilter by remember { mutableStateOf<String?>(null) }
+    var selectedEssayProjectId by remember { mutableStateOf<Long?>(null) }
 
     val uiState by taskViewModel.uiState.collectAsState()
     val inboxCount = uiState.noteInbox.size
@@ -171,6 +175,9 @@ fun EssayMainScreen(
 
     LaunchedEffect(selectedTab) {
         expandedNoteId = null
+        if (selectedTab != EssayTab.PROJECT) {
+            selectedEssayProjectId = null
+        }
     }
 
     LaunchedEffect(openTopicTabWithPrimary) {
@@ -438,10 +445,15 @@ fun EssayMainScreen(
                         primaryFilter = topicPrimaryFilter,
                         onPrimaryFilterChange = { topicPrimaryFilter = it },
                     )
-                    EssayTab.PROJECT -> ProjectTabContent(
+                    EssayTab.PROJECT -> EssayProjectTabPane(
                         projects = uiState.noteProjects.sortedByDescending { it.updatedAt },
                         notes = allTimelineNotes,
-                        onProjectClick = onNavigateToProject
+                        selectedProjectId = selectedEssayProjectId,
+                        onSelectProject = { selectedEssayProjectId = it },
+                        onClearProjectSelection = { selectedEssayProjectId = null },
+                        taskViewModel = taskViewModel,
+                        onOpenNoteEditor = { id -> onNavigateToEditor(id) },
+                        onNavigateToNewNote = { onNavigateToEditor(null) },
                     )
                 }
             }
@@ -977,21 +989,141 @@ private fun EmptyTopicState(modifier: Modifier = Modifier) {
     }
 }
 
+private fun projectNoteCountsByProject(notes: List<Note>): Map<Long, Int> =
+    notes
+        .asSequence()
+        .filter { it.status != NoteStatus.DELETED }
+        .flatMap { note -> note.projectIds.map { pid -> pid to note } }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { it.value.distinctBy { n -> n.id }.size }
+
+@Composable
+private fun EssayProjectTabPane(
+    projects: List<Project>,
+    notes: List<Note>,
+    selectedProjectId: Long?,
+    onSelectProject: (Long) -> Unit,
+    onClearProjectSelection: () -> Unit,
+    taskViewModel: TaskViewModel,
+    onOpenNoteEditor: (Long) -> Unit,
+    onNavigateToNewNote: () -> Unit,
+) {
+    val projectNoteCounts = remember(notes) { projectNoteCountsByProject(notes) }
+    if (projects.isEmpty()) {
+        EmptyProjectState(modifier = Modifier.fillMaxSize())
+        return
+    }
+    val openId = selectedProjectId
+    if (openId == null) {
+        ProjectTabContent(
+            projects = projects,
+            noteCounts = projectNoteCounts,
+            onProjectClick = onSelectProject
+        )
+    } else {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.Top
+        ) {
+            ProjectSidebarRail(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.22f),
+                projects = projects,
+                noteCounts = projectNoteCounts,
+                selectedId = openId,
+                onSelectProject = onSelectProject,
+            )
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .fillMaxHeight()
+                    .background(Color(0xFFE8E8E8))
+            )
+            Box(
+                modifier = Modifier
+                    .weight(0.78f)
+                    .fillMaxHeight()
+            ) {
+                ProjectTimelineScreen(
+                    projectId = openId,
+                    taskViewModel = taskViewModel,
+                    onBack = onClearProjectSelection,
+                    onNoteClick = onOpenNoteEditor,
+                    onNavigateToNewNote = onNavigateToNewNote,
+                    embedded = true,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectSidebarRail(
+    modifier: Modifier,
+    projects: List<Project>,
+    noteCounts: Map<Long, Int>,
+    selectedId: Long,
+    onSelectProject: (Long) -> Unit,
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(end = 6.dp, top = 2.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        items(
+            items = projects,
+            key = { it.id }
+        ) { project ->
+            val selected = project.id == selectedId
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelectProject(project.id) },
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selected) Color(0xFFEEF2FF) else Color.White
+                ),
+                border = if (selected) {
+                    BorderStroke(1.dp, Color(0xFF8A7CF8).copy(alpha = 0.45f))
+                } else {
+                    null
+                },
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Text(text = "📁", fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = project.name,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = PrimaryTextColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${noteCounts[project.id] ?: 0} notes",
+                        fontSize = 11.sp,
+                        color = SecondaryTextColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun ProjectTabContent(
     projects: List<Project>,
-    notes: List<Note>,
+    noteCounts: Map<Long, Int>,
     onProjectClick: (Long) -> Unit
 ) {
-    val projectNoteCounts = remember(notes) {
-        notes
-            .asSequence()
-            .filter { it.status != NoteStatus.DELETED }
-            .flatMap { note -> note.projectIds.map { pid -> pid to note } }
-            .groupBy({ it.first }, { it.second })
-            .mapValues { it.value.distinctBy { n -> n.id }.size }
-    }
-
     if (projects.isEmpty()) {
         EmptyProjectState(modifier = Modifier.fillMaxSize())
         return
@@ -1007,7 +1139,7 @@ private fun ProjectTabContent(
         ) { project ->
             ProjectSummaryCard(
                 project = project,
-                noteCount = projectNoteCounts[project.id] ?: 0,
+                noteCount = noteCounts[project.id] ?: 0,
                 onClick = { onProjectClick(project.id) }
             )
         }

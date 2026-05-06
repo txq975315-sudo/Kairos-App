@@ -3,7 +3,7 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="@android:color/white">
 
     <ImageView
         android:id="@+id/widget_background_bitmap"
@@ -17,107 +17,503 @@
         android:id="@+id/widget_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:baselineAligned="false"
         android:orientation="horizontal"
-        android:padding="10dp">
+        android:padding="6dp">
 
         <LinearLayout
-            android:id="@+id/widget_left_panel"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_day_of_week"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="周二"
-                android:textColor="#1A1A1A"
-                android:textSize="14sp" />
-
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="0dp"
-                android:layout_gravity="center"
-                android:layout_weight="1">
-
-                <ProgressBar
-                    android:id="@+id/widget_progress_circle"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_gravity="center"
-                    android:max="100"
-                    android:progress="0"
-                    android:progressDrawable="@drawable/widget_progress_drawable"
-                    android:rotation="-90" />
-
-                <TextView
-                    android:id="@+id/widget_progress_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="0/0"
-                    android:textColor="#1A1A1A"
-                    android:textSize="11sp" />
-            </FrameLayout>
-        </LinearLayout>
-
-        <LinearLayout
+            android:id="@+id/widget_yesterday_column"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2"
-            android:orientation="vertical">
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="2dp"
+            android:paddingVertical="4dp">
 
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/widget_yesterday_day"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5"
+                android:textColor="@color/widget_date_secondary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/widget_date"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingEnd="32dp"
-                    android:text="05-06"
-                    android:textColor="#1A1A1A"
-                    android:textSize="14sp" />
-
-                <ImageButton
-                    android:id="@+id/widget_create_button"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="top|end"
-                    android:background="@android:color/transparent"
-                    android:contentDescription="@null"
-                    android:padding="2dp"
-                    android:scaleType="centerInside"
-                    android:src="@android:drawable/ic_input_add" />
-            </FrameLayout>
-
-            <FrameLayout
+            <TextView
+                android:id="@+id/widget_yesterday_tasks"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1">
+                android:layout_marginTop="2dp"
+                android:layout_weight="1"
+                android:gravity="start|top"
+                android:lineSpacingExtra="1dp"
+                android:text="—"
+                android:textColor="@color/widget_task_muted"
+                android:textSize="8sp" />
+        </LinearLayout>
 
-                <ListView
-                    android:id="@+id/widget_task_list"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:divider="@null"
-                    android:dividerHeight="0dp"
-                    android:scrollbars="none" />
+        <LinearLayout
+            android:id="@+id/widget_today_center_column"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginHorizontal="2dp"
+            android:layout_weight="6"
+            android:background="@android:color/transparent"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="2dp"
+            android:paddingVertical="2dp">
 
-                <TextView
-                    android:id="@+id/widget_task_list_empty"
+            <TextView
+                android:id="@+id/widget_today_date_line"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingBottom="4dp"
+                android:text="6 · 今日 · 周三 · 05-06"
+                android:textColor="@color/widget_today_day_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_today_overflow_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text=""
+                android:textColor="@color/widget_date_secondary"
+                android:textSize="8sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginBottom="2dp"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:text="暂无任务"
-                    android:textColor="#9E9E9E"
-                    android:textSize="11sp"
-                    android:visibility="gone" />
-            </FrameLayout>
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_0"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_0_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_0_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:gravity="center_vertical"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_1"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_1_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_1_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginBottom="2dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_2"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_2_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_2_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_3"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_3_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_3_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginBottom="2dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_4"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_4_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_4_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_5"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_5_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_5_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginBottom="2dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_6"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_6_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_6_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_7"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_7_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_7_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_8"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_8_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_8_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/widget_today_cell_9"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="2dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_9_mark"
+                            android:layout_width="12dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="○"
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/widget_today_cell_9_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:text=""
+                            android:textColor="@color/widget_task_muted"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_tomorrow_column"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="2dp"
+            android:paddingVertical="4dp">
+
+            <TextView
+                android:id="@+id/widget_tomorrow_day"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="7"
+                android:textColor="@color/widget_date_secondary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_tomorrow_tasks"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="2dp"
+                android:layout_weight="1"
+                android:gravity="start|top"
+                android:lineSpacingExtra="1dp"
+                android:text="—"
+                android:textColor="@color/widget_task_muted"
+                android:textSize="8sp" />
         </LinearLayout>
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/widget_create_button"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="6dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="@null"
+        android:padding="2dp"
+        android:scaleType="centerInside"
+        android:src="@android:drawable/ic_input_add" />
 </FrameLayout>

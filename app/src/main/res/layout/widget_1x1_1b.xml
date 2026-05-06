@@ -45,41 +45,92 @@
                 android:textColor="#9E9E9E"
                 android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/widget_todo_line_0"
+            <LinearLayout
+                android:id="@+id/widget_todo_row_0"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:ellipsize="end"
                 android:gravity="center_vertical"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="#1A1A1A"
-                android:textSize="10sp" />
+                android:orientation="horizontal"
+                android:visibility="gone">
 
-            <TextView
-                android:id="@+id/widget_todo_line_1"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="#1A1A1A"
-                android:textSize="10sp" />
+                <TextView
+                    android:id="@+id/widget_todo_0_mark"
+                    android:layout_width="16dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="○"
+                    android:textColor="#9E9E9E"
+                    android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/widget_todo_line_2"
+                <TextView
+                    android:id="@+id/widget_todo_0_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_todo_row_1"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:ellipsize="end"
                 android:gravity="center_vertical"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="#1A1A1A"
-                android:textSize="10sp" />
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/widget_todo_1_mark"
+                    android:layout_width="16dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="○"
+                    android:textColor="#9E9E9E"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_todo_1_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/widget_todo_row_2"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/widget_todo_2_mark"
+                    android:layout_width="16dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="○"
+                    android:textColor="#9E9E9E"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/widget_todo_2_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="10sp" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/widget_daily_quote"

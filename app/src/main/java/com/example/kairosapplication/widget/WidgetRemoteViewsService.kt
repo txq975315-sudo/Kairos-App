@@ -3,6 +3,10 @@ package com.example.kairosapplication.widget
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.graphics.Color
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StrikethroughSpan
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import com.example.kairosapplication.R
@@ -44,23 +48,53 @@ class WidgetRemoteViewsFactory(
         val views = RemoteViews(context.packageName, R.layout.widget_task_item)
         if (position in rows.indices) {
             val row = rows[position]
-            views.setTextViewText(R.id.task_title, row.title.ifBlank { "—" })
             val done = row.done
-            views.setTextViewText(R.id.task_status, if (done) "✔" else "○")
-            views.setTextColor(
-                R.id.task_status,
-                if (done) Color.parseColor("#7B61FF") else Color.parseColor("#9E9E9E")
+            views.setTextViewText(R.id.task_status, if (done) "✓" else "○")
+            views.setTextColor(R.id.task_status, WidgetTaskStyle.markColorArgb(done))
+            val title = row.title.ifBlank { "—" }
+            if (done) {
+                val ssb = SpannableStringBuilder(title)
+                ssb.setSpan(
+                    StrikethroughSpan(),
+                    0,
+                    ssb.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                ssb.setSpan(
+                    ForegroundColorSpan(WidgetTaskStyle.titleColorArgb(true)),
+                    0,
+                    ssb.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                views.setTextViewText(R.id.task_title, ssb)
+            } else {
+                views.setTextViewText(R.id.task_title, title)
+                views.setTextColor(R.id.task_title, WidgetTaskStyle.titleColorArgb(false))
+            }
+            views.setInt(
+                R.id.widget_task_row,
+                "setBackgroundColor",
+                WidgetTaskStyle.urgencyRowBackgroundArgb(row.urgency, done)
             )
+            views.setTextViewText(R.id.task_urgency_dot, "●")
+            views.setTextColor(
+                R.id.task_urgency_dot,
+                WidgetTaskStyle.urgencyPriorityDotArgb(row.urgency, done)
+            )
+        } else {
+            views.setTextViewText(R.id.task_status, "")
+            views.setTextViewText(R.id.task_title, "")
+            views.setTextViewText(R.id.task_urgency_dot, "")
+            views.setInt(R.id.widget_task_row, "setBackgroundColor", Color.TRANSPARENT)
         }
         val fillInIntent = Intent().apply {
             if (position in rows.indices && rows[position].taskId >= 0) {
-                putExtra(WidgetClickHandler.EXTRA_TARGET_PAGE, WidgetClickHandler.TARGET_EDIT_TASK)
                 putExtra(WidgetClickHandler.EXTRA_TASK_ID, rows[position].taskId)
-            } else {
-                putExtra(WidgetClickHandler.EXTRA_TARGET_PAGE, WidgetClickHandler.TARGET_TODAY)
             }
         }
         views.setOnClickFillInIntent(R.id.widget_task_row, fillInIntent)
+        views.setOnClickFillInIntent(R.id.task_status, fillInIntent)
+        views.setOnClickFillInIntent(R.id.task_urgency_dot, fillInIntent)
         return views
     }
 

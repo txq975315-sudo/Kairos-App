@@ -119,7 +119,8 @@ fun MainScreen(
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
     val widgetNav by widgetIntentViewModel.widgetNav.collectAsState(initial = 0 to WidgetNavPayload(null))
 
-    var pendingWidgetCreate by remember { mutableStateOf(false) }
+    /** Incremented on widget "create" tap so Today opens [CreateTaskBottomSheet] like in-app +. */
+    var widgetCreateSheetNonce by remember { mutableStateOf(0) }
     var pendingWidgetEditTaskId by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(widgetNav.first) {
@@ -131,7 +132,7 @@ fun MainScreen(
             WidgetClickHandler.TARGET_HOME -> selectedTab = AppTab.Today
             WidgetClickHandler.TARGET_CREATE -> {
                 selectedTab = AppTab.Today
-                pendingWidgetCreate = true
+                widgetCreateSheetNonce++
             }
             WidgetClickHandler.TARGET_EDIT_TASK -> {
                 val id = widgetNav.second.taskId
@@ -158,14 +159,6 @@ fun MainScreen(
     var showMiscSettings by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
-    LaunchedEffect(selectedTab, pendingWidgetCreate) {
-        if (selectedTab == AppTab.Today && pendingWidgetCreate) {
-            pendingWidgetCreate = false
-            navController.navigate("create") {
-                launchSingleTop = true
-            }
-        }
-    }
     val essayNavController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val essayNavBackStackEntry by essayNavController.currentBackStackEntryAsState()
@@ -279,7 +272,8 @@ fun MainScreen(
                             onQuoteClick = { navController.navigate("quote_settings") },
                             taskViewModel = taskViewModel,
                             widgetEditTaskId = pendingWidgetEditTaskId,
-                            onConsumedWidgetEditIntent = { pendingWidgetEditTaskId = null }
+                            onConsumedWidgetEditIntent = { pendingWidgetEditTaskId = null },
+                            widgetCreateSheetNonce = widgetCreateSheetNonce
                         )
                     }
                     composable("create") {
@@ -438,7 +432,8 @@ fun MainScreen(
                     else -> MineScreen(
                         mineViewModel = mineViewModel,
                         onNavigateToMoodCalendar = { showMoodCalendar = true },
-                        onOpenSettings = { showSettingsScreen = true }
+                        onOpenSettings = { showSettingsScreen = true },
+                        onOpenTheme = { showThemeSettings = true }
                     )
                 }
             }

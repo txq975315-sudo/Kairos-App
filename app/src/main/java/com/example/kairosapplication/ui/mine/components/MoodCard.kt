@@ -17,11 +17,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,24 +45,26 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.mine.EmojiConstants
-import com.example.kairosapplication.ui.mine.MineViewModel
 import com.example.taskmodel.model.MoodRecord
 import java.time.LocalDate
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-private val CardSurface = Color(0xFFF8F8F8)
+private val CardSurface = Color(0xFFFFFFFF)
 private val CardStroke = Color.Black.copy(alpha = 0.2f)
 private val TitleColor = Color(0xFF1A1A1A)
 private val SubGray = Color(0xFF9E9E9E)
-private val DividerMine = Color(0xFFE8E5E0)
 private val Green = Color(0xFF4CAF50)
 private val LinkBlue = Color(0xFF2196F3)
 private val RingGray = Color(0xFFE0E0E0)
@@ -92,9 +92,16 @@ fun MoodCard(
     val floatScale = remember { Animatable(1f) }
     var floatAlpha by remember { mutableFloatStateOf(1f) }
     val weekMap = remember(weekMoods) { weekMoods.associateBy { it.date } }
-    val monday = remember { MineViewModel.mondayOfWeekContaining(LocalDate.now()) }
-    val weekDates = remember(monday) { (0..6).map { monday.plusDays(it.toLong()) } }
-    val weekLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val lang = LocalCurrentLanguage.current.value
+    val weekLabels = remember(lang) {
+        if (lang == LocalizationManager.Language.ZH) {
+            listOf("日", "一", "二", "三", "四", "五", "六")
+        } else {
+            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+        }
+    }
+    val sunday = remember { sundayStartOfWeekContaining(LocalDate.now()) }
+    val weekDates = remember(sunday) { (0..6).map { sunday.plusDays(it.toLong()) } }
     val today = LocalDate.now()
 
     fun rectContainsPad(r: Rect, p: Offset, pad: Float): Boolean {
@@ -137,72 +144,56 @@ fun MoodCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 2.dp,
-                    shape = RoundedCornerShape(12.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.12f),
-                    spotColor = Color.Black.copy(alpha = 0.12f)
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.1f),
+                    spotColor = Color.Black.copy(alpha = 0.1f)
                 )
-                .background(CardSurface, RoundedCornerShape(12.dp))
-                .border(0.5.dp, CardStroke, RoundedCornerShape(12.dp))
+                .background(CardSurface, RoundedCornerShape(16.dp))
+                .border(0.5.dp, CardStroke, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
             Text(
-                text = LocalizedStrings.get("my_mood"),
+                text = LocalizedStrings.get("mine_mood_card_title"),
                 color = TitleColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.SansSerif
             )
-            Spacer(Modifier.height(4.dp))
-            HorizontalDivider(
-                modifier = Modifier.fillMaxWidth(),
-                thickness = 0.5.dp,
-                color = DividerMine
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = LocalizedStrings.get("today_mood"),
-                color = SubGray,
-                fontSize = 12.sp
-            )
-            Spacer(Modifier.height(8.dp))
-            Column(
+            Spacer(Modifier.height(10.dp))
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Color(0xFFE8E8E8), RoundedCornerShape(8.dp))
-                    .padding(12.dp)
+                    .height(108.dp)
+                    .padding(vertical = 2.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
+                val clusterW = 256.dp
+                val clusterH = 102.dp
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .width(clusterW)
+                        .height(clusterH)
                 ) {
-                    EmojiConstants.CUSTOM_EMOJIS.forEach { emoji ->
-                        val selected = todayMood?.moodIcon == emoji.id
+                    EmojiConstants.CUSTOM_EMOJIS.forEachIndexed { i, emoji ->
+                        val (xo, yo) = moodEmojiClusterSlots().getOrNull(i) ?: return@forEachIndexed
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (selected) Green.copy(alpha = 0.1f) else Color.Transparent
-                                )
-                                .then(
-                                    if (selected) Modifier.border(2.dp, Green, RoundedCornerShape(8.dp))
-                                    else Modifier
-                                ),
+                                .offset(xo, yo)
+                                .size(48.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             DraggableCustomEmojiItem(
                                 emojiItem = emoji,
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(44.dp),
+                                displaySize = 40.dp,
                                 onDragStart = { root ->
                                     draggingIcon = emoji.id
                                     dragFingerRoot = root
                                     dragTotal = 0f
                                     hoveredDate = null
-                                    scope.launch { floatScale.snapTo(0.8f) }
-                                    floatAlpha = 0.7f
+                                    scope.launch { floatScale.snapTo(0.82f) }
+                                    floatAlpha = 0.75f
                                 },
                                 onDrag = { delta ->
                                     dragTotal += hypot(delta.x, delta.y)
@@ -222,7 +213,7 @@ fun MoodCard(
                                     if (id != null && hit != null) {
                                         performConfirm()
                                         scope.launch {
-                                            floatScale.animateTo(1.2f, spring())
+                                            floatScale.animateTo(1.15f, spring())
                                             floatScale.animateTo(1f, spring())
                                         }
                                         onMoodSelected(hit, id)
@@ -247,13 +238,7 @@ fun MoodCard(
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = LocalizedStrings.get("this_week"),
-                color = SubGray,
-                fontSize = 12.sp
-            )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(18.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -347,15 +332,37 @@ fun MoodCard(
                     painter = painterResource(id = item.drawableResId),
                     contentDescription = LocalizedStrings.emojiLabel(item.id),
                     contentScale = ContentScale.Fit,
-                    modifier = dragMod.size(32.dp)
+                    modifier = dragMod.size(48.dp)
                 )
             } else {
                 Text(
                     text = draggingIcon!!,
-                    fontSize = 28.sp,
+                    fontSize = 34.sp,
                     modifier = dragMod
                 )
             }
         }
     }
 }
+
+private fun sundayStartOfWeekContaining(d: LocalDate): LocalDate {
+    val dow = d.dayOfWeek.value
+    return d.minusDays((dow % 7).toLong())
+}
+
+/** Two loose rows: varied X gaps and ≥4 distinct top Y anchors (staggered). */
+/**
+ * Non-overlapping 48×48 slots in a centered 256×102 region: five + four, second row staggered.
+ * Distinct top Y values: 0 and 54 (row gap); slight vertical jitter on a few slots for ≥4 top anchors.
+ */
+private fun moodEmojiClusterSlots(): List<Pair<Dp, Dp>> = listOf(
+    0.dp to 0.dp,
+    52.dp to 2.dp,
+    104.dp to 0.dp,
+    156.dp to 3.dp,
+    208.dp to 1.dp,
+    26.dp to 54.dp,
+    78.dp to 56.dp,
+    130.dp to 54.dp,
+    182.dp to 55.dp
+)

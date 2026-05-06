@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
@@ -46,7 +47,11 @@ fun NoteCardTimeline(
     expandable: Boolean = false,
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
-    publishedActions: PublishedNoteCardActions? = null
+    publishedActions: PublishedNoteCardActions? = null,
+    /** Vertical line segment below the time column dot (shorten when stacking multiple timeline cards). */
+    railExtensionBelowDot: Dp = 100.dp,
+    /** When true and collapsed: one line each for topic (primary · secondary), summary, body; expand restores full layout. */
+    timelineCompactThreeLines: Boolean = false,
 ) {
     val zone = ZoneId.systemDefault()
     val timeStr = remember(note.createdAt) {
@@ -70,7 +75,17 @@ fun NoteCardTimeline(
     }
     val projectCount = note.projectIds.size
 
-    val bodyMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE
+    val headlineTopic = remember(note.primaryCategory, note.secondaryCategory) {
+        val primary = NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
+        val sec = note.secondaryCategory.trim()
+        if (sec.isNotBlank()) "$primary · $sec" else primary
+    }
+
+    val bodyMaxLines = when {
+        timelineCompactThreeLines && !expanded -> 1
+        expandable && !expanded -> 3
+        else -> Int.MAX_VALUE
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -92,7 +107,7 @@ fun NoteCardTimeline(
             Box(
                 modifier = Modifier
                     .width(2.dp)
-                    .height(100.dp)
+                    .height(railExtensionBelowDot)
                     .background(AppColors.TimelineLine)
             )
         }
@@ -110,98 +125,141 @@ fun NoteCardTimeline(
                     .fillMaxWidth()
                     .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
             ) {
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(4.dp)
-                            .height(44.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(categoryColor)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = categoryLabel,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppColors.PrimaryText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                if (timelineCompactThreeLines && !expanded) {
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(categoryColor)
                         )
-                        if (secondaryLine.isNotBlank()) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = secondaryLine,
+                                text = headlineTopic,
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = AppColors.SecondaryText,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.PrimaryText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = note.behaviorSummary.ifBlank { "—" },
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.PrimaryText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = note.body.ifBlank { " " },
-                    fontSize = 14.sp,
-                    color = AppColors.SecondaryText,
-                    maxLines = bodyMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 20.sp
-                )
-                if (note.imageUris.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    NoteImageRow(imageUris = note.imageUris, maxImages = 4)
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        MoodOrEmoji(note.moodIcon, tint = AppColors.SecondaryText)
-                        if (tagsPreview.isNotBlank()) {
+                            Spacer(Modifier.height(2.dp))
                             Text(
-                                text = tagsPreview,
-                                fontSize = 12.sp,
-                                color = AppColors.HintText,
+                                text = note.behaviorSummary.ifBlank { "—" },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.PrimaryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = note.body.ifBlank { " " },
+                                fontSize = 13.sp,
+                                color = AppColors.SecondaryText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                                lineHeight = 15.sp
                             )
                         }
                     }
-                }
-                if (projectCount > 0) {
-                    Spacer(Modifier.height(4.dp))
-                    val assoc = buildString {
-                        append(projectFirstName ?: "Project")
-                        append(" · ")
-                        append(projectCount)
-                        append(" linked")
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(categoryColor)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = categoryLabel,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.PrimaryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (secondaryLine.isNotBlank()) {
+                                Text(
+                                    text = secondaryLine,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppColors.SecondaryText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
+                    Spacer(Modifier.height(6.dp))
                     Text(
-                        text = assoc,
-                        fontSize = 12.sp,
-                        color = AppColors.HintText,
+                        text = note.behaviorSummary.ifBlank { "—" },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.PrimaryText,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = note.body.ifBlank { " " },
+                        fontSize = 14.sp,
+                        color = AppColors.SecondaryText,
+                        maxLines = bodyMaxLines,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 20.sp
+                    )
+                    if (note.imageUris.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        NoteImageRow(imageUris = note.imageUris, maxImages = 4)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            MoodOrEmoji(note.moodIcon, tint = AppColors.SecondaryText)
+                            if (tagsPreview.isNotBlank()) {
+                                Text(
+                                    text = tagsPreview,
+                                    fontSize = 12.sp,
+                                    color = AppColors.HintText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                            }
+                        }
+                    }
+                    if (projectCount > 0) {
+                        Spacer(Modifier.height(4.dp))
+                        val assoc = buildString {
+                            append(projectFirstName ?: "Project")
+                            append(" · ")
+                            append(projectCount)
+                            append(" linked")
+                        }
+                        Text(
+                            text = assoc,
+                            fontSize = 12.sp,
+                            color = AppColors.HintText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 if (expandable && expanded) {
                     Spacer(Modifier.height(10.dp))

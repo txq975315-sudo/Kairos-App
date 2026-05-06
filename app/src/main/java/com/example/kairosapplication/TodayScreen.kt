@@ -123,7 +123,9 @@ fun TodayScreen(
     onQuoteClick: () -> Unit = {},
     taskViewModel: TaskViewModel,
     widgetEditTaskId: Int? = null,
-    onConsumedWidgetEditIntent: () -> Unit = {}
+    onConsumedWidgetEditIntent: () -> Unit = {},
+    /** Each increment opens the same [CreateTaskBottomSheet] used from time blocks (default Anytime). */
+    widgetCreateSheetNonce: Int = 0
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
     val allTasks = uiState.tasks
@@ -206,6 +208,12 @@ fun TodayScreen(
             backgroundColor = TaskUtils.getTimeBlockColor(timeBlock),
             titleColor = TaskUtils.getTimeBlockTitleColor(timeBlock)
         )
+    }
+
+    LaunchedEffect(widgetCreateSheetNonce) {
+        if (widgetCreateSheetNonce > 0) {
+            showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME)
+        }
     }
 
     val applyToAllTaskLists: ((List<Task>) -> List<Task>) -> Unit = { updater ->

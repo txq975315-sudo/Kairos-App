@@ -16,6 +16,8 @@ enum class WidgetLayoutKind(val displayName: String) {
     _3A("Todo展示类"),
     _3B("统计类"),
     _3C("一周任务条"),
+    /** Week strip + scrollable day tasks + daily quote (3×1, like 3×3 week area). */
+    _3D("周任务+一句"),
     _4A("展示今日"),
     _4B("展示全部")
 }

@@ -64,7 +64,12 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 private fun layoutKindsFor(size: WidgetSize): List<WidgetLayoutKind> = when (size) {
     WidgetSize._1X1 -> listOf(WidgetLayoutKind._1A, WidgetLayoutKind._1B)
     WidgetSize._2X2 -> listOf(WidgetLayoutKind._2A)
-    WidgetSize._3X1 -> listOf(WidgetLayoutKind._3A, WidgetLayoutKind._3B, WidgetLayoutKind._3C)
+    WidgetSize._3X1 -> listOf(
+        WidgetLayoutKind._3A,
+        WidgetLayoutKind._3B,
+        WidgetLayoutKind._3C,
+        WidgetLayoutKind._3D,
+    )
     WidgetSize._3X3 -> listOf(WidgetLayoutKind._4A, WidgetLayoutKind._4B)
 }
 

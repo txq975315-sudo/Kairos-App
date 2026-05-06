@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -26,11 +27,16 @@ import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardVariant
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
+import com.example.kairosapplication.ui.view.TimelineTasksByTimeBlocks
 import com.example.kairosapplication.ui.view.ViewUiState
 import com.example.kairosapplication.ui.view.viewClickable
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Task
+import com.example.taskmodel.util.TaskUtils
 import java.time.LocalDate
+
+private const val TodayTabMaxTaskLines = 7
+private const val TodayTabMaxNotePreview = 7
 
 @Composable
 fun TodayTab(
@@ -53,9 +59,11 @@ fun TodayTab(
     val scroll = rememberScrollState()
     val tasks = uiState.todayTasks
     val notes = uiState.todayNotes
+    val sortedTasks = remember(tasks) { TaskUtils.sortTasks(tasks) }
     val completedCount = tasks.count { it.isCompleted }
     val totalCount = tasks.size
     val isCalendarToday = focusedDate == LocalDate.now()
+    val previewNotes = remember(notes) { notes.take(TodayTabMaxNotePreview) }
 
     Column(
         modifier = modifier
@@ -69,33 +77,33 @@ fun TodayTab(
                 onNextDay = onNextDay,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 color = AppColors.CardBackground,
                 shadowElevation = 2.dp,
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                     Text(
                         text = "${LocalizedStrings.get("view_todo_prefix")} ($completedCount/$totalCount)",
                         color = AppColors.HintText,
                         fontSize = 12.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     if (tasks.isNotEmpty()) {
                         HorizontalDivider(
                             modifier = Modifier.fillMaxWidth(),
                             thickness = 0.5.dp,
                             color = AppColors.Divider,
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                     if (tasks.isEmpty()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 20.dp),
+                                .padding(vertical = 16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -110,60 +118,55 @@ fun TodayTab(
                             )
                         }
                     } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            tasks.take(5).forEach { task ->
-                                key(task.id) {
-                                    TaskRow(
-                                        task = task,
-                                        onToggleComplete = { onToggleTaskComplete(task) },
-                                    )
-                                }
-                            }
-                        }
-                        if (tasks.size > 5) {
-                            val more = tasks.size - 5
-                            Spacer(modifier = Modifier.height(8.dp))
+                        TimelineTasksByTimeBlocks(
+                            sortedTasks = sortedTasks,
+                            maxVisible = TodayTabMaxTaskLines,
+                            onToggleTaskComplete = onToggleTaskComplete,
+                        )
+                        if (tasks.size > TodayTabMaxTaskLines) {
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = LocalizedStrings.get("view_see_all_more").replace("{n}", more.toString()),
+                                text = LocalizedStrings.get("view_see_all_more")
+                                    .replace("{n}", (tasks.size - TodayTabMaxTaskLines).toString()),
                                 color = AppColors.HintText,
                                 fontSize = 12.sp,
                                 textAlign = TextAlign.End,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .viewClickable(onRequestOpenToday)
-                                    .padding(vertical = 4.dp),
+                                    .padding(vertical = 2.dp),
                             )
                         }
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 color = AppColors.CardBackground,
                 shadowElevation = 2.dp,
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                     Text(
                         text = "${LocalizedStrings.get("view_notes_section")} (${notes.size})",
                         color = AppColors.HintText,
                         fontSize = 12.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     if (notes.isNotEmpty()) {
                         HorizontalDivider(
                             modifier = Modifier.fillMaxWidth(),
                             thickness = 0.5.dp,
                             color = AppColors.Divider,
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                     if (notes.isEmpty()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 20.dp),
+                                .padding(vertical = 16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -174,12 +177,13 @@ fun TodayTab(
                             )
                         }
                     } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            notes.take(3).forEach { note ->
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            previewNotes.forEachIndexed { index, note ->
                                 key(note.id) {
+                                    val last = index == previewNotes.lastIndex
                                     NoteCard(
                                         note = note,
-                                        variant = NoteCardVariant.TOPIC,
+                                        variant = NoteCardVariant.TIMELINE,
                                         onNoteClick = { },
                                         modifier = Modifier.fillMaxWidth(),
                                         projectsById = projectsById,
@@ -196,12 +200,18 @@ fun TodayTab(
                                         } else {
                                             null
                                         },
+                                        timelineRailExtensionBelowDot = when {
+                                            previewNotes.size == 1 -> 40.dp
+                                            last -> 12.dp
+                                            else -> 28.dp
+                                        },
+                                        timelineCompactThreeLines = true,
                                     )
                                 }
                             }
                         }
-                        if (notes.size > 3) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                        if (notes.size > TodayTabMaxNotePreview) {
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = LocalizedStrings.get("view_see_all"),
                                 color = AppColors.HintText,
@@ -210,13 +220,13 @@ fun TodayTab(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .viewClickable(onRequestOpenEssay)
-                                    .padding(vertical = 4.dp),
+                                    .padding(vertical = 2.dp),
                             )
                         }
                     }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }

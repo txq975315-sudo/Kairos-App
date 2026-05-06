@@ -14,11 +14,13 @@ import com.example.kairosapplication.widget.data.WidgetDataRepository
 import com.example.kairosapplication.widget.data.WidgetLayoutKind
 import com.example.kairosapplication.widget.data.WidgetSize
 import com.example.kairosapplication.widget.data.WidgetTaskRow
+import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.repository.TaskRepository
 import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,10 +43,17 @@ data class Widget2x2DisplayState(
     val tasks: List<WidgetTaskRow>,
     val showTasks: Boolean,
     val showQuote: Boolean,
-    val language: LocalizationManager.Language
+    val language: LocalizationManager.Language,
+    val monthTitle: String,
+    val monthGrid: String
 )
 
-data class Widget1x1TodoLine(val title: String, val done: Boolean)
+data class Widget1x1TodoLine(
+    val title: String,
+    val done: Boolean,
+    val taskId: Int = -1,
+    val urgency: Int = TaskConstants.URGENCY_NORMAL
+)
 
 data class Widget1x1TodoDisplayState(
     val dateText: String,
@@ -149,7 +158,14 @@ object WidgetManager {
         val total = if (showTasks) dayTasks.size else 0
         val completed = if (showTasks) dayTasks.count { it.isCompleted } else 0
         val lines = if (showTasks) {
-            dayTasks.take(3).map { Widget1x1TodoLine(it.title.ifBlank { "—" }, it.isCompleted) }
+            dayTasks.take(3).map {
+                Widget1x1TodoLine(
+                    it.title.ifBlank { "—" },
+                    it.isCompleted,
+                    it.id,
+                    it.urgency
+                )
+            }
         } else {
             emptyList()
         }
@@ -183,7 +199,7 @@ object WidgetManager {
             LocalizationManager.Language.fromCode(DataStoreManager(appContext).getLanguageSync())
         val locale =
             if (language == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
-        val dateLine = today.format(DateTimeFormatter.ofPattern("MM-dd EEEE", locale))
+        val dateLine = today.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
         val taskRepository = TaskRepository(appContext)
         val dayTasks =
             TaskUtils.sortTasks(taskRepository.getTasksSnapshot().filter { it.taskDate == today })
@@ -214,11 +230,12 @@ object WidgetManager {
         }
         val tasks = if (showTasks) {
             dayTasks.take(10).map {
-                WidgetTaskRow(it.title.ifBlank { "—" }, it.isCompleted, it.id)
+                WidgetTaskRow(it.title.ifBlank { "—" }, it.isCompleted, it.id, it.urgency)
             }
         } else {
             emptyList()
         }
+        val (monthTitle, monthGrid) = WidgetViewFactory.build2x2CalendarExtras(today, language)
         return Widget2x2DisplayState(
             dateLine = dateLine,
             statsLine = statsLine,
@@ -226,7 +243,9 @@ object WidgetManager {
             tasks = tasks,
             showTasks = showTasks,
             showQuote = config.displayConfig.showDailyQuote,
-            language = language
+            language = language,
+            monthTitle = monthTitle,
+            monthGrid = monthGrid
         )
     }
 
@@ -293,11 +312,20 @@ object WidgetManager {
         appWidgetManager.updateAppWidget(appWidgetId, remoteViews)
         val notifyTaskList = when (config.size) {
             WidgetSize._2X2, WidgetSize._3X3 -> true
-            WidgetSize._3X1 -> config.layoutKind != WidgetLayoutKind._3C
+            WidgetSize._3X1 -> config.layoutKind == WidgetLayoutKind._3B ||
+                config.layoutKind == WidgetLayoutKind._3D
             else -> false
         }
         if (notifyTaskList) {
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_task_list)
+            val listId = when {
+                config.size == WidgetSize._3X1 && config.layoutKind == WidgetLayoutKind._3D ->
+                    R.id.widget_3x1_week_task_list
+                else -> R.id.widget_task_list
+            }
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, listId)
+        }
+        if (config.size == WidgetSize._3X3) {
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_3x3_week_list)
         }
     }
 

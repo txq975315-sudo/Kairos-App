@@ -51,8 +51,8 @@ class MineViewModel(
 
     val weekMoods: StateFlow<List<MoodRecord>> = allMoods
         .map { list ->
-            val monday = mondayOfWeekContaining(LocalDate.now())
-            val inWeek = (0..6).map { monday.plusDays(it.toLong()) }.toSet()
+            val sunday = sundayStartOfWeekContaining(LocalDate.now())
+            val inWeek = (0..6).map { sunday.plusDays(it.toLong()) }.toSet()
             list.filter { it.date in inWeek }.sortedBy { it.date }
         }
         .stateIn(
@@ -73,10 +73,16 @@ class MineViewModel(
         .map { ui ->
             val today = LocalDate.now()
             val tasks = ui.tasks
+            val distinctCompletionDays =
+                tasks.filter { it.isCompleted }.map { it.taskDate }.toSet().size
+            val todayIncompleteCount =
+                tasks.count { !it.isCompleted && it.taskDate == today }
             AllRecords(
                 completedTasks = tasks.count { it.isCompleted },
                 uncompletedTasks = tasks.count { !it.isCompleted },
-                todayCompletedTasks = tasks.count { it.taskDate == today && it.isCompleted }
+                todayCompletedTasks = tasks.count { it.taskDate == today && it.isCompleted },
+                distinctCompletionDays = distinctCompletionDays,
+                todayIncompleteCount = todayIncompleteCount
             )
         }
         .stateIn(
@@ -137,9 +143,9 @@ class MineViewModel(
 
     fun saveMood(moodIcon: String, date: LocalDate) {
         viewModelScope.launch {
-            val monday = mondayOfWeekContaining(LocalDate.now())
-            val weekEnd = monday.plusDays(6)
-            if (date.isBefore(monday) || date.isAfter(weekEnd)) return@launch
+            val sunday = sundayStartOfWeekContaining(LocalDate.now())
+            val weekEnd = sunday.plusDays(6)
+            if (date.isBefore(sunday) || date.isAfter(weekEnd)) return@launch
             val all = dataStoreManager.getMoods().toMutableList()
             all.removeAll { it.date == date }
             all.add(MoodRecord(date, moodIcon))
@@ -174,6 +180,11 @@ class MineViewModel(
 
         fun mondayOfWeekContaining(date: LocalDate): LocalDate =
             date.minusDays((date.dayOfWeek.value - 1).toLong())
+
+        fun sundayStartOfWeekContaining(date: LocalDate): LocalDate {
+            val dow = date.dayOfWeek.value
+            return date.minusDays((dow % 7).toLong())
+        }
 
         fun hasRecordOnDay(day: LocalDate, ui: TaskUiState): Boolean {
             if (ui.tasks.any { it.taskDate == day }) return true

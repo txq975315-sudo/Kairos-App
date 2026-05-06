@@ -49,6 +49,7 @@ fun CustomEmoji(
 fun DraggableCustomEmojiItem(
     emojiItem: EmojiConstants.EmojiItem,
     modifier: Modifier = Modifier,
+    displaySize: Dp = 40.dp,
     onDragStart: (startInRoot: Offset) -> Unit,
     onDrag: (dragAmount: Offset) -> Unit,
     onDragEnd: (fingerInRoot: Offset) -> Unit,
@@ -66,7 +67,7 @@ fun DraggableCustomEmojiItem(
             painter = painterResource(id = emojiItem.drawableResId),
             contentDescription = LocalizedStrings.emojiLabel(emojiItem.id),
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(36.dp)
+            modifier = Modifier.size(displaySize)
         )
     }
 }

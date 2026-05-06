@@ -11,7 +11,6 @@ import androidx.navigation.navArgument
 import com.example.kairosapplication.ui.editor.NoteEditorScreen
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.kairosapplication.ui.inbox.InboxListScreen
-import com.example.kairosapplication.ui.project.ProjectTimelineScreen
 import com.example.kairosapplication.ui.search.SearchScreen
 import com.example.kairosapplication.ui.trash.TrashScreen
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -34,9 +33,6 @@ fun EssayNavHost(
     val onNavigateToEditor: (Long?) -> Unit = { noteId ->
         val route = if (noteId != null) "essay_editor/$noteId" else "essay_editor/new"
         navController.navigate(route)
-    }
-    val onNavigateToProject: (Long) -> Unit = { projectId ->
-        navController.navigate("essay_project/$projectId")
     }
     val onNavigateToTrash: () -> Unit = { navController.navigate("essay_trash") }
     val onBack: () -> Unit = { navController.popBackStack() }
@@ -61,7 +57,6 @@ fun EssayNavHost(
                 onNavigateToNewNoteFromTopic = { primaryKey ->
                     navController.navigate("essay_editor/new_locked/$primaryKey")
                 },
-                onNavigateToProject = onNavigateToProject,
                 openTopicTabWithPrimary = openTopicTabWithPrimary,
                 onOpenTopicTabConsumed = onOpenTopicTabConsumed,
             )
@@ -127,19 +122,6 @@ fun EssayNavHost(
                     onSaveComplete = onSaveEditor
                 )
             }
-        }
-        composable(
-            route = "essay_project/{projectId}",
-            arguments = listOf(navArgument("projectId") { type = NavType.LongType })
-        ) { entry ->
-            val projectId = entry.arguments?.getLong("projectId") ?: return@composable
-            ProjectTimelineScreen(
-                projectId = projectId,
-                taskViewModel = taskViewModel,
-                onBack = onBack,
-                onNoteClick = { id -> onNavigateToEditor(id) },
-                onNavigateToNewNote = { onNavigateToEditor(null) }
-            )
         }
     }
 }

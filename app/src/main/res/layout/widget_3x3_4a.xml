@@ -18,117 +18,166 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:paddingStart="10dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp">
 
-        <RelativeLayout
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:minHeight="32dp">
 
-            <TextView
-                android:id="@+id/widget_month_title"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:text="2026年5月"
-                android:textColor="#1A1A1A"
-                android:textSize="14sp" />
+                android:layout_gravity="center_horizontal|center_vertical"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/widget_month_prev"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textColor="#9E9E9E"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/widget_month_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:minWidth="120dp"
+                    android:paddingHorizontal="8dp"
+                    android:text="2026年5月"
+                    android:textColor="#1A1A1A"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_month_next"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textColor="#9E9E9E"
+                    android:textSize="18sp" />
+            </LinearLayout>
 
             <ImageButton
                 android:id="@+id/widget_create_button"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
+                android:layout_gravity="end|center_vertical"
                 android:background="@android:color/transparent"
                 android:contentDescription="@null"
                 android:padding="2dp"
                 android:scaleType="centerInside"
                 android:src="@android:drawable/ic_input_add" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_week_header_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="2dp"
+            android:paddingBottom="1dp">
 
             <TextView
-                android:id="@+id/widget_month_next"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_centerVertical="true"
-                android:layout_toStartOf="@id/widget_create_button"
-                android:gravity="center"
-                android:text="›"
+                android:id="@+id/widget_week_h0"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="一"
                 android:textColor="#9E9E9E"
-                android:textSize="16sp" />
+                android:textSize="10sp" />
 
             <TextView
-                android:id="@+id/widget_month_prev"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_centerVertical="true"
-                android:layout_toStartOf="@id/widget_month_next"
-                android:gravity="center"
-                android:text="‹"
+                android:id="@+id/widget_week_h1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="二"
                 android:textColor="#9E9E9E"
-                android:textSize="16sp" />
-        </RelativeLayout>
+                android:textSize="10sp" />
 
-        <TextView
-            android:id="@+id/widget_week_header"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:text="一 二 三 四 五 六 日"
-            android:textColor="#9E9E9E"
-            android:textSize="10sp" />
+            <TextView
+                android:id="@+id/widget_week_h2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="三"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp" />
 
-        <TextView
-            android:id="@+id/widget_calendar_grid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:lineSpacingExtra="2dp"
-            android:paddingTop="4dp"
-            android:textColor="#1A1A1A"
-            android:textSize="9sp"
-            android:typeface="monospace" />
+            <TextView
+                android:id="@+id/widget_week_h3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="四"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp" />
 
-        <TextView
-            android:id="@+id/widget_section_tasks"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="12dp"
-            android:text="今日任务"
-            android:textColor="#1A1A1A"
-            android:textSize="14sp" />
+            <TextView
+                android:id="@+id/widget_week_h4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="五"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp" />
 
-        <FrameLayout
+            <TextView
+                android:id="@+id/widget_week_h5"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="六"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/widget_week_h6"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="日"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/widget_3x3_week_list"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
-
-            <ListView
-                android:id="@+id/widget_task_list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:divider="@null"
-                android:dividerHeight="0dp"
-                android:scrollbars="none" />
-
-            <TextView
-                android:id="@+id/widget_task_list_empty"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="暂无任务"
-                android:textColor="#9E9E9E"
-                android:textSize="11sp"
-                android:visibility="gone" />
-        </FrameLayout>
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="0dp"
+            android:listSelector="@android:color/transparent"
+            android:scrollbars="none" />
 
         <TextView
             android:id="@+id/widget_daily_quote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:gravity="center_horizontal"
             android:maxLines="2"
-            android:paddingTop="4dp"
+            android:paddingTop="2dp"
             android:text="今日一句：心有光芒，步履铿锵"
+            android:textAlignment="center"
             android:textColor="#9E9E9E"
             android:textSize="11sp" />
     </LinearLayout>

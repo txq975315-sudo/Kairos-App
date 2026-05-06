@@ -1,10 +1,16 @@
 package com.example.kairosapplication.widget.data
 
 import android.content.Context
+import com.example.taskmodel.constants.TaskConstants
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class WidgetTaskRow(val title: String, val done: Boolean, val taskId: Int = -1)
+data class WidgetTaskRow(
+    val title: String,
+    val done: Boolean,
+    val taskId: Int = -1,
+    val urgency: Int = TaskConstants.URGENCY_NORMAL
+)
 
 object WidgetTaskListStore {
     private const val PREF_NAME = "kairos_widget_task_rows"
@@ -18,6 +24,7 @@ object WidgetTaskListStore {
                     put("t", row.title)
                     put("d", row.done)
                     put("i", row.taskId)
+                    put("u", row.urgency)
                 }
             )
         }
@@ -42,7 +49,8 @@ object WidgetTaskListStore {
                     WidgetTaskRow(
                         title = o.optString("t", ""),
                         done = o.optBoolean("d", false),
-                        taskId = o.optInt("i", -1)
+                        taskId = o.optInt("i", -1),
+                        urgency = o.optInt("u", TaskConstants.URGENCY_NORMAL)
                     )
                 )
             }

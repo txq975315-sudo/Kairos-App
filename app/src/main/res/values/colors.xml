@@ -7,4 +7,16 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- 3×1 triptych widget: warm wood sides + Figma-style primary slots -->
+    <color name="widget_wood_panel">#FFEBE4DC</color>
+    <color name="widget_wood_text">#FF6D5F52</color>
+    <color name="widget_wood_dots">#FFB8A99A</color>
+    <color name="widget_primary_slot_fill">#FFEDE7FF</color>
+    <color name="widget_primary_slot_title">#FF5C4F96</color>
+    <color name="widget_primary_slot_sub">#FF6E5FA8</color>
+    <color name="widget_today_center_bg">#FFF9F9F9</color>
+    <color name="widget_date_secondary">#FF757575</color>
+    <color name="widget_today_day_primary">#FF1A1A1A</color>
+    <color name="widget_task_muted">#FF888888</color>
 </resources>
