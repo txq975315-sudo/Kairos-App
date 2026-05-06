@@ -25,24 +25,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.view.DayCalendarData
 import com.example.kairosapplication.ui.view.viewClickable
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.util.TaskUtils
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 
 private val DateNumberMuted = Color(0xFF9E9E9E)
-private val DateNumberToday = Color(0xFF1A1A1A)
 private val BarText = Color(0xFF1A1A1A)
-private val ArrowGray = Color(0xFF9E9E9E)
 private val NoteEmptyBg = Color(0xFFF5F0F0)
 private val NoteEmptyDot = Color(0xFF9E9E9E)
 private val TaskEmptyBg = Color(0xFFF5F5F5)
 private val TodayCellBg = Color(0xFFF0F4FF)
+
+private val WeekdayOrder = listOf(
+    DayOfWeek.MONDAY,
+    DayOfWeek.TUESDAY,
+    DayOfWeek.WEDNESDAY,
+    DayOfWeek.THURSDAY,
+    DayOfWeek.FRIDAY,
+    DayOfWeek.SATURDAY,
+    DayOfWeek.SUNDAY,
+)
 
 @Composable
 fun MonthCalendar(
@@ -52,8 +66,15 @@ fun MonthCalendar(
     onMonthChange: (YearMonth) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val monthFmt = remember {
-        DateTimeFormatter.ofPattern("yyyy年M月", Locale.CHINA)
+    val lang = LocalCurrentLanguage.current.value
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
+    val monthFmt = remember(lang) {
+        when (lang) {
+            LocalizationManager.Language.ZH ->
+                DateTimeFormatter.ofPattern("yyyy年M月", Locale.CHINA)
+            LocalizationManager.Language.EN ->
+                DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
+        }
     }
     val today = LocalDate.now()
     val dim = yearMonth.lengthOfMonth()
@@ -67,7 +88,7 @@ fun MonthCalendar(
         ) {
             Text(
                 text = "<",
-                color = ArrowGray,
+                color = AppColors.IconNeutral,
                 fontSize = 20.sp,
                 modifier = Modifier
                     .viewClickable { onMonthChange(yearMonth.minusMonths(1)) }
@@ -75,7 +96,7 @@ fun MonthCalendar(
             )
             Text(
                 text = yearMonth.atDay(1).format(monthFmt),
-                color = DateNumberToday,
+                color = AppScreenHeader.titleColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
@@ -85,7 +106,7 @@ fun MonthCalendar(
             )
             Text(
                 text = ">",
-                color = ArrowGray,
+                color = AppColors.IconNeutral,
                 fontSize = 20.sp,
                 modifier = Modifier
                     .viewClickable { onMonthChange(yearMonth.plusMonths(1)) }
@@ -93,10 +114,9 @@ fun MonthCalendar(
             )
         }
         Row(modifier = Modifier.fillMaxWidth()) {
-            val wdays = listOf("一", "二", "三", "四", "五", "六", "日")
-            wdays.forEach { w ->
+            WeekdayOrder.forEach { dow ->
                 Text(
-                    text = w,
+                    text = dow.getDisplayName(TextStyle.SHORT, locale),
                     color = DateNumberMuted,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
@@ -196,7 +216,7 @@ private fun CalendarDayCell(
         ) {
             Text(
                 text = date.dayOfMonth.toString(),
-                color = if (isToday) DateNumberToday else DateNumberMuted,
+                color = if (isToday) AppScreenHeader.titleColor else DateNumberMuted,
                 fontSize = 12.sp,
                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center,

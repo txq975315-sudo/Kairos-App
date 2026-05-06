@@ -10,14 +10,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.view.viewClickable
+import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
-import java.util.Locale
+import com.example.taskmodel.util.TaskUtils
+
+@Composable
+private fun localizedTimeBlock(block: String): String {
+    return when (block.uppercase()) {
+        TaskConstants.TIME_BLOCK_ANYTIME -> LocalizedStrings.get("view_time_anytime")
+        TaskConstants.TIME_BLOCK_MORNING -> LocalizedStrings.get("view_time_morning")
+        TaskConstants.TIME_BLOCK_AFTERNOON -> LocalizedStrings.get("view_time_afternoon")
+        TaskConstants.TIME_BLOCK_EVENING -> LocalizedStrings.get("view_time_evening")
+        else -> block.lowercase().replaceFirstChar(Char::titlecaseChar)
+    }
+}
 
 @Composable
 fun TaskRow(
@@ -26,23 +39,23 @@ fun TaskRow(
     modifier: Modifier = Modifier,
 ) {
     val done = task.isCompleted
-    val titleColor = if (done) Color(0xFF9E9E9E) else Color(0xFF1A1A1A)
+    val titleColor = if (done) AppColors.HintText else AppColors.PrimaryText
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .height(36.dp)
             .viewClickable(onToggleComplete)
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = task.timeBlock.lowercase(Locale.US),
-            color = Color(0xFF9E9E9E),
+            text = localizedTimeBlock(task.timeBlock),
+            color = AppColors.HintText,
             fontSize = 12.sp,
         )
         Text(
             text = " — ",
-            color = Color(0xFF9E9E9E),
+            color = AppColors.HintText,
             fontSize = 12.sp,
         )
         Text(

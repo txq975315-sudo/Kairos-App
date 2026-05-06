@@ -4,22 +4,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.ui.view.viewClickable
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-private val ArrowGray = Color(0xFF9E9E9E)
-private val DateBlack = Color(0xFF1A1A1A)
 
 @Composable
 fun DateSelector(
@@ -28,36 +30,51 @@ fun DateSelector(
     onNextDay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val fmt = remember {
-        DateTimeFormatter.ofPattern("yyyy年M月d日", Locale.CHINA)
+    val lang = LocalCurrentLanguage.current.value
+    val formatter = remember(lang) {
+        when (lang) {
+            LocalizationManager.Language.ZH ->
+                DateTimeFormatter.ofPattern("yyyy年M月d日", Locale.CHINA)
+            LocalizationManager.Language.EN ->
+                DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy", Locale.ENGLISH)
+        }
     }
-    Row(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
+        shape = RoundedCornerShape(12.dp),
+        color = AppColors.CardBackground,
+        shadowElevation = 2.dp,
     ) {
-        Text(
-            text = "◀",
-            color = ArrowGray,
-            fontSize = 20.sp,
+        Row(
             modifier = Modifier
-                .viewClickable(onPreviousDay)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-        )
-        Text(
-            text = focusedDate.format(fmt),
-            color = DateBlack,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-        )
-        Text(
-            text = "▶",
-            color = ArrowGray,
-            fontSize = 20.sp,
-            modifier = Modifier
-                .viewClickable(onNextDay)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "◀",
+                color = AppColors.IconNeutral,
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .viewClickable(onPreviousDay)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+            Text(
+                text = focusedDate.format(formatter),
+                color = AppScreenHeader.titleColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            )
+            Text(
+                text = "▶",
+                color = AppColors.IconNeutral,
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .viewClickable(onNextDay)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
     }
 }

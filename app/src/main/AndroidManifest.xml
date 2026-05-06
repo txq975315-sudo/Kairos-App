@@ -17,9 +17,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KairosApplication">
         <activity
+            android:name=".ui.widget.settings.WidgetBackgroundActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KairosApplication" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.KairosApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -53,6 +59,63 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".widget.WidgetRemoteViewsService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <receiver
+            android:name=".widget.KairosWidgetProvider1x1"
+            android:exported="true"
+            android:label="@string/widget_picker_label_1x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_1x1" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.KairosWidgetProvider2x2"
+            android:exported="true"
+            android:label="@string/widget_picker_label_2x2">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_2x2" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.KairosWidgetProvider3x1"
+            android:exported="true"
+            android:label="@string/widget_picker_label_3x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_3x1" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.KairosWidgetProvider3x3"
+            android:exported="true"
+            android:label="@string/widget_picker_label_3x3">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_3x3" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WidgetAlarmReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

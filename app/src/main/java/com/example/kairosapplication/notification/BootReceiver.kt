@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.widget.WidgetAlarmScheduler
 import kotlinx.coroutines.runBlocking
 
 class BootReceiver : BroadcastReceiver() {
@@ -27,6 +28,7 @@ class BootReceiver : BroadcastReceiver() {
             } else {
                 helper.cancelDailyReflection()
             }
+            WidgetAlarmScheduler.rescheduleAll(appCtx)
         }
     }
 }

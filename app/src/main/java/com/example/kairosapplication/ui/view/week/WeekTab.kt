@@ -2,6 +2,7 @@ package com.example.kairosapplication.ui.view.week
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -16,17 +17,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardVariant
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
@@ -36,12 +42,9 @@ import com.example.kairosapplication.ui.view.viewClickable
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
-import java.time.DayOfWeek
 import java.time.LocalDate
-
-private val WeekMuted = Color(0xFF9E9E9E)
-private val WeekEmpty = Color(0xFFD0D0D0)
-private val WeekDivider = Color(0xFFE8E5E0)
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun WeekTab(
@@ -60,29 +63,42 @@ fun WeekTab(
     val weekDays = remember(uiState.currentWeekRange) {
         daysInClosedRange(uiState.currentWeekRange.first, uiState.currentWeekRange.second)
     }
-    // TODO: optional thin scrollbar (Compose scroll styling is limited)
+    val lang = LocalCurrentLanguage.current.value
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val dayFmt = remember(lang) {
+        DateTimeFormatter.ofPattern("EEE M/d", locale)
+    }
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         items(
             items = weekDays,
             key = { it.toEpochDay() },
         ) { date ->
-            WeekDaySplitRow(
-                date = date,
-                tasks = uiState.weekTasks[date].orEmpty(),
-                notes = uiState.weekNotes[date].orEmpty(),
-                onToggleTaskComplete = onToggleTaskComplete,
-                onAddTaskForDate = onAddTaskForDate,
-                expandedNoteId = expandedNoteId,
-                onToggleExpand = onToggleExpand,
-                onPublishedChangeTopic = onPublishedChangeTopic,
-                onPublishedChangeProject = onPublishedChangeProject,
-                onPublishedContinueCreate = onPublishedContinueCreate,
-                onPublishedDelete = onPublishedDelete,
-                projectsById = projectsById,
-            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = AppColors.CardBackground,
+                shadowElevation = 2.dp,
+            ) {
+                WeekDaySplitRow(
+                    date = date,
+                    dayLabel = date.format(dayFmt),
+                    tasks = uiState.weekTasks[date].orEmpty(),
+                    notes = uiState.weekNotes[date].orEmpty(),
+                    onToggleTaskComplete = onToggleTaskComplete,
+                    onAddTaskForDate = onAddTaskForDate,
+                    expandedNoteId = expandedNoteId,
+                    onToggleExpand = onToggleExpand,
+                    onPublishedChangeTopic = onPublishedChangeTopic,
+                    onPublishedChangeProject = onPublishedChangeProject,
+                    onPublishedContinueCreate = onPublishedContinueCreate,
+                    onPublishedDelete = onPublishedDelete,
+                    projectsById = projectsById,
+                )
+            }
         }
     }
 }
@@ -90,6 +106,7 @@ fun WeekTab(
 @Composable
 private fun WeekDaySplitRow(
     date: LocalDate,
+    dayLabel: String,
     tasks: List<Task>,
     notes: List<Note>,
     onToggleTaskComplete: (Task) -> Unit,
@@ -113,11 +130,11 @@ private fun WeekDaySplitRow(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 16.dp),
+                .padding(start = 12.dp, top = 12.dp, bottom = 12.dp),
         ) {
             Text(
-                text = formatWeekDayLabel(date),
-                color = WeekMuted,
+                text = dayLabel,
+                color = AppColors.HintText,
                 fontSize = 12.sp,
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -129,8 +146,8 @@ private fun WeekDaySplitRow(
             ) {
                 if (tasks.isEmpty()) {
                     Text(
-                        text = "（无任务）",
-                        color = WeekEmpty,
+                        text = LocalizedStrings.get("view_week_no_tasks"),
+                        color = AppColors.HintText,
                         fontSize = 13.sp,
                     )
                 } else {
@@ -148,8 +165,8 @@ private fun WeekDaySplitRow(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "+ 添加任务",
-                color = WeekMuted,
+                text = LocalizedStrings.get("view_week_add_task"),
+                color = AppColors.HintText,
                 fontSize = 11.sp,
                 textAlign = TextAlign.Start,
                 modifier = Modifier
@@ -162,16 +179,16 @@ private fun WeekDaySplitRow(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(0.5.dp)
-                .background(WeekDivider),
+                .background(AppColors.Divider),
         )
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 16.dp),
+                .padding(end = 12.dp, top = 12.dp, bottom = 12.dp),
         ) {
             Text(
-                text = formatWeekDayLabel(date),
-                color = WeekMuted,
+                text = dayLabel,
+                color = AppColors.HintText,
                 fontSize = 12.sp,
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -191,8 +208,8 @@ private fun WeekDaySplitRow(
             ) {
                 if (notes.isEmpty()) {
                     Text(
-                        text = "（无笔记）",
-                        color = WeekEmpty,
+                        text = LocalizedStrings.get("view_week_no_notes"),
+                        color = AppColors.HintText,
                         fontSize = 13.sp,
                     )
                 } else {
@@ -225,19 +242,6 @@ private fun WeekDaySplitRow(
             }
         }
     }
-}
-
-private fun formatWeekDayLabel(date: LocalDate): String {
-    val w = when (date.dayOfWeek) {
-        DayOfWeek.MONDAY -> "Mon"
-        DayOfWeek.TUESDAY -> "Tue"
-        DayOfWeek.WEDNESDAY -> "Wed"
-        DayOfWeek.THURSDAY -> "Thu"
-        DayOfWeek.FRIDAY -> "Fri"
-        DayOfWeek.SATURDAY -> "Sat"
-        DayOfWeek.SUNDAY -> "Sun"
-    }
-    return "$w ${date.monthValue}/${date.dayOfMonth}"
 }
 
 private fun daysInClosedRange(start: LocalDate, end: LocalDate): List<LocalDate> {

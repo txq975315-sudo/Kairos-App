@@ -12,18 +12,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-private val WeekSwitcherMuted = Color(0xFF9E9E9E)
-private val RangeFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.US)
 
 @Composable
 fun WeekSwitcher(
@@ -34,13 +35,18 @@ fun WeekSwitcher(
     onResetToCurrentWeek: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val lang = LocalCurrentLanguage.current.value
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val rangeFormatter = remember(lang) {
+        DateTimeFormatter.ofPattern("MMM d", locale)
+    }
     val (start, end) = currentWeekRange
     val rangeText = buildString {
-        append(start.format(RangeFormatter))
-        append(" - ")
-        append(end.format(RangeFormatter))
+        append(start.format(rangeFormatter))
+        append(" – ")
+        append(end.format(rangeFormatter))
         if (viewingCurrentWeek) {
-            append(" · This week")
+            append(LocalizedStrings.get("view_week_this_week"))
         }
     }
     Row(
@@ -54,7 +60,7 @@ fun WeekSwitcher(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = null,
-                tint = WeekSwitcherMuted,
+                tint = AppColors.IconNeutral,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -64,7 +70,7 @@ fun WeekSwitcher(
         ) {
             Text(
                 text = rangeText,
-                color = WeekSwitcherMuted,
+                color = AppColors.HintText,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clickable(onClick = onResetToCurrentWeek),
@@ -77,7 +83,7 @@ fun WeekSwitcher(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = WeekSwitcherMuted,
+                tint = AppColors.IconNeutral,
                 modifier = Modifier.size(20.dp),
             )
         }

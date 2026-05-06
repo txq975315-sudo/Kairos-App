@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 
@@ -34,7 +35,11 @@ fun TimeSelector(
             .padding(top = AppSpacing.SectionLarge),
         horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        val labels = listOf("Today", "Week", "Month")
+        val labels = listOf(
+            LocalizedStrings.get("view_tab_today"),
+            LocalizedStrings.get("view_tab_week"),
+            LocalizedStrings.get("view_tab_month"),
+        )
         labels.forEachIndexed { index, label ->
             val selected = selectedIndex == index
             Column(

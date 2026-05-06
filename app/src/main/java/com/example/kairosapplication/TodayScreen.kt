@@ -121,7 +121,9 @@ fun TodayScreen(
     onCreateClick: () -> Unit = {},
     onDailyReviewClick: () -> Unit = {},
     onQuoteClick: () -> Unit = {},
-    taskViewModel: TaskViewModel
+    taskViewModel: TaskViewModel,
+    widgetEditTaskId: Int? = null,
+    onConsumedWidgetEditIntent: () -> Unit = {}
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
     val allTasks = uiState.tasks
@@ -187,6 +189,15 @@ fun TodayScreen(
     var createLocalImageUri by remember { mutableStateOf<String?>(null) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var detailTask by remember { mutableStateOf<Task?>(null) }
+
+    LaunchedEffect(widgetEditTaskId, allTasks) {
+        val id = widgetEditTaskId ?: return@LaunchedEffect
+        val task = allTasks.find { it.id == id }
+        if (task != null) {
+            editingTask = task
+        }
+        onConsumedWidgetEditIntent()
+    }
 
     // Single create entry: time block drives sheet title and colors.
     val showCreateSheet: (String) -> Unit = { timeBlock ->

@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -70,11 +71,13 @@ import com.example.kairosapplication.ui.mine.settings.ThemeSettingsScreen
 import com.example.kairosapplication.ui.mine.settings.WidgetSettingsScreen
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.kairosapplication.ui.view.ViewScreen
+import com.example.kairosapplication.ui.widget.WidgetMainScreen
+import com.example.kairosapplication.widget.WidgetClickHandler
+import com.example.kairosapplication.widget.WidgetManager
 import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
 
@@ -89,7 +92,9 @@ private enum class AppTab(val label: String, val icon: ImageVector) {
 private enum class Overlay { DailyReview }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    widgetIntentViewModel: MainWidgetIntentViewModel = viewModel()
+) {
     val context = LocalContext.current
     val dataStoreManager = remember(context) { DataStoreManager(context.applicationContext) }
     val localizationManager = remember { LocalizationManager(dataStoreManager) }
@@ -107,7 +112,38 @@ fun MainScreen() {
     )
     val taskUiState by taskViewModel.uiState.collectAsState()
 
+    LaunchedEffect(taskUiState.tasks, taskUiState.dailyQuoteEssayId) {
+        WidgetManager.refreshWidgetsAsync(context.applicationContext, taskViewModel)
+    }
+
     var selectedTab by remember { mutableStateOf(AppTab.Today) }
+    val widgetNav by widgetIntentViewModel.widgetNav.collectAsState(initial = 0 to WidgetNavPayload(null))
+
+    var pendingWidgetCreate by remember { mutableStateOf(false) }
+    var pendingWidgetEditTaskId by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(widgetNav.first) {
+        when (val target = widgetNav.second.target) {
+            WidgetClickHandler.TARGET_TODAY -> selectedTab = AppTab.Today
+            WidgetClickHandler.TARGET_ESSAY -> selectedTab = AppTab.Essay
+            WidgetClickHandler.TARGET_VIEW -> selectedTab = AppTab.View
+            WidgetClickHandler.TARGET_MINE -> selectedTab = AppTab.Mine
+            WidgetClickHandler.TARGET_HOME -> selectedTab = AppTab.Today
+            WidgetClickHandler.TARGET_CREATE -> {
+                selectedTab = AppTab.Today
+                pendingWidgetCreate = true
+            }
+            WidgetClickHandler.TARGET_EDIT_TASK -> {
+                val id = widgetNav.second.taskId
+                if (id >= 0) {
+                    selectedTab = AppTab.Today
+                    pendingWidgetEditTaskId = id
+                }
+            }
+            null -> Unit
+            else -> Unit
+        }
+    }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     var showMoodCalendar by remember { mutableStateOf(false) }
     var showSettingsScreen by remember { mutableStateOf(false) }
@@ -121,6 +157,15 @@ fun MainScreen() {
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showMiscSettings by remember { mutableStateOf(false) }
     val navController = rememberNavController()
+
+    LaunchedEffect(selectedTab, pendingWidgetCreate) {
+        if (selectedTab == AppTab.Today && pendingWidgetCreate) {
+            pendingWidgetCreate = false
+            navController.navigate("create") {
+                launchSingleTop = true
+            }
+        }
+    }
     val essayNavController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val essayNavBackStackEntry by essayNavController.currentBackStackEntryAsState()
@@ -232,7 +277,9 @@ fun MainScreen() {
                             onCreateClick = { navController.navigate("create") },
                             onDailyReviewClick = { overlay = Overlay.DailyReview },
                             onQuoteClick = { navController.navigate("quote_settings") },
-                            taskViewModel = taskViewModel
+                            taskViewModel = taskViewModel,
+                            widgetEditTaskId = pendingWidgetEditTaskId,
+                            onConsumedWidgetEditIntent = { pendingWidgetEditTaskId = null }
                         )
                     }
                     composable("create") {
@@ -270,6 +317,8 @@ fun MainScreen() {
                         selectedTab = AppTab.Essay
                     },
                 )
+            } else if (selectedTab == AppTab.Widget) {
+                WidgetMainScreen(taskViewModel = taskViewModel)
             } else if (selectedTab == AppTab.Mine) {
                 when {
                     showMoodCalendar -> MoodCalendarScreen(
@@ -392,8 +441,6 @@ fun MainScreen() {
                         onOpenSettings = { showSettingsScreen = true }
                     )
                 }
-            } else {
-                PlaceholderScreen(selectedTab.label)
             }
 
             if (showCreatePendingLimitDialog && createLimitTargetDate != null) {
@@ -453,16 +500,3 @@ private fun QuoteSettingScreen(onBack: () -> Unit) {
     }
 }
 
-@Composable
-private fun PlaceholderScreen(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = name,
-            fontSize = 24.sp,
-            color = SecondaryTextColor
-        )
-    }
-}

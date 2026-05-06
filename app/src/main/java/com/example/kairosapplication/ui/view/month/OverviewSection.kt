@@ -14,16 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.view.Overview
-
-private val Muted = Color(0xFF9E9E9E)
-private val DividerC = Color(0xFFE8E5E0)
-private val NumberC = Color(0xFF1A1A1A)
 
 @Composable
 fun OverviewSection(
@@ -33,8 +30,8 @@ fun OverviewSection(
     Column(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Text(
-                text = "This month",
-                color = Muted,
+                text = LocalizedStrings.get("view_month_summary"),
+                color = AppColors.HintText,
                 fontSize = 12.sp,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -43,7 +40,7 @@ fun OverviewSection(
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 0.5.dp,
-            color = DividerC,
+            color = AppColors.Divider,
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(
@@ -54,28 +51,29 @@ fun OverviewSection(
         ) {
             OverviewMetricCell(
                 valueText = overview.totalNotes.toString(),
-                label = "Notes",
+                label = LocalizedStrings.get("view_metric_notes"),
                 modifier = Modifier.weight(1f),
             )
             OverviewVerticalDivider()
             OverviewMetricCell(
                 valueText = overview.totalTasks.toString(),
-                label = "Tasks",
+                label = LocalizedStrings.get("view_metric_tasks"),
                 modifier = Modifier.weight(1f),
             )
             OverviewVerticalDivider()
             OverviewMetricCell(
                 valueText = "${overview.completionRate}%",
-                label = "Done",
+                label = LocalizedStrings.get("view_metric_done"),
                 modifier = Modifier.weight(1f),
             )
             OverviewVerticalDivider()
             OverviewMetricCell(
-                valueText = when (overview.consecutiveDays) {
-                    1 -> "1 day"
-                    else -> "${overview.consecutiveDays} days"
+                valueText = if (overview.consecutiveDays == 1) {
+                    LocalizedStrings.get("view_streak_one")
+                } else {
+                    LocalizedStrings.get("view_streak_many").replace("{n}", overview.consecutiveDays.toString())
                 },
-                label = "Streak",
+                label = LocalizedStrings.get("view_metric_streak"),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -94,9 +92,9 @@ private fun OverviewMetricCell(
     ) {
         Text(
             text = valueText,
-            fontSize = 24.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = NumberC,
+            color = AppColors.PrimaryText,
             textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -104,7 +102,7 @@ private fun OverviewMetricCell(
             text = label,
             fontSize = 11.sp,
             fontWeight = FontWeight.Normal,
-            color = Muted,
+            color = AppColors.HintText,
             textAlign = TextAlign.Center,
         )
     }
@@ -116,6 +114,6 @@ private fun OverviewVerticalDivider() {
         modifier = Modifier
             .width(0.5.dp)
             .height(40.dp)
-            .background(DividerC),
+            .background(AppColors.Divider),
     )
 }

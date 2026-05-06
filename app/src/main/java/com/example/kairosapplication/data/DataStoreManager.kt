@@ -8,6 +8,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.kairosapplication.widget.data.WidgetConfig
+import com.example.kairosapplication.widget.data.WidgetSize
+import com.example.kairosapplication.widget.data.decodeWidgetConfig
+import com.example.kairosapplication.widget.data.toJsonString
 import com.example.taskmodel.model.LocalProfile
 import com.example.taskmodel.model.MoodRecord
 import java.time.LocalDate
@@ -29,6 +33,11 @@ private val KEY_MOODS_JSON = stringPreferencesKey("moods_json")
 private val KEY_LAST_BACKUP_TIMESTAMP = longPreferencesKey("last_backup_timestamp")
 private val KEY_SETTINGS_MY_WEEKLY_INSIGHTS =
     booleanPreferencesKey("settings_my_weekly_insights")
+
+private val KEY_WIDGET_CONFIG_1X1 = stringPreferencesKey("widget_config_1x1")
+private val KEY_WIDGET_CONFIG_2X2 = stringPreferencesKey("widget_config_2x2")
+private val KEY_WIDGET_CONFIG_3X1 = stringPreferencesKey("widget_config_3x1")
+private val KEY_WIDGET_CONFIG_3X3 = stringPreferencesKey("widget_config_3x3")
 
 class DataStoreManager(context: Context) {
 
@@ -205,6 +214,31 @@ class DataStoreManager(context: Context) {
     suspend fun setWeeklyInsightsEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[KEY_SETTINGS_MY_WEEKLY_INSIGHTS] = enabled
+        }
+    }
+
+    private fun widgetConfigPreferencesKey(size: WidgetSize) = when (size) {
+        WidgetSize._1X1 -> KEY_WIDGET_CONFIG_1X1
+        WidgetSize._2X2 -> KEY_WIDGET_CONFIG_2X2
+        WidgetSize._3X1 -> KEY_WIDGET_CONFIG_3X1
+        WidgetSize._3X3 -> KEY_WIDGET_CONFIG_3X3
+    }
+
+    suspend fun getWidgetConfig(size: WidgetSize): WidgetConfig? {
+        val prefs = dataStore.data.first()
+        val json = prefs[widgetConfigPreferencesKey(size)] ?: return null
+        return decodeWidgetConfig(json)
+    }
+
+    fun getWidgetConfigFlow(size: WidgetSize): Flow<WidgetConfig?> {
+        val key = widgetConfigPreferencesKey(size)
+        return dataStore.data.map { prefs -> decodeWidgetConfig(prefs[key]) }
+    }
+
+    suspend fun saveWidgetConfig(size: WidgetSize, config: WidgetConfig) {
+        val encoded = config.toJsonString()
+        dataStore.edit { prefs ->
+            prefs[widgetConfigPreferencesKey(size)] = encoded
         }
     }
 
