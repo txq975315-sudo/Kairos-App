@@ -1,0 +1,11 @@
+#!/bin/sh
+# Install once: git config core.hooksPath .githooks
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+if [ -x "./gradlew" ]; then
+  ./gradlew :app:lintDebug :app:scanHardcodedText --daemon
+else
+  echo "gradlew not found or not executable"
+  exit 1
+fi

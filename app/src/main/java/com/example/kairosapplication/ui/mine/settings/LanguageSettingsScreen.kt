@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.mine.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,10 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.R
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.findActivity
 import kotlinx.coroutines.launch
 
 @Composable
@@ -32,7 +36,19 @@ fun LanguageSettingsScreen(
 ) {
     val current by localizationManager.currentLanguage.collectAsState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val currentLabel = current.displayName
+
+    suspend fun applyIfChanged(language: LocalizationManager.Language) {
+        if (language == current) return
+        localizationManager.setLanguage(language)
+        Toast.makeText(
+            context,
+            context.getString(R.string.i18n_language_applied),
+            Toast.LENGTH_SHORT
+        ).show()
+        context.findActivity()?.recreate()
+    }
 
     SettingsL2Scaffold(
         title = LocalizedStrings.get("language_settings"),
@@ -60,18 +76,14 @@ fun LanguageSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            scope.launch {
-                                localizationManager.setLanguage(LocalizationManager.Language.ZH)
-                            }
+                            scope.launch { applyIfChanged(LocalizationManager.Language.ZH) }
                         }
                         .padding(vertical = 6.dp)
                 ) {
                     RadioButton(
                         selected = current == LocalizationManager.Language.ZH,
                         onClick = {
-                            scope.launch {
-                                localizationManager.setLanguage(LocalizationManager.Language.ZH)
-                            }
+                            scope.launch { applyIfChanged(LocalizationManager.Language.ZH) }
                         }
                     )
                     Text(
@@ -85,18 +97,14 @@ fun LanguageSettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            scope.launch {
-                                localizationManager.setLanguage(LocalizationManager.Language.EN)
-                            }
+                            scope.launch { applyIfChanged(LocalizationManager.Language.EN) }
                         }
                         .padding(vertical = 6.dp)
                 ) {
                     RadioButton(
                         selected = current == LocalizationManager.Language.EN,
                         onClick = {
-                            scope.launch {
-                                localizationManager.setLanguage(LocalizationManager.Language.EN)
-                            }
+                            scope.launch { applyIfChanged(LocalizationManager.Language.EN) }
                         }
                     )
                     Text(

@@ -18,15 +18,19 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.taskmodel.model.WeeklyInsights
 import java.time.LocalDate
 
@@ -40,8 +44,6 @@ private val DotBgGray = Color(0xFFF5F5F5)
 private val SwitchBlue = Color(0xFF2196F3)
 private val SwitchThumbOff = Color(0xFFE0E0E0)
 
-private val weekShortLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-
 @Composable
 fun WeeklyInsightsSection(
     insights: WeeklyInsights,
@@ -50,6 +52,9 @@ fun WeeklyInsightsSection(
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val weekShortLabels = remember(lang, context) { weekShortHeadersMondayFirst(context, lang) }
     val monday = mondayOfWeekContaining(LocalDate.now())
     val daysInWeek = (0..6).map { monday.plusDays(it.toLong()) }
     val recordSet = weekDaysWithRecord.toSet()

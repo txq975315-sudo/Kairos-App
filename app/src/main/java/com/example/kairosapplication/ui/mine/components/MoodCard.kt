@@ -43,6 +43,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -52,9 +53,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
-import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.mine.EmojiConstants
+import com.example.kairosapplication.ui.mine.MineViewModel
 import com.example.taskmodel.model.MoodRecord
 import java.time.LocalDate
 import kotlin.math.hypot
@@ -62,7 +64,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 private val CardSurface = Color(0xFFFFFFFF)
-private val CardStroke = Color.Black.copy(alpha = 0.2f)
+private val CardStroke = Color(0xFFE8E8EC)
 private val TitleColor = Color(0xFF1A1A1A)
 private val SubGray = Color(0xFF9E9E9E)
 private val Green = Color(0xFF4CAF50)
@@ -78,6 +80,7 @@ fun MoodCard(
     onViewHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val view = LocalView.current
     val density = LocalDensity.current
     val hoverPadPx = with(density) { 48.dp.toPx() }
@@ -93,15 +96,9 @@ fun MoodCard(
     var floatAlpha by remember { mutableFloatStateOf(1f) }
     val weekMap = remember(weekMoods) { weekMoods.associateBy { it.date } }
     val lang = LocalCurrentLanguage.current.value
-    val weekLabels = remember(lang) {
-        if (lang == LocalizationManager.Language.ZH) {
-            listOf("日", "一", "二", "三", "四", "五", "六")
-        } else {
-            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-        }
-    }
-    val sunday = remember { sundayStartOfWeekContaining(LocalDate.now()) }
-    val weekDates = remember(sunday) { (0..6).map { sunday.plusDays(it.toLong()) } }
+    val weekLabels = remember(lang, context) { weekShortHeadersMondayFirst(context, lang) }
+    val monday = remember { MineViewModel.mondayOfWeekContaining(LocalDate.now()) }
+    val weekDates = remember(monday) { (0..6).map { monday.plusDays(it.toLong()) } }
     val today = LocalDate.now()
 
     fun rectContainsPad(r: Rect, p: Offset, pad: Float): Boolean {
@@ -144,23 +141,24 @@ fun MoodCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 3.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.1f),
-                    spotColor = Color.Black.copy(alpha = 0.1f)
+                    elevation = 5.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                    spotColor = Color.Black.copy(alpha = 0.08f)
                 )
-                .background(CardSurface, RoundedCornerShape(16.dp))
-                .border(0.5.dp, CardStroke, RoundedCornerShape(16.dp))
-                .padding(16.dp)
+                .background(CardSurface, RoundedCornerShape(20.dp))
+                .border(1.dp, CardStroke, RoundedCornerShape(20.dp))
+                .padding(horizontal = 18.dp, vertical = 18.dp)
         ) {
             Text(
                 text = LocalizedStrings.get("mine_mood_card_title"),
                 color = TitleColor,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = FontFamily.SansSerif
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Serif,
+                lineHeight = 22.sp
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -238,12 +236,12 @@ fun MoodCard(
                     }
                 }
             }
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 weekDates.forEachIndexed { index, date ->
@@ -272,7 +270,7 @@ fun MoodCard(
                             if (has) {
                                 Box(
                                     modifier = Modifier
-                                        .size(30.dp)
+                                        .size(32.dp)
                                         .then(
                                             if (isToday) Modifier.border(2.dp, Green, CircleShape)
                                             else Modifier
@@ -286,18 +284,26 @@ fun MoodCard(
                                     )
                                 }
                             } else {
+                                val todayEmpty = isToday
                                 Box(
                                     modifier = Modifier
-                                        .size(28.dp)
+                                        .size(32.dp)
                                         .clip(CircleShape)
-                                        .background(EmptyDayFill)
-                                        .border(1.dp, RingGray, CircleShape),
+                                        .then(
+                                            if (todayEmpty) {
+                                                Modifier.background(Color(0xFF1A1A1A))
+                                            } else {
+                                                Modifier
+                                                    .background(EmptyDayFill)
+                                                    .border(1.dp, RingGray, CircleShape)
+                                            }
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = "+",
-                                        color = slotColor,
-                                        fontSize = 16.sp,
+                                        color = if (todayEmpty) Color.White else slotColor,
+                                        fontSize = if (todayEmpty) 17.sp else 15.sp,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
@@ -306,14 +312,15 @@ fun MoodCard(
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 text = LocalizedStrings.get("view_history"),
                 color = LinkBlue,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .clickable { onViewHistory() }
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = 6.dp)
             )
         }
         if (draggingIcon != null) {
@@ -343,11 +350,6 @@ fun MoodCard(
             }
         }
     }
-}
-
-private fun sundayStartOfWeekContaining(d: LocalDate): LocalDate {
-    val dow = d.dayOfWeek.value
-    return d.minusDays((dow % 7).toLong())
 }
 
 /**

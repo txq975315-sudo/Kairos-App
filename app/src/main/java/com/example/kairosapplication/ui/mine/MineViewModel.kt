@@ -7,12 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.ui.mine.records.CheckInViewMode
 import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
+import com.example.kairosapplication.ui.mine.records.nextByTapCycle
 import com.example.kairosapplication.ui.mine.records.MineRecordsOverview
 import com.example.kairosapplication.ui.mine.records.MineRecordsScope
 import com.example.kairosapplication.ui.mine.records.MineRecordsStats
+import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.AllRecords
 import com.example.taskmodel.model.LocalProfile
 import com.example.taskmodel.model.MoodRecord
+import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.model.WeeklyInsights
 import com.example.taskmodel.viewmodel.TaskUiState
@@ -58,8 +61,8 @@ class MineViewModel(
 
     val weekMoods: StateFlow<List<MoodRecord>> = allMoods
         .map { list ->
-            val sunday = sundayStartOfWeekContaining(LocalDate.now())
-            val inWeek = (0..6).map { sunday.plusDays(it.toLong()) }.toSet()
+            val monday = mondayOfWeekContaining(LocalDate.now())
+            val inWeek = (0..6).map { monday.plusDays(it.toLong()) }.toSet()
             list.filter { it.date in inWeek }.sortedBy { it.date }
         }
         .stateIn(
@@ -136,6 +139,14 @@ class MineViewModel(
             initialValue = emptyList()
         )
 
+    val publishedNotes: StateFlow<List<Note>> = taskUiState
+        .map { ui -> ui.notePublished.filter { it.status == NoteStatus.PUBLISHED } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
     val mineRecordsMetrics: StateFlow<List<MineRecordsMetric>> =
         dataStoreManager.getMineRecordsMetricsEncoded()
             .map { raw -> MineRecordsMetric.parseStored(raw) }
@@ -204,9 +215,25 @@ class MineViewModel(
 
     fun setMineRecordsMetrics(metrics: List<MineRecordsMetric>) {
         viewModelScope.launch {
-            val next = metrics.distinct().ifEmpty { MineRecordsMetric.defaultSelection() }
+            val next = metrics.distinct().take(8).ifEmpty { MineRecordsMetric.defaultSelection() }
             dataStoreManager.setMineRecordsMetricsEncoded(MineRecordsMetric.encode(next))
         }
+    }
+
+    fun cycleMetricAtDisplayIndex(index: Int) {
+        val cur = mineRecordsMetrics.value
+        if (index !in cur.indices) return
+        val row = cur.toMutableList()
+        row[index] = row[index].nextByTapCycle()
+        setMineRecordsMetrics(row)
+    }
+
+    fun reorderMineMetrics(from: Int, to: Int) {
+        val cur = mineRecordsMetrics.value.toMutableList()
+        if (from !in cur.indices || to !in cur.indices) return
+        val item = cur.removeAt(from)
+        cur.add(to, item)
+        setMineRecordsMetrics(cur)
     }
 
     fun setMineRecordsScope(scope: MineRecordsScope) {
@@ -229,9 +256,9 @@ class MineViewModel(
 
     fun saveMood(moodIcon: String, date: LocalDate) {
         viewModelScope.launch {
-            val sunday = sundayStartOfWeekContaining(LocalDate.now())
-            val weekEnd = sunday.plusDays(6)
-            if (date.isBefore(sunday) || date.isAfter(weekEnd)) return@launch
+            val monday = mondayOfWeekContaining(LocalDate.now())
+            val weekEnd = monday.plusDays(6)
+            if (date.isBefore(monday) || date.isAfter(weekEnd)) return@launch
             val all = dataStoreManager.getMoods().toMutableList()
             all.removeAll { it.date == date }
             all.add(MoodRecord(date, moodIcon))

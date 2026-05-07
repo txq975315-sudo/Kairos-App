@@ -113,7 +113,7 @@ fun PrivacySettingsScreen(
                         showDeleteConfirm = false
                         Toast.makeText(
                             context,
-                            LocalizedStrings.stringFor(lang, "feature_developing"),
+                            LocalizedStrings.stringFor(lang, "feature_developing", context),
                             Toast.LENGTH_SHORT
                         ).show()
                     }

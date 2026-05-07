@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.view.month
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -16,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +37,7 @@ fun OverviewSection(
     onCustomizeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -46,7 +49,7 @@ fun OverviewSection(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = LocalizedStrings.stringFor(lang, "view_month_summary"),
+                    text = LocalizedStrings.stringFor(lang, "view_month_summary", ctx),
                     color = AppColors.HintText,
                     fontSize = 12.sp,
                     modifier = Modifier.fillMaxWidth(),
@@ -78,8 +81,8 @@ fun OverviewSection(
                     OverviewVerticalDivider()
                 }
                 OverviewMetricCell(
-                    valueText = formatOverviewMetricValue(overview, metric, lang),
-                    label = LocalizedStrings.stringFor(lang, metric.labelKey()),
+                    valueText = formatOverviewMetricValue(overview, metric, lang, ctx),
+                    label = LocalizedStrings.stringFor(lang, metric.labelKey(), ctx),
                     modifier = Modifier.widthIn(min = 76.dp),
                 )
             }
@@ -121,6 +124,7 @@ private fun formatOverviewMetricValue(
     overview: Overview,
     metric: MonthOverviewMetric,
     lang: LocalizationManager.Language,
+    context: Context,
 ): String {
     val raw = overview.displayValue(metric)
     return when (metric) {
@@ -129,8 +133,8 @@ private fun formatOverviewMetricValue(
         MonthOverviewMetric.STREAK_BOTH_MODULES,
         -> {
             val n = raw.toIntOrNull() ?: 0
-            if (n == 1) LocalizedStrings.stringFor(lang, "view_streak_one")
-            else LocalizedStrings.stringFor(lang, "view_streak_many").replace("{n}", n.toString())
+            if (n == 1) LocalizedStrings.stringFor(lang, "view_streak_one", context)
+            else LocalizedStrings.stringFor(lang, "view_streak_many", context, n)
         }
         else -> raw
     }

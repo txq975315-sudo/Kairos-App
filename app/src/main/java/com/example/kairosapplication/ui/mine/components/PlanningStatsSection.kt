@@ -2,6 +2,7 @@ package com.example.kairosapplication.ui.mine.components
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -33,8 +35,9 @@ import com.example.taskmodel.model.WeeklyInsights
 
 private val CardWhite = Color(0xFFFFFFFF)
 private val TitleSans = Color(0xFF1A1A1A)
-private val BlockBlue = Color(0xFFD9EFFF)
-private val BlockPurple = Color(0xFFD1C4E9)
+private val BlockStreakTint = Color(0xFFEDE7F6)
+private val BlockTotalSurface = Color(0xFFFFFFFF)
+private val BlockTotalBorder = Color(0xFFE6E6EA)
 private val LabelCaps = Color(0xFF424242)
 private val SwitchBlue = Color(0xFF2196F3)
 private val SwitchThumbOff = Color(0xFFE0E0E0)
@@ -53,13 +56,14 @@ fun PlanningStatsSection(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(16.dp),
-                ambientColor = Color.Black.copy(alpha = 0.08f),
+                elevation = 5.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color.Black.copy(alpha = 0.06f),
                 spotColor = Color.Black.copy(alpha = 0.08f)
             )
-            .background(CardWhite, RoundedCornerShape(16.dp))
-            .padding(16.dp)
+            .background(CardWhite, RoundedCornerShape(20.dp))
+            .border(1.dp, Color(0xFFE8E8EC), RoundedCornerShape(20.dp))
+            .padding(horizontal = 18.dp, vertical = 18.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -69,9 +73,10 @@ fun PlanningStatsSection(
             Text(
                 text = LocalizedStrings.get("mine_planning_heading"),
                 color = TitleSans,
-                fontSize = 15.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = FontFamily.Serif,
+                lineHeight = 22.sp,
                 modifier = Modifier.weight(1f)
             )
             Switch(
@@ -86,7 +91,7 @@ fun PlanningStatsSection(
                 )
             )
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
         if (!enabled) {
             Text(
                 text = LocalizedStrings.get("insights_off_today"),
@@ -98,22 +103,24 @@ fun PlanningStatsSection(
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatBlock(
                     value = insights.consecutiveDays,
                     caption = LocalizedStrings.get("mine_stat_days_in_a_row"),
-                    background = BlockBlue,
+                    background = BlockStreakTint,
+                    outlined = false,
                     modifier = Modifier.weight(1f)
                 )
                 StatBlock(
                     value = insights.daysWithRecord,
                     caption = LocalizedStrings.get("mine_stat_total_days"),
-                    background = BlockPurple,
+                    background = BlockTotalSurface,
+                    outlined = true,
                     modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -158,29 +165,41 @@ private fun StatBlock(
     value: Int,
     caption: String,
     background: Color,
+    outlined: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(16.dp)
     Column(
         modifier = modifier
-            .background(background, RoundedCornerShape(14.dp))
-            .padding(vertical = 18.dp, horizontal = 12.dp),
+            .clip(shape)
+            .then(
+                if (outlined) {
+                    Modifier
+                        .border(1.dp, BlockTotalBorder, shape)
+                        .background(background, shape)
+                } else {
+                    Modifier.background(background, shape)
+                }
+            )
+            .padding(vertical = 20.dp, horizontal = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = value.toString(),
             color = TitleSans,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.SansSerif
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = caption,
             color = LabelCaps,
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.SansSerif,
-            letterSpacing = 0.3.sp
+            letterSpacing = 0.4.sp,
+            lineHeight = 14.sp
         )
     }
 }

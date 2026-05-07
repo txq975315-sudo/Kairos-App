@@ -317,7 +317,7 @@ object WidgetViewFactory {
                     build3x1_3c(context, config, language, appWidgetId, tasks)
                 WidgetLayoutKind._3D -> {
                     val quoteBody = loadQuoteBody(context, language)
-                    val q = formatQuoteDisplay(config, language, quoteBody)
+                    val q = formatQuoteDisplay(context, config, language, quoteBody)
                     build3x1_3d(context, config, language, appWidgetId, tasks, q)
                 }
                 else ->
@@ -335,7 +335,7 @@ object WidgetViewFactory {
         return withContext(Dispatchers.IO) {
             val tasks = TaskRepository(context.applicationContext).getTasksSnapshot()
             val quoteBody = loadQuoteBody(context, language)
-            val q = formatQuoteDisplay(config, language, quoteBody)
+            val q = formatQuoteDisplay(context, config, language, quoteBody)
             when (config.layoutKind) {
                 WidgetLayoutKind._4B ->
                     build3x3_4b(context, config, language, appWidgetId, tasks, q)
@@ -365,7 +365,7 @@ object WidgetViewFactory {
             R.id.widget_progress_text,
             if (showTasks) "$completed/$total" else "0/0"
         )
-        val quotePrefix = LocalizedStrings.stringFor(state.language, "widget_quote_prefix")
+        val quotePrefix = LocalizedStrings.stringFor(state.language, "widget_quote_prefix", context)
         val quoteLine = if (config.displayConfig.showDailyQuote) {
             if (quotePrefix.isNotEmpty()) quotePrefix + state.quoteBody else state.quoteBody
         } else {
@@ -411,7 +411,7 @@ object WidgetViewFactory {
             if (showTasks) "${state.completed}/${state.total}" else "—"
         )
         bind1x1TodoRows(context, views, appWidgetId, state.lines, showTasks)
-        val quotePrefix = LocalizedStrings.stringFor(state.language, "widget_quote_prefix")
+        val quotePrefix = LocalizedStrings.stringFor(state.language, "widget_quote_prefix", context)
         val quoteLine = if (config.displayConfig.showDailyQuote) {
             if (quotePrefix.isNotEmpty()) quotePrefix + state.quoteBody else state.quoteBody
         } else {
@@ -477,18 +477,19 @@ object WidgetViewFactory {
         language: LocalizationManager.Language,
         dataRepository: WidgetDataRepository
     ): String {
-        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default")
+        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default", context)
         val body = dataRepository.getDailyQuote(defaultQuote)
-        return formatQuoteDisplay(config, language, body)
+        return formatQuoteDisplay(context, config, language, body)
     }
 
     private fun formatQuoteDisplay(
+        context: Context,
         config: WidgetConfig,
         language: LocalizationManager.Language,
-        quoteBody: String
+        quoteBody: String,
     ): String {
         if (!config.displayConfig.showDailyQuote) return ""
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix")
+        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", context)
         val raw = if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
         return when {
             raw.length <= 120 -> raw
@@ -498,7 +499,7 @@ object WidgetViewFactory {
 
     private suspend fun loadQuoteBody(context: Context, language: LocalizationManager.Language): String {
         val taskRepository = TaskRepository(context.applicationContext)
-        val defaultText = LocalizedStrings.stringFor(language, "widget_quote_default")
+        val defaultText = LocalizedStrings.stringFor(language, "widget_quote_default", context)
         val id = taskRepository.dailyQuoteEssayIdFlow.first() ?: return defaultText
         val essay = taskRepository.essaysFlow.first().find { it.id == id } ?: return defaultText
         val line = essay.body.trim().lineSequence().firstOrNull()?.trim().orEmpty()
@@ -528,8 +529,8 @@ object WidgetViewFactory {
             R.id.widget_progress_text,
             if (showTasks) "$completed/$total" else "0/0"
         )
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix")
-        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default")
+        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", context)
+        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default", context)
         val quoteBody = dataRepository.getDailyQuote(defaultQuote)
         val combined = if (config.displayConfig.showDailyQuote) {
             if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
@@ -599,8 +600,8 @@ object WidgetViewFactory {
             emptyList()
         }
         bind1x1TodoRows(context, views, appWidgetId, lines, showTasks)
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix")
-        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default")
+        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", context)
+        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default", context)
         val quoteBody = dataRepository.getDailyQuote(defaultQuote)
         val combined = if (config.displayConfig.showDailyQuote) {
             if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
@@ -656,9 +657,9 @@ object WidgetViewFactory {
         val taskData = dataRepository.getTodayTaskData()
         val completed = if (showTasks) taskData.completedCount else 0
         val total = if (showTasks) taskData.totalCount else 0
-        val statsLine = formatStatsLine(language, completed, total, showTasks)
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix")
-        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default")
+        val statsLine = formatStatsLine(context, language, completed, total, showTasks)
+        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", context)
+        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default", context)
         val quoteBody = dataRepository.getDailyQuote(defaultQuote)
         val quoteCombined = if (config.displayConfig.showDailyQuote) {
             if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
@@ -724,7 +725,7 @@ object WidgetViewFactory {
         views.setTextViewText(R.id.widget_2x2_month_grid, buildMiniMonthGridSpanned(ym, calendarDay))
         views.setTextViewText(
             R.id.widget_task_list_empty,
-            LocalizedStrings.stringFor(language, "widget_task_list_empty")
+            LocalizedStrings.stringFor(language, "widget_task_list_empty", context)
         )
         bindTaskList(context, views, appWidgetId, showTasks)
         if (showQuote) {
@@ -791,7 +792,7 @@ object WidgetViewFactory {
             java.time.format.TextStyle.SHORT,
             locale
         )
-        val todayLabel = LocalizedStrings.stringFor(language, "view_tab_today")
+        val todayLabel = LocalizedStrings.stringFor(language, "view_tab_today", context)
         views.setTextViewText(
             R.id.widget_today_date_line,
             "${today.dayOfMonth} · $todayLabel · $weekdayShort · $mmDd"
@@ -844,8 +845,7 @@ object WidgetViewFactory {
             views.setViewVisibility(R.id.widget_today_overflow_hint, View.VISIBLE)
             views.setTextViewText(
                 R.id.widget_today_overflow_hint,
-                LocalizedStrings.stringFor(language, "widget_3x1_more_tasks")
-                    .replace("{n}", overflow.toString())
+                LocalizedStrings.stringFor(language, "widget_3x1_more_tasks", context, overflow),
             )
         } else {
             views.setViewVisibility(R.id.widget_today_overflow_hint, View.GONE)
@@ -913,7 +913,7 @@ object WidgetViewFactory {
         WidgetTaskListStore.save(context, appWidgetId, rows)
         views.setTextViewText(
             R.id.widget_task_list_empty,
-            LocalizedStrings.stringFor(language, "widget_task_list_empty")
+            LocalizedStrings.stringFor(language, "widget_task_list_empty", context)
         )
         bindTaskList(context, views, appWidgetId, showTasks)
         val weekDays = mondayFirstWeek(today)
@@ -932,7 +932,7 @@ object WidgetViewFactory {
             R.id.widget_checkin_stats,
             String.format(
                 Locale.US,
-                LocalizedStrings.stringFor(language, "widget_checkin_stats"),
+                LocalizedStrings.stringFor(language, "widget_checkin_stats", context),
                 streak,
                 totalDays
             )
@@ -974,7 +974,7 @@ object WidgetViewFactory {
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_3x1_3c)
         val today = LocalDate.now()
-        val labels = weekDayLabels(language)
+        val labels = weekDayLabels(context, language)
         val weekDays = mondayFirstWeek(today)
         weekDays.forEachIndexed { i, date ->
             val wdId = WD_IDS.getOrNull(i) ?: return@forEachIndexed
@@ -1031,7 +1031,7 @@ object WidgetViewFactory {
             R.id.widget_wweek_title,
             "${weekStart.format(mdFmt)}–${weekStart.plusDays(6).format(mdFmt)}"
         )
-        val labels = weekDayLabels(language)
+        val labels = weekDayLabels(context, language)
         W3X3_WEEK_HEADER_IDS.forEachIndexed { i, hid ->
             views.setTextViewText(hid, labels.getOrElse(i) { "" })
         }
@@ -1258,7 +1258,7 @@ object WidgetViewFactory {
             ym.format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
         }
         views.setTextViewText(R.id.widget_month_title, monthTitle)
-        val weekLabs = weekDayLabels(language)
+        val weekLabs = weekDayLabels(context, language)
         W3X3_WEEK_HEADER_IDS.forEachIndexed { i, hid ->
             views.setTextViewText(hid, weekLabs.getOrElse(i) { "" })
         }
@@ -1348,15 +1348,16 @@ object WidgetViewFactory {
     }
 
     private fun formatStatsLine(
+        context: Context,
         language: LocalizationManager.Language,
         completed: Int,
         total: Int,
-        showTasks: Boolean
+        showTasks: Boolean,
     ): String {
         if (!showTasks) return "—"
         return String.format(
             Locale.US,
-            LocalizedStrings.stringFor(language, "widget_2x2_stats"),
+            LocalizedStrings.stringFor(language, "widget_2x2_stats", context),
             completed,
             total
         )
@@ -1419,8 +1420,8 @@ object WidgetViewFactory {
         return (0..6).map { monday.plusDays(it.toLong()) }
     }
 
-    private fun weekDayLabels(language: LocalizationManager.Language): List<String> {
-        val s = LocalizedStrings.stringFor(language, "widget_main_week_row")
+    private fun weekDayLabels(context: Context, language: LocalizationManager.Language): List<String> {
+        val s = LocalizedStrings.stringFor(language, "widget_main_week_row", context)
         return s.split(" ").map { it.trim() }.filter { it.isNotEmpty() }
     }
 

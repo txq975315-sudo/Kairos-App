@@ -14,10 +14,13 @@ class LocalizationManager(
     suspend fun setLanguage(language: Language) {
         dataStoreManager.setLanguage(language.code)
         _currentLanguage.value = language
+        LocaleHelper.setLocale(language.code)
     }
 
     suspend fun loadLanguage() {
-        _currentLanguage.value = Language.fromCode(dataStoreManager.getLanguageValue())
+        val lang = Language.fromCode(dataStoreManager.getLanguageValue())
+        _currentLanguage.value = lang
+        LocaleHelper.setLocale(lang.code)
     }
 
     enum class Language(val code: String, val displayName: String) {

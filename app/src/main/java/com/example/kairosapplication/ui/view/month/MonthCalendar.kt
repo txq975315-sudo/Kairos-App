@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -26,16 +27,15 @@ import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.view.DayCalendarData
 import com.example.kairosapplication.ui.view.viewClickable
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.util.TaskUtils
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.Locale
 
 private val DateNumberMuted = Color(0xFF9E9E9E)
@@ -44,19 +44,9 @@ private val TaskEmptyBg = Color(0xFFF0F0F0)
 private val TodayCellBg = Color(0xFFF0F4FF)
 private val SummaryCardText = Color(0xFF1A1A1A)
 private val SummaryCardRadius = 4.dp
-private val SummaryCardHeight = 22.dp
-/** Tall enough for date number + two summary rows + spacing (non-square cells). */
-private val CalendarRowMinHeight = 108.dp
-
-private val WeekdayOrder = listOf(
-    DayOfWeek.MONDAY,
-    DayOfWeek.TUESDAY,
-    DayOfWeek.WEDNESDAY,
-    DayOfWeek.THURSDAY,
-    DayOfWeek.FRIDAY,
-    DayOfWeek.SATURDAY,
-    DayOfWeek.SUNDAY,
-)
+private val SummaryCardHeight = 18.dp
+/** Date number + two summary rows (tasks + notes), compact height. */
+private val CalendarRowMinHeight = 76.dp
 
 @Composable
 fun MonthCalendar(
@@ -66,8 +56,8 @@ fun MonthCalendar(
     onMonthChange: (YearMonth) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
-    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
     val monthFmt = remember(lang) {
         when (lang) {
             LocalizationManager.Language.ZH ->
@@ -76,6 +66,7 @@ fun MonthCalendar(
                 DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
         }
     }
+    val weekHeaders = remember(lang, context) { weekShortHeadersMondayFirst(context, lang) }
     val today = LocalDate.now()
     val dim = yearMonth.lengthOfMonth()
     val firstCol = (yearMonth.atDay(1).dayOfWeek.value + 6) % 7
@@ -114,19 +105,19 @@ fun MonthCalendar(
             )
         }
         Row(modifier = Modifier.fillMaxWidth()) {
-            WeekdayOrder.forEach { dow ->
+            weekHeaders.forEach { label ->
                 Text(
-                    text = dow.getDisplayName(TextStyle.SHORT, locale),
+                    text = label,
                     color = DateNumberMuted,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 2.dp),
                 )
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         val rowCount = totalCells / 7
         for (row in 0 until rowCount) {
             Row(
@@ -201,7 +192,7 @@ private fun CalendarDayCell(
             .fillMaxSize()
             .viewClickable(onClick)
             .background(if (isToday) TodayCellBg else Color.Transparent)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .padding(horizontal = 3.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -211,12 +202,12 @@ private fun CalendarDayCell(
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
             textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(5.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         MonthDaySummaryCard(
             text = taskText,
             backgroundColor = taskCardBg,
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         MonthDaySummaryCard(
             text = if (data.noteCount > 0) data.noteCount.toString() else "—",
             backgroundColor = noteCardBg,

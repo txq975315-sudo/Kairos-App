@@ -1,7 +1,9 @@
 package com.example.kairosapplication.ui.topic
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.ui.components.NoteCardConstants
@@ -22,18 +24,24 @@ object EssayCategoryUi {
         primaryKey: String,
         sec: EssaySecondaryCategoryConfig,
         lang: LocalizationManager.Language,
+        context: Context,
     ): String {
         val trimmed = sec.name.trim()
         if (trimmed.isNotEmpty()) return trimmed
-        return TopicDisplayStrings.secondaryLabel(primaryKey, sec.id, lang)
+        return TopicDisplayStrings.secondaryLabel(primaryKey, sec.id, lang, context)
     }
 
     fun secondaryGuide(primaryKey: String, secondaryId: String, config: EssayCategoryConfig): String? =
         secondaryEntry(primaryKey, secondaryId, config)?.guide?.trim()?.takeIf { it.isNotEmpty() }
 
     /** 主课题固定为系统文案，不读取配置中的自定义名称。 */
-    fun primaryDisplayName(key: String, @Suppress("UNUSED_PARAMETER") config: EssayCategoryConfig, lang: LocalizationManager.Language): String =
-        TopicDisplayStrings.primaryLabel(key, lang)
+    fun primaryDisplayName(
+        key: String,
+        @Suppress("UNUSED_PARAMETER") config: EssayCategoryConfig,
+        lang: LocalizationManager.Language,
+        context: Context,
+    ): String =
+        TopicDisplayStrings.primaryLabel(key, lang, context)
 
     /** 主课题 Emoji 固定为内置映射。 */
     fun primaryEmoji(key: String, @Suppress("UNUSED_PARAMETER") config: EssayCategoryConfig): String =
@@ -49,8 +57,13 @@ object EssayCategoryUi {
         if (key == NotePrimaryCategory.FREESTYLE) EditorPlaceholderDefaults.bodyFreestyle
         else EditorPlaceholderDefaults.bodyFor(key)
 
-    fun primaryNavShort(categoryKey: String, config: EssayCategoryConfig, lang: LocalizationManager.Language): String {
-        val full = primaryDisplayName(categoryKey, config, lang)
+    fun primaryNavShort(
+        categoryKey: String,
+        config: EssayCategoryConfig,
+        lang: LocalizationManager.Language,
+        context: Context,
+    ): String {
+        val full = primaryDisplayName(categoryKey, config, lang, context)
         if (lang == LocalizationManager.Language.ZH) {
             return when {
                 full.length <= 4 -> full
@@ -63,17 +76,19 @@ object EssayCategoryUi {
 
 @Composable
 fun rememberTopicPrimaryLabelWithConfig(categoryKey: String, config: EssayCategoryConfig): String {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
-    return remember(categoryKey, config, lang) {
-        EssayCategoryUi.primaryDisplayName(categoryKey, config, lang)
+    return remember(categoryKey, config, lang, ctx) {
+        EssayCategoryUi.primaryDisplayName(categoryKey, config, lang, ctx)
     }
 }
 
 @Composable
 fun rememberTopicPrimaryNavShortWithConfig(categoryKey: String, config: EssayCategoryConfig): String {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
-    return remember(categoryKey, config, lang) {
-        EssayCategoryUi.primaryNavShort(categoryKey, config, lang)
+    return remember(categoryKey, config, lang, ctx) {
+        EssayCategoryUi.primaryNavShort(categoryKey, config, lang, ctx)
     }
 }
 
@@ -83,10 +98,11 @@ fun rememberTopicSecondaryLabelWithConfig(
     storedSecondary: String,
     config: EssayCategoryConfig,
 ): String {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
-    return remember(primaryKey, storedSecondary, config, lang) {
+    return remember(primaryKey, storedSecondary, config, lang, ctx) {
         val sec = EssayCategoryUi.secondaryEntry(primaryKey, storedSecondary, config)
             ?: EssaySecondaryCategoryConfig(id = storedSecondary)
-        EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang)
+        EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang, ctx)
     }
 }

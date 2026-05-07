@@ -13,12 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Checkbox
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,7 +30,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,15 +53,19 @@ fun MineAllRecordsCustomizeScreen(
     val scroll = rememberScrollState()
     val currentYear = LocalDate.now().year
     val minYear = (currentYear - 5).coerceAtLeast(2020)
+    val shown = metrics.ifEmpty { MineRecordsMetric.defaultSelection() }
+    val pool = enumValues<MineRecordsMetric>().filter { it !in shown }
 
-    fun toggleMetric(metric: MineRecordsMetric) {
-        val next = metrics.toMutableSet()
-        if (metric in next) {
-            if (next.size > 1) next.remove(metric)
-        } else {
-            next.add(metric)
-        }
-        mineViewModel.setMineRecordsMetrics(next.toList())
+    fun addMetric(m: MineRecordsMetric) {
+        val cur = mineViewModel.mineRecordsMetrics.value.ifEmpty { MineRecordsMetric.defaultSelection() }
+        if (cur.size >= 8 || m in cur) return
+        mineViewModel.setMineRecordsMetrics(cur + m)
+    }
+
+    fun removeAt(index: Int) {
+        val cur = mineViewModel.mineRecordsMetrics.value.ifEmpty { MineRecordsMetric.defaultSelection() }
+        if (cur.size <= 1) return
+        mineViewModel.setMineRecordsMetrics(cur.filterIndexed { i, _ -> i != index })
     }
 
     Column(
@@ -85,6 +88,9 @@ fun MineAllRecordsCustomizeScreen(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
+            TextButton(onClick = onBack) {
+                Text(LocalizedStrings.get("view_month_customize_done"))
+            }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
 
@@ -103,14 +109,14 @@ fun MineAllRecordsCustomizeScreen(
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ScopeChip(
-                    label = LocalizedStrings.get("mine_records_scope_year"),
-                    selected = scope == MineRecordsScope.THIS_YEAR,
-                    onClick = { mineViewModel.setMineRecordsScope(MineRecordsScope.THIS_YEAR) }
-                )
-                ScopeChip(
                     label = LocalizedStrings.get("mine_records_scope_all"),
                     selected = scope == MineRecordsScope.ALL_TIME,
-                    onClick = { mineViewModel.setMineRecordsScope(MineRecordsScope.ALL_TIME) }
+                    onClick = { mineViewModel.setMineRecordsScope(MineRecordsScope.ALL_TIME) },
+                )
+                ScopeChip(
+                    label = LocalizedStrings.get("mine_records_scope_year"),
+                    selected = scope == MineRecordsScope.THIS_YEAR,
+                    onClick = { mineViewModel.setMineRecordsScope(MineRecordsScope.THIS_YEAR) },
                 )
             }
             if (scope == MineRecordsScope.THIS_YEAR) {
@@ -154,31 +160,71 @@ fun MineAllRecordsCustomizeScreen(
             }
             Spacer(Modifier.height(20.dp))
             Text(
-                text = LocalizedStrings.get("mine_records_metrics_heading"),
+                text = LocalizedStrings.get("mine_records_shown_heading"),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(8.dp))
-
-            enumValues<MineRecordsMetric>().forEach { metric ->
-                val checked = metric in metrics
+            Text(
+                text = LocalizedStrings.get("mine_records_shown_max_hint"),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            )
+            Spacer(Modifier.height(8.dp))
+            shown.forEachIndexed { index, metric ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .toggleable(
-                            value = checked,
-                            role = Role.Checkbox,
-                            onValueChange = { toggleMetric(metric) }
-                        )
-                        .padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(checked = checked, onCheckedChange = { toggleMetric(metric) })
+                    IconButton(
+                        onClick = { mineViewModel.reorderMineMetrics(index, (index - 1).coerceAtLeast(0)) },
+                        enabled = index > 0,
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                    }
+                    IconButton(
+                        onClick = { mineViewModel.reorderMineMetrics(index, (index + 1).coerceAtMost(shown.lastIndex)) },
+                        enabled = index < shown.lastIndex,
+                    ) {
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                    }
                     Text(
                         text = LocalizedStrings.get(metric.labelKey()),
                         fontSize = 15.sp,
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    )
+                    TextButton(
+                        onClick = { removeAt(index) },
+                        enabled = shown.size > 1,
+                    ) {
+                        Text(LocalizedStrings.get("mine_records_remove_metric"))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Text(
+                text = LocalizedStrings.get("mine_records_pool_heading"),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            pool.forEach { metric ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = shown.size < 8) { addMetric(metric) }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "+ ${LocalizedStrings.get(metric.labelKey())}",
+                        fontSize = 15.sp,
+                        color = if (shown.size < 8) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     )
                 }
             }
@@ -193,9 +239,9 @@ fun MineAllRecordsCustomizeScreen(
             Spacer(Modifier.height(10.dp))
             MineRecordsMetricsCard(
                 overview = overview,
-                metrics = metrics.ifEmpty { MineRecordsMetric.defaultSelection() },
+                metrics = shown,
                 modifier = Modifier.fillMaxWidth(),
-                onClick = null
+                onClick = null,
             )
             Spacer(Modifier.height(24.dp))
         }

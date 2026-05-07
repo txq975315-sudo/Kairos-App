@@ -57,6 +57,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
 import com.example.kairosapplication.ui.EssayNavHost
 import com.example.kairosapplication.ui.mine.MineAllRecordsCustomizeScreen
+import com.example.kairosapplication.ui.mine.MineAllRecordsScreen
 import com.example.kairosapplication.ui.mine.MineScreen
 import com.example.kairosapplication.ui.mine.MineViewModel
 import com.example.kairosapplication.ui.mine.MoodCalendarScreen
@@ -159,6 +160,7 @@ fun MainScreen(
     }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     var showMoodCalendar by remember { mutableStateOf(false) }
+    var showMineAllRecords by remember { mutableStateOf(false) }
     var showMineAllRecordsCustomize by remember { mutableStateOf(false) }
     var showTopicManageHub by remember { mutableStateOf(false) }
     var topicManageEditPrimaryKey by remember { mutableStateOf<String?>(null) }
@@ -183,7 +185,7 @@ fun MainScreen(
         (selectedTab == AppTab.Today && currentRoute == "create") ||
             (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main") ||
             (selectedTab == AppTab.Mine &&
-                (showTopicManageHub || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
+                (showTopicManageHub || showMineAllRecords || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
                     showImportScreen || showNotificationSettings || showThemeSettings || showMoodSettings ||
                     showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
@@ -194,6 +196,7 @@ fun MainScreen(
         if (selectedTab != AppTab.Mine) {
             showTopicManageHub = false
             topicManageEditPrimaryKey = null
+            showMineAllRecords = false
             showMineAllRecordsCustomize = false
             showMoodCalendar = false
             showSettingsScreen = false
@@ -320,6 +323,11 @@ fun MainScreen(
                     taskViewModel = taskViewModel,
                     openTopicTabWithPrimary = essayOpenTopicPrimary,
                     onOpenTopicTabConsumed = { essayOpenTopicPrimary = null },
+                    onOpenTopicManage = {
+                        selectedTab = AppTab.Mine
+                        showTopicManageHub = true
+                        topicManageEditPrimaryKey = null
+                    },
                 )
             } else if (selectedTab == AppTab.View) {
                 ViewScreen(
@@ -346,6 +354,15 @@ fun MainScreen(
                             topicManageEditPrimaryKey = null
                         },
                         onEditPrimary = { topicManageEditPrimaryKey = it },
+                    )
+                    showMineAllRecords -> MineAllRecordsScreen(
+                        mineViewModel = mineViewModel,
+                        onBack = { showMineAllRecords = false },
+                        onOpenCustomize = { showMineAllRecordsCustomize = true },
+                        onGoTodayForTasks = {
+                            showMineAllRecords = false
+                            selectedTab = AppTab.Today
+                        },
                     )
                     showMineAllRecordsCustomize -> MineAllRecordsCustomizeScreen(
                         mineViewModel = mineViewModel,
@@ -470,7 +487,8 @@ fun MainScreen(
                         onNavigateToMoodCalendar = { showMoodCalendar = true },
                         onOpenSettings = { showSettingsScreen = true },
                         onOpenTheme = { showThemeSettings = true },
-                        onCustomizeAllRecords = { showMineAllRecordsCustomize = true }
+                        onOpenAllRecords = { showMineAllRecords = true },
+                        onCustomizeAllRecords = { showMineAllRecordsCustomize = true },
                     )
                 }
             }

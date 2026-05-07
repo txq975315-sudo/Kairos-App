@@ -37,6 +37,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        lintConfig = file("lint.xml")
+        abortOnError = true
+        checkReleaseBuilds = false
+    }
 }
 
 val renameInvalidSw512Drawable by tasks.registering {
@@ -56,8 +62,51 @@ tasks.named("preBuild").configure {
     dependsOn(renameInvalidSw512Drawable)
 }
 
+tasks.register("scanHardcodedText") {
+    group = "verification"
+    description =
+        "Fails the build if main Kotlin sources contain CJK inside Text(\"...\") (same-line heuristic; pair with :lint-rules and ./gradlew lint)."
+    doLast {
+        val srcRoot = layout.projectDirectory.dir("src/main/java").asFile
+        if (!srcRoot.isDirectory) return@doLast
+        val textCjk = Regex("""Text\s*\(\s*"[^"]*[\u4e00-\u9fff][^"]*"""")
+        val lineSkips =
+            listOf(
+                "stringResource",
+                "LocalizedStrings",
+            )
+        val pathSkips =
+            listOf(
+                "/test/",
+                "/androidTest/",
+            )
+        val violations = mutableListOf<String>()
+        srcRoot.walkTopDown().maxDepth(30).filter { it.isFile && it.extension == "kt" }.forEach { file ->
+            val rel = file.relativeTo(layout.projectDirectory.asFile).invariantSeparatorsPath
+            if (pathSkips.any { rel.contains(it, ignoreCase = true) }) return@forEach
+            file.readLines().forEachIndexed { idx, rawLine ->
+                val line = rawLine.trimStart()
+                if (line.startsWith("//") || line.startsWith("*")) return@forEachIndexed
+                if (lineSkips.any { rawLine.contains(it) }) return@forEachIndexed
+                if (textCjk.containsMatchIn(rawLine)) {
+                    violations.add("$rel:${idx + 1}: Text(...) may contain hardcoded CJK")
+                }
+            }
+        }
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                "scanHardcodedText failed (${violations.size} finding(s)):\n" +
+                    violations.joinToString("\n") +
+                    "\n\nUse stringResource / resources or narrow suppressions.",
+            )
+        }
+    }
+}
+
 dependencies {
+    lintChecks(project(":lint-rules"))
     implementation(project(":task-model"))
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)

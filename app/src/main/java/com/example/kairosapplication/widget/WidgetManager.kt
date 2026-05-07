@@ -134,7 +134,7 @@ object WidgetManager {
         val completed = dayTasks.count { it.isCompleted }
         val dataStoreManager = DataStoreManager(appContext)
         val language = LocalizationManager.Language.fromCode(dataStoreManager.getLanguageSync())
-        val quoteBody = loadDailyQuoteBody(taskRepository, language)
+        val quoteBody = loadDailyQuoteBody(taskRepository, language, appContext)
         return Widget1x1DisplayState(
             dateText = dateText,
             completed = completed,
@@ -169,7 +169,7 @@ object WidgetManager {
         } else {
             emptyList()
         }
-        val quoteBody = loadDailyQuoteBody(taskRepository, language)
+        val quoteBody = loadDailyQuoteBody(taskRepository, language, appContext)
         return Widget1x1TodoDisplayState(
             dateText = dateText,
             completed = completed,
@@ -182,9 +182,10 @@ object WidgetManager {
 
     private suspend fun loadDailyQuoteBody(
         taskRepository: TaskRepository,
-        language: LocalizationManager.Language
+        language: LocalizationManager.Language,
+        appContext: Context,
     ): String {
-        val defaultText = LocalizedStrings.stringFor(language, "widget_quote_default")
+        val defaultText = LocalizedStrings.stringFor(language, "widget_quote_default", appContext)
         val id = taskRepository.dailyQuoteEssayIdFlow.first() ?: return defaultText
         val essay = taskRepository.essaysFlow.first().find { it.id == id } ?: return defaultText
         val line = essay.body.trim().lineSequence().firstOrNull()?.trim().orEmpty()
@@ -211,13 +212,13 @@ object WidgetManager {
         } else {
             String.format(
                 Locale.US,
-                LocalizedStrings.stringFor(language, "widget_2x2_stats"),
+                LocalizedStrings.stringFor(language, "widget_2x2_stats", appContext),
                 completed,
                 total
             )
         }
-        val quoteBody = loadDailyQuoteBody(taskRepository, language)
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix")
+        val quoteBody = loadDailyQuoteBody(taskRepository, language, appContext)
+        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", appContext)
         val rawQuote = if (config.displayConfig.showDailyQuote) {
             if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
         } else {

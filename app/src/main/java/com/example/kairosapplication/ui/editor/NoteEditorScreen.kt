@@ -374,11 +374,11 @@ fun NoteEditorScreen(
     val secondaryIds = remember(primaryCategory, categoryConfig) {
         EssayCategoryUi.mergedSecondaryIds(primaryCategory, categoryConfig)
     }
-    val secondaryChipOptions = remember(secondaryIds, categoryConfig, lang) {
+    val secondaryChipOptions = remember(secondaryIds, categoryConfig, lang, context) {
         secondaryIds.map { id ->
             val sec = EssayCategoryUi.secondaryEntry(primaryCategory, id, categoryConfig)
                 ?: EssaySecondaryCategoryConfig(id = id)
-            id to EssayCategoryUi.secondaryDisplayLabel(primaryCategory, sec, lang)
+            id to EssayCategoryUi.secondaryDisplayLabel(primaryCategory, sec, lang, context)
         }
     }
     val secondaryGuideText = remember(primaryCategory, secondaryCategory, categoryConfig) {

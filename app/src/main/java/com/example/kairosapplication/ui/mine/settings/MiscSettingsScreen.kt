@@ -70,7 +70,7 @@ fun MiscSettingsScreen(
             Spacer(Modifier.height(8.dp))
             SettingsGroupCard(title = LocalizedStrings.get("clear_cache")) {
                 Text(
-                    "${LocalizedStrings.stringFor(lang, "cache_size")}: $cacheLabel",
+                    "${LocalizedStrings.stringFor(lang, "cache_size", context)}: $cacheLabel",
                     fontSize = 15.sp,
                     color = SettingsTitleC
                 )
@@ -80,14 +80,14 @@ fun MiscSettingsScreen(
                         viewModel.clearCache()
                         Toast.makeText(
                             context,
-                            LocalizedStrings.stringFor(lang, "cache_cleared"),
+                            LocalizedStrings.stringFor(lang, "cache_cleared", context),
                             Toast.LENGTH_SHORT
                         ).show()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = SettingsSwitchBlue)
                 ) {
-                    Text(LocalizedStrings.stringFor(lang, "clear_cache"))
+                    Text(LocalizedStrings.stringFor(lang, "clear_cache", context))
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -101,13 +101,13 @@ fun MiscSettingsScreen(
                             context.startActivity(
                                 Intent.createChooser(
                                     intent,
-                                    LocalizedStrings.stringFor(lang, "feedback")
+                                    LocalizedStrings.stringFor(lang, "feedback", context)
                                 )
                             )
                         } catch (_: Exception) {
                             Toast.makeText(
                                 context,
-                                LocalizedStrings.stringFor(lang, "no_mail_app"),
+                                LocalizedStrings.stringFor(lang, "no_mail_app", context),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -125,13 +125,13 @@ fun MiscSettingsScreen(
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "${LocalizedStrings.stringFor(lang, "recommend_kairos")}${context.packageName}"
+                                "${LocalizedStrings.stringFor(lang, "recommend_kairos", context)}${context.packageName}"
                             )
                         }
                         context.startActivity(
                             Intent.createChooser(
                                 intent,
-                                LocalizedStrings.stringFor(lang, "share_app")
+                                LocalizedStrings.stringFor(lang, "share_app", context)
                             )
                         )
                     },

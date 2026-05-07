@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Layout XML: no literal user-facing strings (placeholders live in widget XML; copy is bound in code). -->
+    <issue id="HardcodedText" severity="error">
+        <ignore path="**/res/layout/widget_*.xml" />
+    </issue>
+
+    <!-- Compose Kotlin: CJK inside Text() without stringResource (see :lint-rules). -->
+    <issue id="ComposeHardcodedCjkText" severity="warning" />
+</lint>

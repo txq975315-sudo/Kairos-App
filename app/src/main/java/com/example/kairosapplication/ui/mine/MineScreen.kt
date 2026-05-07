@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
@@ -45,7 +47,7 @@ import com.example.kairosapplication.ui.mine.components.ProfileCard
 import com.example.kairosapplication.ui.mine.components.ProfileEditSheet
 import com.example.kairosapplication.i18n.LocalizedStrings
 
-private val MineScreenBg = Color(0xFFF3F3F5)
+private val MineScreenBg = Color(0xFFF4F4F6)
 private val MoonTint = Color(0xFFFFC107)
 private val SettingsIconTint = Color(0xFF616161)
 
@@ -55,6 +57,7 @@ fun MineScreen(
     onNavigateToMoodCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenTheme: () -> Unit,
+    onOpenAllRecords: () -> Unit,
     onCustomizeAllRecords: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,6 +67,7 @@ fun MineScreen(
     val mineRecordsMetrics by mineViewModel.mineRecordsMetrics.collectAsState()
     val checkInViewMode by mineViewModel.checkInViewMode.collectAsState()
     val tasks by mineViewModel.tasks.collectAsState()
+    val publishedNotes by mineViewModel.publishedNotes.collectAsState()
     val weeklyInsights by mineViewModel.weeklyInsights.collectAsState()
     val weeklyInsightsEnabled by mineViewModel.weeklyInsightsEnabled.collectAsState()
     val todayMood by mineViewModel.todayMood.collectAsState()
@@ -81,34 +85,54 @@ fun MineScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 18.dp)
+                .padding(horizontal = 20.dp)
         ) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .shadow(2.dp, RoundedCornerShape(50))
-                        .clip(RoundedCornerShape(50))
+                        .weight(1f)
+                        .heightIn(min = 44.dp)
+                        .shadow(1.dp, RoundedCornerShape(22.dp), clip = false)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(Color.White)
+                        .clickable(onClick = openEdit)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = profile.displayName.ifBlank { LocalizedStrings.get("user_nickname") },
+                        color = Color(0xFF1A1A1A),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .shadow(1.dp, CircleShape, clip = false)
+                        .clip(CircleShape)
                         .background(Color.White)
                         .clickable(onClick = onOpenTheme),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Filled.DarkMode,
-                        contentDescription = null,
+                        contentDescription = LocalizedStrings.get("dark_mode"),
                         tint = MoonTint,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .shadow(2.dp, CircleShape)
+                        .size(40.dp)
+                        .shadow(1.dp, CircleShape, clip = false)
                         .clip(CircleShape)
                         .background(Color.White)
                         .clickable(onClick = onOpenSettings),
@@ -118,11 +142,11 @@ fun MineScreen(
                         imageVector = Icons.Outlined.Settings,
                         contentDescription = LocalizedStrings.get("mine_settings"),
                         tint = SettingsIconTint,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(18.dp))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -131,10 +155,11 @@ fun MineScreen(
                 Text(
                     text = LocalizedStrings.get("weekly_insights"),
                     color = Color(0xFF1A1A1A),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Normal,
                     fontFamily = FontFamily.Serif,
-                    modifier = Modifier.padding(bottom = 10.dp)
+                    lineHeight = 34.sp,
+                    modifier = Modifier.padding(bottom = 14.dp)
                 )
                 MoodCard(
                     todayMood = todayMood,
@@ -144,26 +169,28 @@ fun MineScreen(
                     },
                     onViewHistory = onNavigateToMoodCalendar
                 )
-                Spacer(Modifier.height(20.dp))
-                PlanningStatsSection(
-                    insights = weeklyInsights,
-                    enabled = weeklyInsightsEnabled,
-                    onToggleEnabled = { mineViewModel.toggleWeeklyInsights(it) }
-                )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
                 AllRecordsSection(
                     overview = mineRecordsOverview,
                     metrics = mineRecordsMetrics,
                     tasks = tasks,
+                    publishedNotes = publishedNotes,
                     checkInViewMode = checkInViewMode,
                     onCheckInViewModeChange = { mineViewModel.setCheckInViewMode(it) },
-                    onCustomizeClick = onCustomizeAllRecords
+                    onOpenAllRecords = onOpenAllRecords,
+                    onCustomizeClick = onCustomizeAllRecords,
                 )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
                 ProfileCard(
                     profile = profile,
                     recordDays = recordDays,
                     onClick = openEdit
+                )
+                Spacer(Modifier.height(24.dp))
+                PlanningStatsSection(
+                    insights = weeklyInsights,
+                    enabled = weeklyInsightsEnabled,
+                    onToggleEnabled = { mineViewModel.toggleWeeklyInsights(it) }
                 )
                 Spacer(Modifier.height(32.dp))
             }

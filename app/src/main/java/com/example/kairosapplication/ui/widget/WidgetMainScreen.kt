@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
@@ -88,6 +89,7 @@ fun WidgetMainScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val today = LocalDate.now()
     val lang = LocalCurrentLanguage.current.value
     val isZh = lang == LocalizationManager.Language.ZH
@@ -116,7 +118,7 @@ fun WidgetMainScreen(
     val tmTasks = remember(uiState.tasks, tomorrow) {
         TaskUtils.sortTasks(uiState.tasks.filter { it.taskDate == tomorrow })
     }
-    val triptychMergedDateLine = remember(today, lang, isZh) {
+    val triptychMergedDateLine = remember(today, lang, isZh, context) {
         val mmDd = if (isZh) {
             DateTimeFormatter.ofPattern("MM-dd", Locale.CHINA).format(today)
         } else {
@@ -126,7 +128,7 @@ fun WidgetMainScreen(
             TextStyle.SHORT,
             if (isZh) Locale.CHINA else Locale.ENGLISH
         )
-        val todayLabel = LocalizedStrings.stringFor(lang, "view_tab_today")
+        val todayLabel = LocalizedStrings.stringFor(lang, "view_tab_today", context)
         "${today.dayOfMonth} · $todayLabel · $wd · $mmDd"
     }
     val triptychGridSlots = remember(sortedToday) {
@@ -136,10 +138,10 @@ fun WidgetMainScreen(
             }
         }
     }
-    val triptychOverflow = remember(sortedToday, lang) {
+    val triptychOverflow = remember(sortedToday, lang, context) {
         val n = sortedToday.size - 10
         if (n > 0) {
-            LocalizedStrings.stringFor(lang, "widget_3x1_more_tasks").replace("{n}", n.toString())
+            LocalizedStrings.stringFor(lang, "widget_3x1_more_tasks", context, n)
         } else {
             null
         }
@@ -683,14 +685,15 @@ private fun Widget3x1WeekQuotePreview(
     quote: String,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
     val mdFmt = remember(lang) { DateTimeFormatter.ofPattern("M/d", locale) }
     val weekStart = remember(today) {
         today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     }
     val weekEnd = weekStart.plusDays(6)
-    val weekLabels = remember(lang) {
-        LocalizedStrings.stringFor(lang, "widget_main_week_row")
+    val weekLabels = remember(lang, context) {
+        LocalizedStrings.stringFor(lang, "widget_main_week_row", context)
             .split(" ")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -834,14 +837,15 @@ private fun SuperLargePreviewCard(
     quote: String,
     lang: LocalizationManager.Language
 ) {
+    val context = LocalContext.current
     val isZh = lang == LocalizationManager.Language.ZH
     val ym = YearMonth.from(today)
     val monthTitle = remember(today, isZh) {
         if (isZh) DateTimeFormatter.ofPattern("yyyy年M月", Locale.CHINA).format(today)
         else DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH).format(today)
     }
-    val weekLabels = remember(lang) {
-        LocalizedStrings.stringFor(lang, "widget_main_week_row")
+    val weekLabels = remember(lang, context) {
+        LocalizedStrings.stringFor(lang, "widget_main_week_row", context)
             .split(" ")
             .map { it.trim() }
             .filter { it.isNotEmpty() }

@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,7 @@ fun ProfileEditSheet(
     modifier: Modifier = Modifier
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     var nickname by remember { mutableStateOf(profile.displayName) }
     var selectedEmoji by remember { mutableStateOf(profile.avatarEmoji.ifBlank { "😊" }) }
@@ -139,7 +141,7 @@ fun ProfileEditSheet(
                         onSave(
                             LocalProfile(
                                 displayName = nickname.ifBlank {
-                                    LocalizedStrings.stringFor(lang, "user_nickname")
+                                    LocalizedStrings.stringFor(lang, "user_nickname", context)
                                 },
                                 avatarEmoji = selectedEmoji.ifBlank { "😊" },
                                 avatarImageUri = profile.avatarImageUri

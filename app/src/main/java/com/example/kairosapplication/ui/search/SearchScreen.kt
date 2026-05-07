@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.search
 
+import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -60,6 +61,8 @@ import androidx.compose.ui.window.Dialog
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.topic.TopicDisplayStrings
 import com.example.kairosapplication.ui.PublishedNoteActionDialogsHost
 import com.example.kairosapplication.ui.components.NoteCard
@@ -192,32 +195,33 @@ fun SearchScreen(
     }
 
     val lang = LocalCurrentLanguage.current.value
-    val categoryDialogOptions = remember(lang) {
-        listOf(CategoryAllKey to "All") +
+    val categoryDialogOptions = remember(lang, context) {
+        listOf(CategoryAllKey to LocalizedStrings.stringFor(lang, "search_filter_all", context)) +
             categoryFilterOrder.map { key ->
-                key to TopicDisplayStrings.primaryLabel(key, lang)
+                key to TopicDisplayStrings.primaryLabel(key, lang, context)
             }
     }
 
-    val dateDialogOptions = remember {
+    val dateDialogOptions = remember(lang, context) {
         listOf(
-            DateRangeFilter.ANY to "Any",
-            DateRangeFilter.TODAY to "Today",
-            DateRangeFilter.THIS_WEEK to "This week",
-            DateRangeFilter.THIS_MONTH to "This month"
+            DateRangeFilter.ANY to LocalizedStrings.stringFor(lang, "search_filter_any", context),
+            DateRangeFilter.TODAY to LocalizedStrings.stringFor(lang, "search_filter_today", context),
+            DateRangeFilter.THIS_WEEK to LocalizedStrings.stringFor(lang, "search_filter_this_week", context),
+            DateRangeFilter.THIS_MONTH to LocalizedStrings.stringFor(lang, "search_filter_this_month", context),
         )
     }
 
-    val imageDialogOptions = remember {
+    val imageDialogOptions = remember(lang, context) {
         listOf(
-            ImageFilter.ANY to "Any",
-            ImageFilter.WITH_IMAGES to "Yes",
-            ImageFilter.WITHOUT_IMAGES to "No"
+            ImageFilter.ANY to LocalizedStrings.stringFor(lang, "search_filter_any", context),
+            ImageFilter.WITH_IMAGES to LocalizedStrings.stringFor(lang, "search_filter_yes", context),
+            ImageFilter.WITHOUT_IMAGES to LocalizedStrings.stringFor(lang, "search_filter_no", context),
         )
     }
 
-    val moodDialogOptions = remember {
-        listOf(MoodAnyKey to "Any") + moodOptions.map { emoji -> emoji to emoji }
+    val moodDialogOptions = remember(lang, context) {
+        listOf(MoodAnyKey to LocalizedStrings.stringFor(lang, "search_filter_any", context)) +
+            moodOptions.map { emoji -> emoji to emoji }
     }
 
     LaunchedEffect(commentNoteId, filteredNotes) {
@@ -298,8 +302,9 @@ fun SearchScreen(
                 item {
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
                     FilterRow(
-                        label = "Category",
-                        value = selectedCategory?.let { TopicDisplayStrings.primaryLabel(it, lang) } ?: "All",
+                        label = LocalizedStrings.get("search_filter_category"),
+                        value = selectedCategory?.let { TopicDisplayStrings.primaryLabel(it, lang, context) }
+                            ?: LocalizedStrings.get("search_filter_all"),
                         onClick = { showCategoryDialog = true }
                     )
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
@@ -307,8 +312,8 @@ fun SearchScreen(
 
                 item {
                     FilterRow(
-                        label = "Date range",
-                        value = dateRangeDisplayLabel(selectedDateRange),
+                        label = LocalizedStrings.get("search_filter_date_range"),
+                        value = dateRangeDisplayLabel(selectedDateRange, lang, context),
                         onClick = { showDateRangeDialog = true }
                     )
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
@@ -316,8 +321,8 @@ fun SearchScreen(
 
                 item {
                     FilterRow(
-                        label = "Has images",
-                        value = imageFilterDisplayLabel(selectedImageFilter),
+                        label = LocalizedStrings.get("search_filter_has_images"),
+                        value = imageFilterDisplayLabel(selectedImageFilter, lang, context),
                         onClick = { showHasImagesDialog = true }
                     )
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
@@ -325,8 +330,8 @@ fun SearchScreen(
 
                 item {
                     FilterRow(
-                        label = "Mood",
-                        value = selectedMood ?: "Any",
+                        label = LocalizedStrings.get("search_filter_mood"),
+                        value = selectedMood ?: LocalizedStrings.get("search_filter_any"),
                         onClick = { showMoodDialog = true }
                     )
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
@@ -334,7 +339,7 @@ fun SearchScreen(
 
                 item {
                     Text(
-                        text = "Results (${filteredNotes.size})",
+                        text = LocalizedStrings.get("search_results", filteredNotes.size),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.PrimaryText,
@@ -353,13 +358,13 @@ fun SearchScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "No notes found",
+                                text = LocalizedStrings.get("search_no_results_title"),
                                 fontSize = 16.sp,
                                 color = AppColors.SecondaryText
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Try different keywords or filters",
+                                text = LocalizedStrings.get("search_no_results_hint"),
                                 fontSize = 14.sp,
                                 color = AppColors.HintText
                             )
@@ -425,7 +430,7 @@ fun SearchScreen(
 
     if (showCategoryDialog) {
         KeyLabelFilterDialog(
-            title = "Category",
+            title = LocalizedStrings.get("search_filter_category"),
             options = categoryDialogOptions,
             selectedKey = selectedCategory ?: CategoryAllKey,
             onSelect = { key ->
@@ -438,7 +443,7 @@ fun SearchScreen(
 
     if (showDateRangeDialog) {
         EnumFilterDialog(
-            title = "Date range",
+            title = LocalizedStrings.get("search_filter_date_range"),
             options = dateDialogOptions,
             selected = selectedDateRange,
             onSelect = {
@@ -451,7 +456,7 @@ fun SearchScreen(
 
     if (showHasImagesDialog) {
         EnumFilterDialog(
-            title = "Has images",
+            title = LocalizedStrings.get("search_filter_has_images"),
             options = imageDialogOptions,
             selected = selectedImageFilter,
             onSelect = {
@@ -464,7 +469,7 @@ fun SearchScreen(
 
     if (showMoodDialog) {
         KeyLabelFilterDialog(
-            title = "Mood",
+            title = LocalizedStrings.get("search_filter_mood"),
             options = moodDialogOptions,
             selectedKey = selectedMood ?: MoodAnyKey,
             onSelect = { key ->
@@ -497,7 +502,7 @@ private fun SearchBar(
         IconButton(onClick = onBackClick) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = LocalizedStrings.get("back"),
                 tint = AppColors.PrimaryText,
                 modifier = Modifier.size(24.dp)
             )
@@ -535,7 +540,7 @@ private fun SearchBar(
                         Box(modifier = Modifier.fillMaxWidth()) {
                             if (query.isEmpty()) {
                                 Text(
-                                    text = "Search notes...",
+                                    text = LocalizedStrings.get("search_placeholder"),
                                     fontSize = 16.sp,
                                     color = fieldText.copy(alpha = 0.8f),
                                     modifier = Modifier.align(Alignment.CenterStart)
@@ -552,7 +557,7 @@ private fun SearchBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear",
+                            contentDescription = LocalizedStrings.get("search_cd_clear"),
                             tint = fieldText.copy(alpha = 0.8f),
                             modifier = Modifier.size(18.dp)
                         )
@@ -622,7 +627,7 @@ private fun RecentSearchChipsSection(
     editTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { editTarget = null },
-            title = { Text("Edit search", color = AppColors.PrimaryText) },
+            title = { Text(LocalizedStrings.get("search_dialog_edit_title"), color = AppColors.PrimaryText) },
             text = {
                 OutlinedTextField(
                     value = editedText,
@@ -638,7 +643,7 @@ private fun RecentSearchChipsSection(
                         editTarget = null
                     }
                 ) {
-                    Text("Save", color = AppColors.PrimaryText)
+                    Text(LocalizedStrings.get("search_dialog_save"), color = AppColors.PrimaryText)
                 }
             },
             dismissButton = {
@@ -649,10 +654,10 @@ private fun RecentSearchChipsSection(
                             editTarget = null
                         }
                     ) {
-                        Text("Delete", color = AppColors.SecondaryText)
+                        Text(LocalizedStrings.get("search_dialog_delete"), color = AppColors.SecondaryText)
                     }
                     TextButton(onClick = { editTarget = null }) {
-                        Text("Cancel", color = AppColors.SecondaryText)
+                        Text(LocalizedStrings.get("cancel"), color = AppColors.SecondaryText)
                     }
                 }
             }
@@ -717,7 +722,7 @@ private fun FilterRow(
             )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Select",
+                contentDescription = LocalizedStrings.get("search_cd_select"),
                 tint = AppColors.HintText,
                 modifier = Modifier
                     .size(16.dp)
@@ -825,15 +830,23 @@ private fun <T> EnumFilterDialog(
     }
 }
 
-private fun dateRangeDisplayLabel(selected: DateRangeFilter): String = when (selected) {
-    DateRangeFilter.ANY -> "Any"
-    DateRangeFilter.TODAY -> "Today"
-    DateRangeFilter.THIS_WEEK -> "This week"
-    DateRangeFilter.THIS_MONTH -> "This month"
+private fun dateRangeDisplayLabel(
+    selected: DateRangeFilter,
+    lang: LocalizationManager.Language,
+    context: Context,
+): String = when (selected) {
+    DateRangeFilter.ANY -> LocalizedStrings.stringFor(lang, "search_filter_any", context)
+    DateRangeFilter.TODAY -> LocalizedStrings.stringFor(lang, "search_filter_today", context)
+    DateRangeFilter.THIS_WEEK -> LocalizedStrings.stringFor(lang, "search_filter_this_week", context)
+    DateRangeFilter.THIS_MONTH -> LocalizedStrings.stringFor(lang, "search_filter_this_month", context)
 }
 
-private fun imageFilterDisplayLabel(selected: ImageFilter): String = when (selected) {
-    ImageFilter.ANY -> "Any"
-    ImageFilter.WITH_IMAGES -> "Yes"
-    ImageFilter.WITHOUT_IMAGES -> "No"
+private fun imageFilterDisplayLabel(
+    selected: ImageFilter,
+    lang: LocalizationManager.Language,
+    context: Context,
+): String = when (selected) {
+    ImageFilter.ANY -> LocalizedStrings.stringFor(lang, "search_filter_any", context)
+    ImageFilter.WITH_IMAGES -> LocalizedStrings.stringFor(lang, "search_filter_yes", context)
+    ImageFilter.WITHOUT_IMAGES -> LocalizedStrings.stringFor(lang, "search_filter_no", context)
 }

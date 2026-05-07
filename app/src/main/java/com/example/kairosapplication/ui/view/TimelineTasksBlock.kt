@@ -15,6 +15,7 @@ import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,12 +27,13 @@ import com.example.taskmodel.model.Task
 
 @Composable
 private fun timelineTimeBlockLabel(block: String): String {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     return when (block.uppercase()) {
-        TaskConstants.TIME_BLOCK_ANYTIME -> LocalizedStrings.stringFor(lang, "view_time_anytime")
-        TaskConstants.TIME_BLOCK_MORNING -> LocalizedStrings.stringFor(lang, "view_time_morning")
-        TaskConstants.TIME_BLOCK_AFTERNOON -> LocalizedStrings.stringFor(lang, "view_time_afternoon")
-        TaskConstants.TIME_BLOCK_EVENING -> LocalizedStrings.stringFor(lang, "view_time_evening")
+        TaskConstants.TIME_BLOCK_ANYTIME -> LocalizedStrings.stringFor(lang, "view_time_anytime", ctx)
+        TaskConstants.TIME_BLOCK_MORNING -> LocalizedStrings.stringFor(lang, "view_time_morning", ctx)
+        TaskConstants.TIME_BLOCK_AFTERNOON -> LocalizedStrings.stringFor(lang, "view_time_afternoon", ctx)
+        TaskConstants.TIME_BLOCK_EVENING -> LocalizedStrings.stringFor(lang, "view_time_evening", ctx)
         else -> block.lowercase().replaceFirstChar(Char::titlecaseChar)
     }
 }
@@ -76,6 +78,7 @@ fun TimelineTasksByTimeBlocks(
     onToggleTaskComplete: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     var remaining = maxVisible
     Column(modifier = modifier) {
@@ -108,8 +111,12 @@ fun TimelineTasksByTimeBlocks(
         }
         if (sortedTasks.size > maxVisible) {
             Text(
-                text = LocalizedStrings.stringFor(lang, "view_week_more_tasks")
-                    .replace("{n}", (sortedTasks.size - maxVisible).toString()),
+                text = LocalizedStrings.stringFor(
+                    lang,
+                    "view_week_more_tasks",
+                    ctx,
+                    sortedTasks.size - maxVisible,
+                ),
                 color = AppColors.HintText,
                 fontSize = 10.sp,
                 modifier = Modifier.padding(top = 2.dp),

@@ -126,8 +126,10 @@ fun TodayTab(
                         if (tasks.size > TodayTabMaxTaskLines) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = LocalizedStrings.get("view_see_all_more")
-                                    .replace("{n}", (tasks.size - TodayTabMaxTaskLines).toString()),
+                                text = LocalizedStrings.get(
+                                    "view_see_all_more",
+                                    tasks.size - TodayTabMaxTaskLines,
+                                ),
                                 color = AppColors.HintText,
                                 fontSize = 12.sp,
                                 textAlign = TextAlign.End,

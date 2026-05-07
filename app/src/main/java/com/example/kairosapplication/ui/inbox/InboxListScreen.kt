@@ -48,8 +48,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.topic.TopicDisplayStrings
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -76,15 +81,6 @@ private val topicEmojis = mapOf(
     NotePrimaryCategory.MEANING to "✨"
 )
 
-private val topicLabels = mapOf(
-    NotePrimaryCategory.FREESTYLE to "Freestyle",
-    NotePrimaryCategory.SELF_AWARENESS to "Self-Awareness",
-    NotePrimaryCategory.INTERPERSONAL to "Interpersonal",
-    NotePrimaryCategory.INTIMACY_FAMILY to "Intimacy & Family",
-    NotePrimaryCategory.SOMATIC_ENERGY to "Health & Energy",
-    NotePrimaryCategory.MEANING to "Meaning"
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxListScreen(
@@ -94,6 +90,7 @@ fun InboxListScreen(
     onQuickClassify: (Long, String) -> Unit
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
+    val lang = LocalCurrentLanguage.current.value
     var sortOrder by remember { mutableStateOf(InboxSortOrder.BY_DEADLINE) }
     var showMenu by remember { mutableStateOf(false) }
 
@@ -138,8 +135,8 @@ fun InboxListScreen(
             ) {
                 Text(
                     text = when (sortOrder) {
-                        InboxSortOrder.BY_DEADLINE -> "Sorted by deadline (soonest first)"
-                        InboxSortOrder.BY_DATE -> "Sorted by date (newest first)"
+                        InboxSortOrder.BY_DEADLINE -> LocalizedStrings.get("inbox_sort_hint_deadline")
+                        InboxSortOrder.BY_DATE -> LocalizedStrings.get("inbox_sort_hint_date")
                     },
                     fontSize = 12.sp,
                     color = SecondaryTextColor,
@@ -176,7 +173,7 @@ fun InboxListScreen(
                                     contentAlignment = Alignment.CenterEnd
                                 ) {
                                     Text(
-                                        text = "Delete",
+                                        text = LocalizedStrings.get("inbox_swipe_delete"),
                                         color = Color.Red,
                                         fontWeight = FontWeight.Medium,
                                         modifier = Modifier.padding(16.dp)
@@ -186,6 +183,7 @@ fun InboxListScreen(
                             content = {
                                 InboxNoteCard(
                                     note = note,
+                                    lang = lang,
                                     onClick = { onNoteClick(note.id) },
                                     onQuickClassify = { category ->
                                         onQuickClassify(note.id, category)
@@ -211,17 +209,18 @@ private fun InboxTopBar(
     onShowMenuChange: (Boolean) -> Unit,
     onClearAll: () -> Unit
 ) {
+    val ctx = LocalContext.current
     TopAppBar(
         title = {
             Column {
                 Text(
-                    text = "Inspiration",
+                    text = LocalizedStrings.get("inbox_title"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
                     color = PrimaryTextColor
                 )
                 Text(
-                    text = "$inboxCount unorganized",
+                    text = LocalizedStrings.get("inbox_subtitle_unorganized", inboxCount),
                     fontSize = 12.sp,
                     color = SecondaryTextColor
                 )
@@ -231,7 +230,7 @@ private fun InboxTopBar(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = LocalizedStrings.get("back"),
                     tint = PrimaryTextColor
                 )
             }
@@ -241,7 +240,7 @@ private fun InboxTopBar(
                 IconButton(onClick = { onShowMenuChange(true) }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Menu",
+                        contentDescription = LocalizedStrings.get("cd_more_menu"),
                         tint = PrimaryTextColor
                     )
                 }
@@ -252,7 +251,7 @@ private fun InboxTopBar(
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Sort by deadline")
+                                Text(LocalizedStrings.get("inbox_menu_sort_deadline"))
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = if (sortOrder == InboxSortOrder.BY_DEADLINE) "✓" else "",
@@ -268,7 +267,7 @@ private fun InboxTopBar(
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Sort by date")
+                                Text(LocalizedStrings.get("inbox_menu_sort_date"))
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = if (sortOrder == InboxSortOrder.BY_DATE) "✓" else "",
@@ -284,7 +283,7 @@ private fun InboxTopBar(
                     HorizontalDivider()
                     DropdownMenuItem(
                         text = {
-                            Text("Clear all → Freestyle", color = Color.Red)
+                            Text(LocalizedStrings.get("inbox_menu_clear_freestyle"), color = Color.Red)
                         },
                         onClick = {
                             onClearAll()
@@ -301,9 +300,11 @@ private fun InboxTopBar(
 @Composable
 private fun InboxNoteCard(
     note: Note,
+    lang: LocalizationManager.Language,
     onClick: () -> Unit,
     onQuickClassify: (String) -> Unit
 ) {
+    val ctx = LocalContext.current
     var showCategoryPicker by remember { mutableStateOf(false) }
 
     Card(
@@ -326,11 +327,16 @@ private fun InboxNoteCard(
             val daysLeft = deadline?.let { ChronoUnit.DAYS.between(today, it).toInt() }
 
             val (deadlineText, deadlineColor) = when {
-                daysLeft == null -> "No deadline" to SecondaryTextColor
-                daysLeft < 0 -> "⚠️ Overdue! Converted ${-daysLeft} day(s) ago" to Color.Red
-                daysLeft == 0 -> "⚠️ Due today!" to Color.Red
-                daysLeft == 1 -> "⏰ Due tomorrow" to Color(0xFFFF9800)
-                else -> "⏰ Auto-converts in $daysLeft days" to SecondaryTextColor
+                daysLeft == null ->
+                    LocalizedStrings.stringFor(lang, "inbox_deadline_none", ctx) to SecondaryTextColor
+                daysLeft < 0 ->
+                    LocalizedStrings.stringFor(lang, "inbox_deadline_overdue", ctx, -daysLeft) to Color.Red
+                daysLeft == 0 ->
+                    LocalizedStrings.stringFor(lang, "inbox_deadline_today", ctx) to Color.Red
+                daysLeft == 1 ->
+                    LocalizedStrings.stringFor(lang, "inbox_deadline_tomorrow", ctx) to Color(0xFFFF9800)
+                else ->
+                    LocalizedStrings.stringFor(lang, "inbox_deadline_auto", ctx, daysLeft) to SecondaryTextColor
             }
 
             Text(
@@ -348,7 +354,7 @@ private fun InboxNoteCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = topicLabels[note.primaryCategory] ?: note.primaryCategory,
+                        text = TopicDisplayStrings.primaryLabel(note.primaryCategory, lang, ctx),
                         fontSize = 12.sp,
                         color = SecondaryTextColor
                     )
@@ -375,7 +381,7 @@ private fun InboxNoteCard(
             }
 
             Text(
-                text = formatInboxDate(note.recordedDate),
+                text = formatInboxDate(note.recordedDate, lang),
                 fontSize = 11.sp,
                 color = SecondaryTextColor.copy(alpha = 0.7f)
             )
@@ -387,7 +393,7 @@ private fun InboxNoteCard(
                     onClick = { showCategoryPicker = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Quick Classify", fontSize = 12.sp)
+                    Text(LocalizedStrings.get("inbox_quick_classify"), fontSize = 12.sp)
                 }
             }
         }
@@ -409,21 +415,23 @@ private fun CategoryPickerDialog(
     onDismiss: () -> Unit,
     onCategorySelected: (String) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
     val categories = listOf(
-        NotePrimaryCategory.SELF_AWARENESS to "Self-Awareness",
-        NotePrimaryCategory.INTERPERSONAL to "Interpersonal",
-        NotePrimaryCategory.INTIMACY_FAMILY to "Intimacy & Family",
-        NotePrimaryCategory.SOMATIC_ENERGY to "Health & Energy",
-        NotePrimaryCategory.MEANING to "Meaning",
-        NotePrimaryCategory.FREESTYLE to "Freestyle"
+        NotePrimaryCategory.SELF_AWARENESS,
+        NotePrimaryCategory.INTERPERSONAL,
+        NotePrimaryCategory.INTIMACY_FAMILY,
+        NotePrimaryCategory.SOMATIC_ENERGY,
+        NotePrimaryCategory.MEANING,
+        NotePrimaryCategory.FREESTYLE,
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select category", color = PrimaryTextColor) },
+        title = { Text(LocalizedStrings.get("inbox_pick_category_title"), color = PrimaryTextColor) },
         text = {
             Column {
-                categories.forEach { (key, label) ->
+                categories.forEach { key ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -435,7 +443,7 @@ private fun CategoryPickerDialog(
                     ) {
                         Text(text = topicEmojis[key] ?: "📝", fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(text = label, fontSize = 16.sp, color = PrimaryTextColor)
+                        Text(text = TopicDisplayStrings.primaryLabel(key, lang, ctx), fontSize = 16.sp, color = PrimaryTextColor)
                     }
                 }
             }
@@ -443,7 +451,7 @@ private fun CategoryPickerDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SecondaryTextColor)
+                Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
             }
         }
     )
@@ -459,14 +467,14 @@ private fun EmptyInboxState(modifier: Modifier = Modifier) {
             Text(text = "🎉", fontSize = 64.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "All clear!",
+                text = LocalizedStrings.get("inbox_empty_title"),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = PrimaryTextColor
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No inspiration waiting to be organized",
+                text = LocalizedStrings.get("inbox_empty_subtitle"),
                 fontSize = 14.sp,
                 color = SecondaryTextColor
             )
@@ -474,7 +482,8 @@ private fun EmptyInboxState(modifier: Modifier = Modifier) {
     }
 }
 
-private fun formatInboxDate(date: LocalDate): String {
-    val formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH)
-    return date.format(formatter)
+private fun formatInboxDate(date: LocalDate, lang: LocalizationManager.Language): String {
+    val pattern = if (lang == LocalizationManager.Language.ZH) "yyyy年M月d日" else "MMMM d, yyyy"
+    val loc = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
+    return date.format(DateTimeFormatter.ofPattern(pattern, loc))
 }

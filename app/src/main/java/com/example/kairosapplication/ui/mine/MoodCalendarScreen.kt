@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.mine.components.MoodStoredIcon
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.taskmodel.model.MoodRecord
@@ -60,8 +61,6 @@ private val TitleColor = Color(0xFF1A1A1A)
 private val SubGray = Color(0xFF9E9E9E)
 private val TodayBorder = Color(0xFF9E9E9E)
 private val SelectedBg = Color(0xFFF0F4FF)
-private val WeekLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-
 @Composable
 fun MoodCalendarScreen(
     mineViewModel: MineViewModel,
@@ -70,6 +69,7 @@ fun MoodCalendarScreen(
 ) {
     val context = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
+    val weekHeaders = remember(lang, context) { weekShortHeadersMondayFirst(context, lang) }
     val allMoods by mineViewModel.allMoods.collectAsState()
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -113,10 +113,11 @@ fun MoodCalendarScreen(
             TextButton(onClick = {
                 val snap = mineViewModel.monthMoodStatsSnapshot(yearMonth)
                 val sep = if (lang == LocalizationManager.Language.ZH) "，" else ", "
-                val times = LocalizedStrings.moodStatTimesFor(lang)
+                val times = LocalizedStrings.moodStatTimesFor(lang, context)
                 val lines = snap.entries.sortedByDescending { e -> e.value }
                     .joinToString(sep) { e -> "${e.key}×${e.value}$times" }
                 val summary = LocalizedStrings.moodShareSummaryFor(
+                    context,
                     lang,
                     yearMonth.format(titleFmt),
                     lines
@@ -126,7 +127,7 @@ fun MoodCalendarScreen(
                     putExtra(Intent.EXTRA_TEXT, summary)
                 }
                 context.startActivity(
-                    Intent.createChooser(send, LocalizedStrings.stringFor(lang, "share"))
+                    Intent.createChooser(send, LocalizedStrings.stringFor(lang, "share", context))
                 )
             }) {
                 Text(LocalizedStrings.get("share"), color = Color(0xFF2196F3), fontSize = 14.sp)
@@ -185,7 +186,7 @@ fun MoodCalendarScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        WeekLabels.forEach { w ->
+                        weekHeaders.forEach { w ->
                             Text(
                                 text = w,
                                 modifier = Modifier.weight(1f),

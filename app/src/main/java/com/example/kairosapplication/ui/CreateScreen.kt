@@ -69,6 +69,8 @@ import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
 import java.time.DayOfWeek
@@ -524,7 +526,9 @@ private fun CalendarSection(
         currentMonth.atDay(1).format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
     }
     val monthDays = remember(currentMonth) { buildCalendarDays(currentMonth) }
-    val weekTitles = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val ctx = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val weekTitles = remember(lang, ctx) { weekShortHeadersMondayFirst(ctx, lang) }
 
     Column(
         modifier = modifier
@@ -1037,7 +1041,7 @@ private fun SelectionChip(
 
 private fun buildCalendarDays(month: YearMonth): List<LocalDate?> {
     val firstDay = month.atDay(1)
-    val leadingEmpty = firstDay.dayOfWeek.value % DayOfWeek.SUNDAY.value
+    val leadingEmpty = (firstDay.dayOfWeek.value + 6) % 7
     val totalDays = month.lengthOfMonth()
     val cells = MutableList<LocalDate?>(leadingEmpty) { null }
 

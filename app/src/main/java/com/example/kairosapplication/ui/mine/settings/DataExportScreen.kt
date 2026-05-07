@@ -82,7 +82,7 @@ fun DataExportScreen(
             is SettingsViewModel.ExportState.Success -> {
                 Toast.makeText(
                     context,
-                    LocalizedStrings.stringFor(langSnap, "export_success"),
+                    LocalizedStrings.stringFor(langSnap, "export_success", context),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -106,7 +106,7 @@ fun DataExportScreen(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
-            Intent.createChooser(intent, LocalizedStrings.stringFor(lang, "share"))
+            Intent.createChooser(intent, LocalizedStrings.stringFor(lang, "share", context))
         )
     }
 
@@ -141,7 +141,7 @@ fun DataExportScreen(
                             } else {
                                 Toast.makeText(
                                     context,
-                                    LocalizedStrings.stringFor(lang, "export_first"),
+                                    LocalizedStrings.stringFor(lang, "export_first", context),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }

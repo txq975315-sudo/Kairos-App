@@ -1,7 +1,10 @@
 package com.example.kairosapplication.ui.mine.components
 
+import android.content.Context
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -38,14 +42,21 @@ private val GradientEnd = Color(0xFFC8BCFA)
 private val OnGradient = Color.White
 private val OnGradientMuted = Color.White.copy(alpha = 0.82f)
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MineRecordsMetricsCard(
     overview: MineRecordsOverview,
     metrics: List<MineRecordsMetric>,
     modifier: Modifier = Modifier,
+    /** Whole-card tap (e.g. open hub) when per-metric taps are not used. */
     onClick: (() -> Unit)? = null,
+    /** Per-metric tap: cycle metric in pool (index in [metrics] list). */
+    onMetricIndexClick: ((Int) -> Unit)? = null,
+    onMetricsLongPress: (() -> Unit)? = null,
 ) {
+    val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
+    val list = metrics.distinct()
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -63,7 +74,20 @@ fun MineRecordsMetricsCard(
                 ),
                 shape = RoundedCornerShape(18.dp)
             )
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null && onMetricIndexClick == null) {
+                    if (onMetricsLongPress != null) {
+                        Modifier.combinedClickable(
+                            onClick = onClick,
+                            onLongClick = onMetricsLongPress,
+                        )
+                    } else {
+                        Modifier.clickable(onClick = onClick)
+                    }
+                } else {
+                    Modifier
+                },
+            )
             .padding(vertical = 22.dp, horizontal = 8.dp)
     ) {
         Row(
@@ -73,7 +97,7 @@ fun MineRecordsMetricsCard(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            metrics.distinct().forEachIndexed { index, metric ->
+            list.forEachIndexed { index, metric ->
                 if (index > 0) {
                     Box(
                         modifier = Modifier
@@ -82,10 +106,20 @@ fun MineRecordsMetricsCard(
                             .background(OnGradient.copy(alpha = 0.45f))
                     )
                 }
+                val cellModifier = if (onMetricIndexClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = { onMetricIndexClick(index) },
+                        onLongClick = { onMetricsLongPress?.invoke() },
+                    )
+                } else {
+                    Modifier
+                }
                 GradientMetricCell(
-                    valueText = formatMineMetricValue(overview, metric, lang),
-                    label = LocalizedStrings.stringFor(lang, metric.labelKey()),
-                    modifier = Modifier.padding(horizontal = 10.dp)
+                    valueText = formatMineMetricValue(overview, metric, lang, ctx),
+                    label = LocalizedStrings.stringFor(lang, metric.labelKey(), ctx),
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp)
+                        .then(cellModifier),
                 )
             }
         }
@@ -126,6 +160,7 @@ private fun formatMineMetricValue(
     overview: MineRecordsOverview,
     metric: MineRecordsMetric,
     lang: LocalizationManager.Language,
+    context: Context,
 ): String {
     val raw = overview.rawDisplay(metric)
     return when (metric) {
@@ -133,10 +168,13 @@ private fun formatMineMetricValue(
         MineRecordsMetric.STREAK_ALL_TASKS_DONE,
         MineRecordsMetric.STREAK_BOTH_MODULES,
         MineRecordsMetric.MAX_STREAK_RECORD,
+        MineRecordsMetric.LONGEST_ALL_TASKS_STREAK,
+        MineRecordsMetric.LONGEST_BOTH_STREAK,
+        MineRecordsMetric.PEAK_CONTINUITY_STREAK,
         -> {
             val n = raw.toIntOrNull() ?: 0
-            if (n == 1) LocalizedStrings.stringFor(lang, "view_streak_one")
-            else LocalizedStrings.stringFor(lang, "view_streak_many").replace("{n}", n.toString())
+            if (n == 1) LocalizedStrings.stringFor(lang, "view_streak_one", context)
+            else LocalizedStrings.stringFor(lang, "view_streak_many", context, n)
         }
         else -> raw
     }

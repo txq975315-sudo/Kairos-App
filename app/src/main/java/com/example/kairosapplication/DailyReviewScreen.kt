@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppReviewLayout
 import com.example.kairosapplication.core.ui.AppScreenHeader
@@ -118,10 +119,10 @@ fun DailyReviewScreen(
                 direction = ArrowDirection.LEFT,
                 size = 36.dp,
                 tint = Color(0xFF1A1A1A),
-                contentDescription = "Back"
+                contentDescription = LocalizedStrings.get("back")
             )
             Text(
-                text = "Daily Review !",
+                text = LocalizedStrings.get("daily_review_title"),
                 fontSize = AppScreenHeader.titleSp,
                 fontWeight = AppScreenHeader.titleWeight,
                 color = AppScreenHeader.titleColor,
@@ -130,7 +131,7 @@ fun DailyReviewScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        QuoteSnapshot(text = "The wind rises; I keep going.")
+        QuoteSnapshot(text = LocalizedStrings.get("daily_review_quote"))
         Spacer(modifier = Modifier.height(18.dp))
 
         Column(
@@ -141,7 +142,7 @@ fun DailyReviewScreen(
         ) {
             ReviewSection(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                title = "Overdue (${overdueTasks.size})",
+                title = LocalizedStrings.get("daily_review_overdue", overdueTasks.size),
                 titleColor = Color(0xFFE53935),
                 backgroundColor = Color(0x40E53935),
                 borderColor = Color.Transparent,
@@ -156,7 +157,7 @@ fun DailyReviewScreen(
 
             ReviewSection(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                title = "Completed (${completedTasks.size})",
+                title = LocalizedStrings.get("daily_review_completed", completedTasks.size),
                 titleColor = Color(0xFF1A1A1A),
                 backgroundColor = Color(0x404A74FF),
                 borderColor = Color(0x664A74FF),
@@ -203,7 +204,7 @@ fun DailyReviewScreen(
                     disabledContentColor = Color(0xFF9E9E9E)
                 )
             ) {
-                Text("Copy to Today", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(LocalizedStrings.get("daily_review_copy_today"), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
 
             Button(
@@ -234,7 +235,7 @@ fun DailyReviewScreen(
                     disabledContentColor = Color(0xFFF5F3FF)
                 )
             ) {
-                Text("Move to Today", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text(LocalizedStrings.get("daily_review_move_today"), fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

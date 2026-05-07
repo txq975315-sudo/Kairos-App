@@ -163,6 +163,7 @@ fun EssayMainScreen(
     onNavigateToNewNoteFromTopic: (String) -> Unit,
     openTopicTabWithPrimary: String? = null,
     onOpenTopicTabConsumed: () -> Unit = {},
+    onOpenTopicManage: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf(EssayTab.TIMELINE) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -393,7 +394,14 @@ fun EssayMainScreen(
                         )
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
-                                text = { Text("Trash", color = PrimaryTextColor) },
+                                text = { Text(LocalizedStrings.get("topic_manage"), color = PrimaryTextColor) },
+                                onClick = {
+                                    menuOpen = false
+                                    onOpenTopicManage()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(LocalizedStrings.get("essay_menu_trash"), color = PrimaryTextColor) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
@@ -407,7 +415,7 @@ fun EssayMainScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Essay: Card layout", color = essayHeaderPrimary) },
+                                text = { Text(LocalizedStrings.get("essay_menu_layout_card"), color = essayHeaderPrimary) },
                                 leadingIcon = if (timelineLayout == "card") {
                                     {
                                         Icon(
@@ -425,7 +433,7 @@ fun EssayMainScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Essay: Integrated layout", color = essayHeaderPrimary) },
+                                text = { Text(LocalizedStrings.get("essay_menu_layout_integrated"), color = essayHeaderPrimary) },
                                 leadingIcon = if (timelineLayout == "integrated") {
                                     {
                                         Icon(
@@ -444,7 +452,7 @@ fun EssayMainScreen(
                             )
                             if (integratedLayoutActive) {
                                 DropdownMenuItem(
-                                    text = { Text("Essay wallpaper…", color = essayHeaderPrimary) },
+                                    text = { Text(LocalizedStrings.get("essay_menu_wallpaper"), color = essayHeaderPrimary) },
                                     onClick = {
                                         menuOpen = false
                                         pickEssayWallpaper.launch(
@@ -453,7 +461,7 @@ fun EssayMainScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Clear essay wallpaper", color = essayHeaderPrimary) },
+                                    text = { Text(LocalizedStrings.get("essay_menu_clear_wallpaper"), color = essayHeaderPrimary) },
                                     onClick = {
                                         menuOpen = false
                                         scope.launch { dataStore.setEssayIntegratedWallpaperUri(null) }
@@ -461,14 +469,6 @@ fun EssayMainScreen(
                                     enabled = essayWallpaperUri != null
                                 )
                             }
-                            DropdownMenuItem(
-                                text = { Text("View settings", color = PrimaryTextColor) },
-                                onClick = { menuOpen = false }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Sort by date", color = PrimaryTextColor) },
-                                onClick = { menuOpen = false }
-                            )
                         }
                     }
                 }

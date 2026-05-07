@@ -85,20 +85,20 @@ fun DataImportScreen(
                     r.onFailure {
                         Toast.makeText(
                             context,
-                            LocalizedStrings.stringFor(lang, "parse_failed"),
+                            LocalizedStrings.stringFor(lang, "parse_failed", context),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
                 }
             } ?: Toast.makeText(
                 context,
-                LocalizedStrings.stringFor(lang, "cannot_read_file"),
+                LocalizedStrings.stringFor(lang, "cannot_read_file", context),
                 Toast.LENGTH_SHORT
             ).show()
         }.onFailure {
             Toast.makeText(
                 context,
-                LocalizedStrings.stringFor(lang, "cannot_read_file"),
+                LocalizedStrings.stringFor(lang, "cannot_read_file", context),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -113,6 +113,7 @@ fun DataImportScreen(
                 Toast.makeText(
                     context,
                     LocalizedStrings.importSuccessMessageFor(
+                        context,
                         langSnap,
                         s.result.newNotes,
                         s.result.newTasks,

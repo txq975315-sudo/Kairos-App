@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -26,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,10 +34,16 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.mine.MineViewModel
+import com.example.kairosapplication.ui.mine.records.CalendarDayVisual
 import com.example.kairosapplication.ui.mine.records.CheckInViewMode
-import com.example.kairosapplication.ui.mine.records.DailyCheckInTier
-import com.example.kairosapplication.ui.mine.records.dailyCheckInTierForDay
+import com.example.kairosapplication.ui.mine.records.FutureCheckInDisplay
+import com.example.kairosapplication.ui.mine.records.PastCheckInDisplay
+import com.example.kairosapplication.ui.mine.records.calendarDayVisual
+import com.example.kairosapplication.ui.mine.records.pastTierCountsInMonth
+import com.example.taskmodel.constants.NoteStatus
+import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
 import java.time.LocalDate
 import java.time.YearMonth
@@ -49,16 +55,20 @@ private val SubGray = Color(0xFF9E9E9E)
 private val TodayBorder = Color(0xFF9E9E9E)
 private val ToggleBg = Color(0xFFF0F0F2)
 private val ToggleSelected = Color(0xFF5B7CFA)
-private val WeekLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 private val EmojiSize = 26.sp
-private val EmptyMarkSize = 13.sp
+private val FutureMuted = Color(0xFFBDBDBD)
+private val FutureDot = Color(0xFFE0E0E0)
 
 @Composable
 fun CheckInStatsSection(
     tasks: List<Task>,
+    publishedNotes: List<Note>,
     viewMode: CheckInViewMode,
     onViewModeChange: (CheckInViewMode) -> Unit,
     modifier: Modifier = Modifier,
+    showHeadingRow: Boolean = true,
+    onDayClick: ((LocalDate) -> Unit)? = null,
+    showMonthSummaryFooter: Boolean = false,
 ) {
     val lang = LocalCurrentLanguage.current.value
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
@@ -80,38 +90,49 @@ fun CheckInStatsSection(
     }
 
     val tasksByDate = remember(tasks) { tasks.groupBy { it.taskDate } }
+    val context = LocalContext.current
+    val weekHeaderLabels = remember(lang, context) { weekShortHeadersMondayFirst(context, lang) }
+    val essayByDate = remember(publishedNotes) {
+        publishedNotes
+            .filter { it.status == NoteStatus.PUBLISHED }
+            .groupingBy { it.recordedDate }
+            .eachCount()
+    }
+    val today = LocalDate.now()
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = LocalizedStrings.get("mine_checkin_title"),
-                color = TitleColor,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+        if (showHeadingRow) {
             Row(
-                modifier = Modifier
-                    .background(ToggleBg, RoundedCornerShape(20.dp))
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                CheckInModeChip(
-                    label = LocalizedStrings.get("mine_checkin_week"),
-                    selected = viewMode == CheckInViewMode.WEEK,
-                    onClick = { onViewModeChange(CheckInViewMode.WEEK) }
+                Text(
+                    text = LocalizedStrings.get("mine_checkin_title"),
+                    color = TitleColor,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
-                CheckInModeChip(
-                    label = LocalizedStrings.get("mine_checkin_month"),
-                    selected = viewMode == CheckInViewMode.MONTH,
-                    onClick = { onViewModeChange(CheckInViewMode.MONTH) }
-                )
+                Row(
+                    modifier = Modifier
+                        .background(ToggleBg, RoundedCornerShape(20.dp))
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    CheckInModeChip(
+                        label = LocalizedStrings.get("mine_checkin_week"),
+                        selected = viewMode == CheckInViewMode.WEEK,
+                        onClick = { onViewModeChange(CheckInViewMode.WEEK) }
+                    )
+                    CheckInModeChip(
+                        label = LocalizedStrings.get("mine_checkin_month"),
+                        selected = viewMode == CheckInViewMode.MONTH,
+                        onClick = { onViewModeChange(CheckInViewMode.MONTH) }
+                    )
+                }
             }
+            Spacer(Modifier.height(10.dp))
         }
-        Spacer(Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -154,7 +175,7 @@ fun CheckInStatsSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            WeekLabels.forEach { w ->
+            weekHeaderLabels.forEach { w ->
                 Text(
                     text = w,
                     fontSize = 11.sp,
@@ -166,11 +187,33 @@ fun CheckInStatsSection(
         }
         Spacer(Modifier.height(4.dp))
         when (viewMode) {
-            CheckInViewMode.MONTH -> CheckInMonthGrid(yearMonth = yearMonth, tasksByDate = tasksByDate)
+            CheckInViewMode.MONTH -> CheckInMonthGrid(
+                yearMonth = yearMonth,
+                today = today,
+                tasksByDate = tasksByDate,
+                essayByDate = essayByDate,
+                onDayClick = onDayClick,
+            )
             CheckInViewMode.WEEK -> {
                 val monday = MineViewModel.mondayOfWeekContaining(weekCursor)
-                CheckInWeekRow(monday = monday, tasksByDate = tasksByDate)
+                CheckInWeekRow(
+                    monday = monday,
+                    today = today,
+                    tasksByDate = tasksByDate,
+                    essayByDate = essayByDate,
+                    onDayClick = onDayClick,
+                )
             }
+        }
+        if (showMonthSummaryFooter && viewMode == CheckInViewMode.MONTH) {
+            Spacer(Modifier.height(10.dp))
+            val counts = pastTierCountsInMonth(yearMonth, today, tasksByDate, essayByDate)
+            Text(
+                text = formatMonthPastSummary(lang, counts),
+                color = SubGray,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+            )
         }
         Spacer(Modifier.height(8.dp))
         Text(
@@ -179,6 +222,23 @@ fun CheckInStatsSection(
             fontSize = 11.sp,
             lineHeight = 15.sp
         )
+    }
+}
+
+private fun formatMonthPastSummary(
+    lang: LocalizationManager.Language,
+    counts: Map<PastCheckInDisplay, Int>,
+): String {
+    fun n(d: PastCheckInDisplay) = counts[d] ?: 0
+    val zh = lang == LocalizationManager.Language.ZH
+    return if (zh) {
+        "本月完美：${n(PastCheckInDisplay.PERFECT)}天    优秀：${n(PastCheckInDisplay.EXCELLENT)}天\n" +
+            "加油：${n(PastCheckInDisplay.CHEER)}天        新芽：${n(PastCheckInDisplay.SEEDLING)}天\n" +
+            "文档记录者：${n(PastCheckInDisplay.WRITER)}天  空白：${n(PastCheckInDisplay.EMPTY)}天"
+    } else {
+        "Perfect ${n(PastCheckInDisplay.PERFECT)} · Great ${n(PastCheckInDisplay.EXCELLENT)} · " +
+            "Cheer ${n(PastCheckInDisplay.CHEER)} · Sprout ${n(PastCheckInDisplay.SEEDLING)}\n" +
+            "Writer ${n(PastCheckInDisplay.WRITER)} · Blank ${n(PastCheckInDisplay.EMPTY)}"
     }
 }
 
@@ -205,14 +265,16 @@ private fun CheckInModeChip(
 @Composable
 private fun CheckInMonthGrid(
     yearMonth: YearMonth,
+    today: LocalDate,
     tasksByDate: Map<LocalDate, List<Task>>,
+    essayByDate: Map<LocalDate, Int>,
+    onDayClick: ((LocalDate) -> Unit)?,
 ) {
     val firstDow = yearMonth.atDay(1).dayOfWeek.value
     val leading = firstDow - 1
     val daysInMonth = yearMonth.lengthOfMonth()
     val totalSlots = leading + daysInMonth
     val rows = (totalSlots + 6) / 7
-    val today = LocalDate.now()
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -229,11 +291,25 @@ private fun CheckInMonthGrid(
                         Box(modifier = Modifier.weight(1f).height(54.dp))
                     } else {
                         val date = yearMonth.atDay(dayNum)
+                        val visual = calendarDayVisual(
+                            date = date,
+                            today = today,
+                            dayTasks = tasksByDate[date].orEmpty(),
+                            essayCount = essayByDate[date] ?: 0,
+                        )
                         CheckInDayCell(
                             dayNum = dayNum,
-                            tier = dailyCheckInTierForDay(tasksByDate[date].orEmpty()),
+                            visual = visual,
                             isToday = date == today,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .then(
+                                    if (onDayClick != null) {
+                                        Modifier.clickable { onDayClick(date) }
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
                         )
                     }
                 }
@@ -245,21 +321,32 @@ private fun CheckInMonthGrid(
 @Composable
 private fun CheckInWeekRow(
     monday: LocalDate,
+    today: LocalDate,
     tasksByDate: Map<LocalDate, List<Task>>,
+    essayByDate: Map<LocalDate, Int>,
+    onDayClick: ((LocalDate) -> Unit)?,
 ) {
-    val today = LocalDate.now()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         for (i in 0 until 7) {
             val date = monday.plusDays(i.toLong())
+            val visual = calendarDayVisual(
+                date = date,
+                today = today,
+                dayTasks = tasksByDate[date].orEmpty(),
+                essayCount = essayByDate[date] ?: 0,
+            )
             CheckInDayCell(
                 dayNum = date.dayOfMonth,
-                tier = dailyCheckInTierForDay(tasksByDate[date].orEmpty()),
+                visual = visual,
                 isToday = date == today,
-                modifier = Modifier.weight(1f),
-                dimDateIfOtherMonth = false
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onDayClick != null) Modifier.clickable { onDayClick(date) } else Modifier,
+                    ),
             )
         }
     }
@@ -268,16 +355,15 @@ private fun CheckInWeekRow(
 @Composable
 private fun CheckInDayCell(
     dayNum: Int,
-    tier: DailyCheckInTier,
+    visual: CalendarDayVisual,
     isToday: Boolean,
     modifier: Modifier = Modifier,
-    dimDateIfOtherMonth: Boolean = true,
 ) {
-    val hasTasks = tier != DailyCheckInTier.NO_TASKS
+    val isFutureStyle = visual.useMutedFutureStyle
     val titleColor = when {
-        !dimDateIfOtherMonth -> TitleColor
-        hasTasks -> TitleColor
-        else -> SubGray
+        isFutureStyle -> FutureMuted
+        visual.past == PastCheckInDisplay.EMPTY -> SubGray
+        else -> TitleColor
     }
     Column(
         modifier = modifier
@@ -294,18 +380,25 @@ private fun CheckInDayCell(
             fontSize = 12.sp,
             color = titleColor
         )
-        when (tier) {
-            DailyCheckInTier.NO_TASKS -> Text(
-                text = "—",
-                fontSize = EmptyMarkSize,
-                color = SubGray.copy(alpha = 0.75f),
-                modifier = Modifier.padding(top = 2.dp)
-            )
-            else -> Text(
-                text = tier.emoji(),
+        when {
+            visual.future != null -> {
+                val sym = visual.future.symbol()
+                val col = if (visual.future == FutureCheckInDisplay.NONE_DOT) {
+                    FutureDot
+                } else {
+                    FutureMuted
+                }
+                Text(
+                    text = sym,
+                    fontSize = EmojiSize,
+                    color = col,
+                )
+            }
+            visual.past != null -> Text(
+                text = visual.past.emoji(),
                 fontSize = EmojiSize,
-                modifier = Modifier.padding(top = 0.dp)
             )
+            else -> Spacer(Modifier.height(22.dp))
         }
     }
 }

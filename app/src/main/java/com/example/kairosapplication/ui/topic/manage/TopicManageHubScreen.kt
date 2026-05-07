@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.topic.manage
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -29,11 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.theme.BackgroundColor
@@ -41,10 +43,10 @@ import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.model.EssayCategoryConfig
 import com.example.taskmodel.viewmodel.TaskViewModel
 
-private val CardBg = Color.White
+private val CardBg = Color(0xFFFAFAFA)
 private val TitleColor = Color(0xFF1A1A1A)
 private val Muted = Color(0xFF9E9E9E)
-private val LockedBg = Color(0xFFF5F5F5)
+private val LockedFg = Color(0xFF9E9E9E)
 
 @Composable
 fun TopicManageHubScreen(
@@ -53,6 +55,7 @@ fun TopicManageHubScreen(
     onEditPrimary: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val uiState by taskViewModel.uiState.collectAsState()
     val config = uiState.essayCategoryConfig
     val lang = LocalCurrentLanguage.current.value
@@ -82,26 +85,39 @@ fun TopicManageHubScreen(
             )
         }
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(keys, key = { it }) { key ->
                 val locked = key == NotePrimaryCategory.FREESTYLE
-                val name = EssayCategoryUi.primaryDisplayName(key, config, lang)
+                val name = EssayCategoryUi.primaryDisplayName(key, config, lang, context)
                 val emoji = EssayCategoryUi.primaryEmoji(key, config)
                 val secCount = config.primaryOrNull(key)?.secondaries?.size ?: 0
                 TopicManagePrimaryCard(
                     emoji = emoji,
                     title = name,
-                    subtitle = if (locked) LocalizedStrings.get("topic_manage_locked_badge") else "$secCount/8",
+                    subtitle = if (locked) {
+                        LocalizedStrings.get("topic_manage_locked_badge")
+                    } else {
+                        "$secCount/8"
+                    },
                     locked = locked,
                     onClick = {
-                        if (!locked) onEditPrimary(key)
+                        if (locked) {
+                            val msg = LocalizedStrings.stringFor(
+                                lang,
+                                "topic_manage_freestyle_toast",
+                                context,
+                            )
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        } else {
+                            onEditPrimary(key)
+                        }
                     },
                 )
             }
@@ -110,7 +126,7 @@ fun TopicManageHubScreen(
             text = LocalizedStrings.get("topic_manage_footer_hint"),
             fontSize = 12.sp,
             color = Muted,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             lineHeight = 16.sp,
         )
     }
@@ -124,39 +140,38 @@ private fun TopicManagePrimaryCard(
     locked: Boolean,
     onClick: () -> Unit,
 ) {
-    val bg = if (locked) LockedBg else CardBg
-    val fg = if (locked) Muted else TitleColor
+    val fg = if (locked) LockedFg else TitleColor
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(14.dp))
-            .background(bg)
-            .clickable(enabled = !locked, onClick = onClick)
-            .padding(10.dp),
+            .clip(RoundedCornerShape(8.dp))
+            .background(CardBg)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         if (locked) {
-            Text("🔒", fontSize = 18.sp)
-            Spacer(Modifier.height(4.dp))
-        } else {
-            Text(emoji, fontSize = 26.sp, textAlign = TextAlign.Center, maxLines = 1)
+            Text("🔒", fontSize = 20.sp)
             Spacer(Modifier.height(6.dp))
+        } else {
+            Text(emoji, fontSize = 28.sp, textAlign = TextAlign.Center, maxLines = 1)
+            Spacer(Modifier.height(8.dp))
         }
         Text(
             text = title,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             color = fg,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            lineHeight = 14.sp,
+            lineHeight = 16.sp,
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
             text = subtitle,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             color = Muted,
             textAlign = TextAlign.Center,
             maxLines = 1,

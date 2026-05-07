@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.topic.manage
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,23 +20,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +56,10 @@ import java.util.UUID
 
 private val TitleColor = Color(0xFF1A1A1A)
 private val Muted = Color(0xFF757575)
-private val SectionBg = Color.White
+private val SectionBg = Color(0xFFFAFAFA)
 
 /** 仅管理二级课题；主课题名称与引导句由系统固定，不在此编辑。 */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicPrimaryEditScreen(
     primaryKey: String,
@@ -58,10 +67,10 @@ fun TopicPrimaryEditScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val uiState by taskViewModel.uiState.collectAsState()
     val config = uiState.essayCategoryConfig
     val lang = LocalCurrentLanguage.current.value
-
     var draftSecondaries by remember(primaryKey) {
         mutableStateOf<List<EssaySecondaryCategoryConfig>>(emptyList())
     }
@@ -69,32 +78,38 @@ fun TopicPrimaryEditScreen(
         draftSecondaries = config.primary(primaryKey).secondaries.map { it.copy() }
     }
 
-    var showSecDialog by remember { mutableStateOf(false) }
+    var showSecSheet by remember { mutableStateOf(false) }
     var editingSecIndex by remember { mutableStateOf<Int?>(null) }
-    var secDialogName by remember { mutableStateOf("") }
-    var secDialogGuide by remember { mutableStateOf("") }
-    var showAdvancedSec by remember { mutableStateOf(false) }
+    var secSheetName by remember { mutableStateOf("") }
+    var secSheetGuide by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    fun secondaryResolvedLabel(sec: EssaySecondaryCategoryConfig): String =
+        EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang, context).trim()
+
+    fun hasDuplicateNames(list: List<EssaySecondaryCategoryConfig>): Boolean {
+        val labels = list.map { secondaryResolvedLabel(it).lowercase() }.filter { it.isNotEmpty() }
+        return labels.size != labels.toSet().size
+    }
 
     fun openAddSecondary() {
         editingSecIndex = null
-        secDialogName = ""
-        secDialogGuide = ""
-        showAdvancedSec = false
-        showSecDialog = true
+        secSheetName = ""
+        secSheetGuide = ""
+        showSecSheet = true
     }
 
     fun openEditSecondary(index: Int, sec: EssaySecondaryCategoryConfig) {
         editingSecIndex = index
-        secDialogName = sec.name.ifBlank { sec.id }
-        secDialogGuide = sec.guide.orEmpty()
-        showAdvancedSec = secDialogGuide.isNotBlank()
-        showSecDialog = true
+        secSheetName = sec.name.ifBlank { sec.id }
+        secSheetGuide = sec.guide.orEmpty()
+        showSecSheet = true
     }
 
-    fun confirmSecondaryDialog() {
-        val name = secDialogName.trim()
+    fun confirmSecondarySheet() {
+        val name = secSheetName.trim()
         if (name.isEmpty()) return
-        val guide = secDialogGuide.trim().takeIf { it.isNotEmpty() }
+        val guide = secSheetGuide.trim().takeIf { it.isNotEmpty() }
         val idx = editingSecIndex
         val nextSecs = draftSecondaries.toMutableList()
         if (idx == null) {
@@ -105,11 +120,28 @@ fun TopicPrimaryEditScreen(
             val old = nextSecs[idx]
             nextSecs[idx] = old.copy(name = name, guide = guide)
         }
+        val trial = if (idx == null) nextSecs else nextSecs
+        if (hasDuplicateNames(nextSecs)) {
+            Toast.makeText(
+                context,
+                LocalizedStrings.stringFor(lang, "topic_secondary_name_duplicate", context),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
         draftSecondaries = nextSecs
-        showSecDialog = false
+        showSecSheet = false
     }
 
     fun persistSecondariesOnly() {
+        if (hasDuplicateNames(draftSecondaries)) {
+            Toast.makeText(
+                context,
+                LocalizedStrings.stringFor(lang, "topic_secondary_name_duplicate", context),
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
         taskViewModel.saveEssayCategoryConfig(
             config.updatePrimary(primaryKey) {
                 it.copy(
@@ -139,20 +171,13 @@ fun TopicPrimaryEditScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = LocalizedStrings.get("back"), tint = TitleColor)
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = EssayCategoryUi.primaryDisplayName(primaryKey, config, lang),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TitleColor,
-                )
-                Text(
-                    text = LocalizedStrings.get("topic_manage_secondary_only_subtitle"),
-                    fontSize = 11.sp,
-                    color = Muted,
-                    lineHeight = 14.sp,
-                )
-            }
+            Text(
+                text = EssayCategoryUi.primaryDisplayName(primaryKey, config, lang, context),
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TitleColor,
+                modifier = Modifier.weight(1f),
+            )
             TextButton(onClick = { persistSecondariesOnly() }) {
                 Text(LocalizedStrings.get("save"))
             }
@@ -165,6 +190,14 @@ fun TopicPrimaryEditScreen(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item {
+                Text(
+                    text = LocalizedStrings.get("topic_manage_secondary_only_subtitle"),
+                    fontSize = 11.sp,
+                    color = Muted,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+            }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -189,38 +222,73 @@ fun TopicPrimaryEditScreen(
             }
 
             itemsIndexed(draftSecondaries, key = { _, sec -> sec.id }) { index, sec ->
-                val label = EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(SectionBg, RoundedCornerShape(10.dp))
-                        .padding(10.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
+                key(sec.id, sec.guide) {
+                    var guideExpanded by remember(sec.id, draftSecondaries.size) {
+                        mutableStateOf(sec.guide?.isNotBlank() == true)
+                    }
+                    val guideText = sec.guide?.takeIf { it.isNotBlank() }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(SectionBg, RoundedCornerShape(8.dp))
+                            .padding(10.dp),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TitleColor)
-                            sec.guide?.takeIf { it.isNotBlank() }?.let { g ->
-                                Spacer(Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "▸ $g",
-                                    fontSize = 11.sp,
-                                    color = Muted,
-                                    lineHeight = 14.sp,
+                                    EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang, context),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = TitleColor,
+                                )
+                                if (guideText != null) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .clickable { guideExpanded = !guideExpanded }
+                                            .fillMaxWidth(),
+                                    ) {
+                                        Text(
+                                            text = LocalizedStrings.get("topic_secondary_guide_fold_hint"),
+                                            fontSize = 11.sp,
+                                            color = Muted,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        Icon(
+                                            imageVector = if (guideExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            tint = Muted,
+                                        )
+                                    }
+                                    if (guideExpanded) {
+                                        Text(
+                                            text = "▸ $guideText",
+                                            fontSize = 11.sp,
+                                            color = Muted,
+                                            lineHeight = 14.sp,
+                                        )
+                                    }
+                                }
+                            }
+                            IconButton(onClick = { openEditSecondary(index, sec) }) {
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = Muted)
+                            }
+                            IconButton(
+                                onClick = {
+                                    draftSecondaries = draftSecondaries.toMutableList().also { it.removeAt(index) }
+                                },
+                                enabled = draftSecondaries.size > 1,
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = if (draftSecondaries.size > 1) Muted else Muted.copy(alpha = 0.35f),
                                 )
                             }
-                        }
-                        IconButton(onClick = { openEditSecondary(index, sec) }) {
-                            Icon(Icons.Default.Edit, contentDescription = null, tint = Muted)
-                        }
-                        IconButton(
-                            onClick = {
-                                draftSecondaries = draftSecondaries.toMutableList().also { it.removeAt(index) }
-                            },
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = null, tint = Muted)
                         }
                     }
                 }
@@ -228,57 +296,60 @@ fun TopicPrimaryEditScreen(
         }
     }
 
-    if (showSecDialog) {
-        AlertDialog(
-            onDismissRequest = { showSecDialog = false },
-            title = {
+    if (showSecSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSecSheet = false },
+            sheetState = sheetState,
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            ) {
                 Text(
-                    if (editingSecIndex == null) LocalizedStrings.get("topic_secondary_add")
-                    else LocalizedStrings.get("topic_secondary_edit"),
+                    text = if (editingSecIndex == null) {
+                        LocalizedStrings.get("topic_secondary_add")
+                    } else {
+                        LocalizedStrings.get("topic_secondary_edit")
+                    },
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TitleColor,
                 )
-            },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = secDialogName,
-                        onValueChange = { secDialogName = it },
-                        label = { Text(LocalizedStrings.get("topic_secondary_name_label")) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        LocalizedStrings.get("topic_advanced_settings"),
-                        fontSize = 12.sp,
-                        color = Muted,
-                        modifier = Modifier
-                            .clickable { showAdvancedSec = !showAdvancedSec }
-                            .padding(vertical = 4.dp),
-                    )
-                    if (showAdvancedSec) {
-                        OutlinedTextField(
-                            value = secDialogGuide,
-                            onValueChange = { secDialogGuide = it },
-                            label = { Text(LocalizedStrings.get("topic_secondary_guide_hint")) },
-                            maxLines = 4,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = secSheetName,
+                    onValueChange = { secSheetName = it },
+                    label = { Text(LocalizedStrings.get("topic_secondary_name_label")) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = secSheetGuide,
+                    onValueChange = { secSheetGuide = it },
+                    label = { Text(LocalizedStrings.get("topic_secondary_guide_hint")) },
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = { showSecSheet = false }) {
+                        Text(LocalizedStrings.get("cancel"))
+                    }
+                    TextButton(
+                        onClick = { confirmSecondarySheet() },
+                        enabled = secSheetName.trim().isNotEmpty(),
+                    ) {
+                        Text(LocalizedStrings.get("confirm"))
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { confirmSecondaryDialog() },
-                    enabled = secDialogName.trim().isNotEmpty(),
-                ) {
-                    Text(LocalizedStrings.get("confirm"))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSecDialog = false }) {
-                    Text(LocalizedStrings.get("cancel"))
-                }
-            },
-        )
+                Spacer(Modifier.height(8.dp))
+            }
+        }
     }
 }

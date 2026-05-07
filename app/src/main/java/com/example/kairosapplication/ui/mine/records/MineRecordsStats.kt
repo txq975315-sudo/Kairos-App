@@ -5,6 +5,7 @@ import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.viewmodel.TaskUiState
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 
 object MineRecordsStats {
@@ -40,6 +41,26 @@ object MineRecordsStats {
         val totalChars = charLens.sumOf { it.toLong() }
         val maxChars = charLens.maxOrNull() ?: 0
 
+        val longestAllTasksStreak = maxConsecutiveStreak(start, end) { day ->
+            val dt = tasksByDate[day].orEmpty()
+            dt.isNotEmpty() && dt.all { it.isCompleted }
+        }
+        val longestBothStreak = maxConsecutiveStreak(start, end) { day ->
+            val dt = tasksByDate[day].orEmpty()
+            notesByDate[day].orEmpty().isNotEmpty() && dt.isNotEmpty() && dt.all { it.isCompleted }
+        }
+        val maxStreakRecord = maxConsecutiveStreak(start, end) { hasRecord(it, tasksByDate, notesByDate) }
+        val peakContinuityStreak = maxOf(maxStreakRecord, longestAllTasksStreak, longestBothStreak)
+
+        val ymNow = YearMonth.from(today)
+        var monthActiveDays = 0
+        for (dom in 1..ymNow.lengthOfMonth()) {
+            val d = ymNow.atDay(dom)
+            if (!d.isBefore(start) && !d.isAfter(end) && hasRecord(d, tasksByDate, notesByDate)) {
+                monthActiveDays++
+            }
+        }
+
         return MineRecordsOverview(
             completionDaysDistinct = completionDistinctDays,
             completedTaskCount = completedInPeriod,
@@ -54,9 +75,14 @@ object MineRecordsStats {
             },
             streakBothModules = streakBackward(anchor, start) { day ->
                 tasksByDate[day].orEmpty().isNotEmpty() &&
-                    notesByDate[day].orEmpty().isNotEmpty()
+                    notesByDate[day].orEmpty().isNotEmpty() &&
+                    tasksByDate[day].orEmpty().all { it.isCompleted }
             },
-            maxStreakRecord = maxConsecutiveStreak(start, end) { hasRecord(it, tasksByDate, notesByDate) },
+            maxStreakRecord = maxStreakRecord,
+            longestAllTasksStreak = longestAllTasksStreak,
+            longestBothStreak = longestBothStreak,
+            peakContinuityStreak = peakContinuityStreak,
+            monthActiveDays = monthActiveDays,
             totalChars = totalChars,
             maxNoteChars = maxChars,
             avgDailyTasks = totalTasks.toFloat() / dim,

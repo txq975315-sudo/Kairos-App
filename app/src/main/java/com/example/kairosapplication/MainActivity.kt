@@ -2,7 +2,6 @@ package com.example.kairosapplication
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -21,7 +20,7 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.notification.NotificationHelper
 import com.example.kairosapplication.ui.theme.KairosApplicationTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : BaseLocaleActivity() {
 
     private val taskViewModel: TaskViewModel by viewModels(factoryProducer = {
         TaskViewModel.factory(applicationContext)

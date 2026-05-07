@@ -27,6 +27,7 @@ fun EssayNavHost(
     startDestination: String = EssayMainRoute,
     openTopicTabWithPrimary: String? = null,
     onOpenTopicTabConsumed: () -> Unit = {},
+    onOpenTopicManage: () -> Unit = {},
 ) {
     val onNavigateToInbox = { navController.navigate("essay_inbox") }
     val onNavigateToSearch = { navController.navigate("essay_search") }
@@ -59,6 +60,7 @@ fun EssayNavHost(
                 },
                 openTopicTabWithPrimary = openTopicTabWithPrimary,
                 onOpenTopicTabConsumed = onOpenTopicTabConsumed,
+                onOpenTopicManage = onOpenTopicManage,
             )
         }
         composable("essay_trash") {

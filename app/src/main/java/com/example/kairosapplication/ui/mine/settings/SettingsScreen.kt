@@ -81,7 +81,7 @@ fun SettingsScreen(
     val languageCode by viewModel.language.collectAsState()
 
     fun toastSoon() {
-        Toast.makeText(context, LocalizedStrings.stringFor(uiLanguage, "soon"), Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, LocalizedStrings.stringFor(uiLanguage, "soon", context), Toast.LENGTH_SHORT).show()
     }
 
     Column(
