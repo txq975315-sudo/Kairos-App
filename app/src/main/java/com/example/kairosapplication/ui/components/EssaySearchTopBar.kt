@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 /**
  * Essay search top bar: back + gradient pill field + search icon (Figma-aligned).
@@ -65,7 +66,7 @@ fun EssaySearchTopBar(
     capsuleBorderColor: Color = Color.Black.copy(alpha = 0.12f),
     queryColor: Color = Color.White,
     placeholderColor: Color = Color.White.copy(alpha = 0.85f),
-    placeholderText: String = "Search body or topic",
+    placeholderText: String = "",
     searchWellColor: Color = Color(0xFF756767).copy(alpha = 0.1f),
     searchIconTint: Color = Color(0xFF1A1A1A),
     backIconTint: Color = Color(0xFF1A1A1A),
@@ -73,6 +74,8 @@ fun EssaySearchTopBar(
     onSearchButtonClick: () -> Unit = {},
     focusRequester: FocusRequester? = null,
 ) {
+    val resolvedPlaceholder =
+        placeholderText.ifEmpty { LocalizedStrings.get("essay_search_placeholder") }
     val capsuleShape = RoundedCornerShape(barHeight / 2)
     val brush = Brush.horizontalGradient(
         colors = listOf(
@@ -98,7 +101,7 @@ fun EssaySearchTopBar(
                 direction = ArrowDirection.LEFT,
                 size = 40.dp,
                 tint = backIconTint,
-                contentDescription = "Back"
+                contentDescription = LocalizedStrings.get("back")
             )
         }
         Spacer(modifier = Modifier.width(4.dp))
@@ -151,7 +154,7 @@ fun EssaySearchTopBar(
                             ) {
                                 if (query.isEmpty()) {
                                     Text(
-                                        text = placeholderText,
+                                        text = resolvedPlaceholder,
                                         style = TextStyle(
                                             color = placeholderColor,
                                             fontSize = 15.sp,
@@ -178,7 +181,7 @@ fun EssaySearchTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
+                        contentDescription = LocalizedStrings.get("cd_search"),
                         tint = searchIconTint,
                         modifier = Modifier.size(22.dp)
                     )
@@ -215,7 +218,7 @@ fun EssaySearchHistorySection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "History:",
+                text = LocalizedStrings.get("essay_search_history_label"),
                 fontSize = 14.sp,
                 color = Color(0xFF757575),
                 modifier = Modifier
@@ -225,7 +228,7 @@ fun EssaySearchHistorySection(
             )
             if (historyEditMode) {
                 Text(
-                    text = "Done",
+                    text = LocalizedStrings.get("essay_search_done_btn"),
                     fontSize = 14.sp,
                     color = Color(0xFF8A7CF8),
                     modifier = Modifier.clickable { onHistoryEditModeChange(false) }
@@ -322,7 +325,7 @@ private fun HistoryChip(
         if (editMode) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Remove",
+                contentDescription = LocalizedStrings.get("cd_remove"),
                 tint = fg,
                 modifier = Modifier
                     .size(iconSize)

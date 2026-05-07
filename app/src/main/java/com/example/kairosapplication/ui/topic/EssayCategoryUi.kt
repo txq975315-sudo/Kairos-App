@@ -9,6 +9,7 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.editor.EditorPlaceholderDefaults
 import com.example.taskmodel.constants.NotePrimaryCategory
+import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.model.EssayCategoryConfig
 import com.example.taskmodel.model.EssaySecondaryCategoryConfig
 
@@ -26,9 +27,15 @@ object EssayCategoryUi {
         lang: LocalizationManager.Language,
         context: Context,
     ): String {
-        val trimmed = sec.name.trim()
-        if (trimmed.isNotEmpty()) return trimmed
-        return TopicDisplayStrings.secondaryLabel(primaryKey, sec.id, lang, context)
+        val idTrim = sec.id.trim()
+        val official = NoteSecondaryCategories.defaults[primaryKey].orEmpty()
+        // Official presets must always use app language, never the English display name from JSON config.
+        if (idTrim in official) {
+            return TopicDisplayStrings.secondaryLabel(primaryKey, idTrim, lang, context)
+        }
+        val trimmedName = sec.name.trim()
+        if (trimmedName.isNotEmpty()) return trimmedName
+        return TopicDisplayStrings.secondaryLabel(primaryKey, idTrim, lang, context)
     }
 
     fun secondaryGuide(primaryKey: String, secondaryId: String, config: EssayCategoryConfig): String? =

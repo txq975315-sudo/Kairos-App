@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.view.month.MonthOverviewMetric
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
@@ -52,7 +54,7 @@ data class ViewUiState(
 )
 
 class ViewViewModel(
-    application: Application,
+    private val application: Application,
     private val taskViewModel: TaskViewModel,
 ) : ViewModel() {
 
@@ -136,8 +138,10 @@ class ViewViewModel(
     fun updateNoteTopic(noteId: Long, primary: String, secondary: String) {
         val n = taskViewModel.uiState.value.notePublished.find { it.id == noteId } ?: return
         val topic = NotePrimaryCategory.isTopic(primary)
+        val appCtx = application.applicationContext
+        val lang = LocalizationManager.Language.fromCode(dataStoreManager.getLanguageSync())
         val newSummary = if (topic && n.behaviorSummary.isBlank()) {
-            "Add behavior summary"
+            LocalizedStrings.stringFor(lang, "note_default_behavior_summary", appCtx)
         } else {
             n.behaviorSummary
         }

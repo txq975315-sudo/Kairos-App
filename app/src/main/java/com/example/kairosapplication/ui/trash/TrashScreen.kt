@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.trash
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,10 +49,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.UserVisibleStrings
+import com.example.kairosapplication.ui.topic.TopicDisplayStrings
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -66,15 +73,6 @@ private enum class TrashSortOrder {
     ALPHABETICAL
 }
 
-private val topicEnglishLabel: Map<String, String> = mapOf(
-    NotePrimaryCategory.FREESTYLE to "Freestyle",
-    NotePrimaryCategory.SELF_AWARENESS to "Self-Awareness",
-    NotePrimaryCategory.INTERPERSONAL to "Interpersonal",
-    NotePrimaryCategory.INTIMACY_FAMILY to "Intimacy & Family",
-    NotePrimaryCategory.SOMATIC_ENERGY to "Health & Energy",
-    NotePrimaryCategory.MEANING to "Meaning"
-)
-
 private val topicEmoji: Map<String, String> = mapOf(
     NotePrimaryCategory.FREESTYLE to "🎨",
     NotePrimaryCategory.SELF_AWARENESS to "🧠",
@@ -84,10 +82,10 @@ private val topicEmoji: Map<String, String> = mapOf(
     NotePrimaryCategory.MEANING to "✨"
 )
 
-private fun sortOrderLabel(order: TrashSortOrder): String = when (order) {
-    TrashSortOrder.DELETED_NEW -> "Deleted date (newest)"
-    TrashSortOrder.DELETED_OLD -> "Deleted date (oldest)"
-    TrashSortOrder.ALPHABETICAL -> "Alphabetical"
+private fun trashSortOrderKey(order: TrashSortOrder): String = when (order) {
+    TrashSortOrder.DELETED_NEW -> "trash_sort_deleted_new"
+    TrashSortOrder.DELETED_OLD -> "trash_sort_deleted_old"
+    TrashSortOrder.ALPHABETICAL -> "trash_sort_alphabetical"
 }
 
 private fun sortKeyForAlphabetical(note: Note): String =
@@ -100,6 +98,8 @@ fun TrashScreen(
     onBackClick: () -> Unit,
     onNoteClick: (Long) -> Unit
 ) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
     val trashNotes by taskViewModel.noteTrash.collectAsState()
     var sortOrder by remember { mutableStateOf(TrashSortOrder.DELETED_NEW) }
     var showOverflowMenu by remember { mutableStateOf(false) }
@@ -116,10 +116,15 @@ fun TrashScreen(
     if (showEmptyTrashDialog) {
         AlertDialog(
             onDismissRequest = { showEmptyTrashDialog = false },
-            title = { Text("Empty trash?", color = AppColors.PrimaryText) },
+            title = {
+                Text(
+                    LocalizedStrings.stringFor(lang, "trash_empty_dialog_title", context),
+                    color = AppColors.PrimaryText
+                )
+            },
             text = {
                 Text(
-                    "All notes in Trash will be permanently deleted. This cannot be undone.",
+                    LocalizedStrings.stringFor(lang, "trash_empty_dialog_body", context),
                     color = AppColors.SecondaryText
                 )
             },
@@ -130,12 +135,16 @@ fun TrashScreen(
                         showEmptyTrashDialog = false
                     }
                 ) {
-                    Text("Empty Trash", color = AppColors.Urgent, fontWeight = FontWeight.Medium)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "trash_empty_dialog_confirm", context),
+                        color = AppColors.Urgent,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEmptyTrashDialog = false }) {
-                    Text("Cancel", color = AppColors.SecondaryText)
+                    Text(LocalizedStrings.stringFor(lang, "cancel", context), color = AppColors.SecondaryText)
                 }
             }
         )
@@ -148,6 +157,8 @@ fun TrashScreen(
                 TrashTopBar(
                     trashCount = trashNotes.size,
                     sortOrder = sortOrder,
+                    lang = lang,
+                    context = context,
                     onBackClick = onBackClick,
                     showMenu = showOverflowMenu,
                     onShowMenuChange = { showOverflowMenu = it },
@@ -163,8 +174,10 @@ fun TrashScreen(
                         .padding(horizontal = AppSpacing.PageHorizontal, vertical = AppSpacing.SectionSmall),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val sortLabel = LocalizedStrings.stringFor(lang, trashSortOrderKey(sortOrder), context)
+                    val sortLine = LocalizedStrings.stringFor(lang, "trash_sort_line", context, sortLabel)
                     Text(
-                        text = "Sort by: ${sortOrderLabel(sortOrder)}",
+                        text = sortLine,
                         fontSize = 13.sp,
                         color = AppColors.SecondaryText
                     )
@@ -207,23 +220,33 @@ fun TrashScreen(
 private fun TrashTopBar(
     trashCount: Int,
     sortOrder: TrashSortOrder,
+    lang: LocalizationManager.Language,
+    context: Context,
     onBackClick: () -> Unit,
     showMenu: Boolean,
     onShowMenuChange: (Boolean) -> Unit,
     onSortChange: (TrashSortOrder) -> Unit,
     onEmptyTrashRequest: () -> Unit
 ) {
+    val trashTitle = LocalizedStrings.stringFor(lang, "trash_title", context)
+    val countSubtitle = if (trashCount == 1) {
+        LocalizedStrings.stringFor(lang, "trash_header_item_one", context)
+    } else {
+        LocalizedStrings.stringFor(lang, "trash_header_item_many", context, trashCount)
+    }
+    val cdBack = LocalizedStrings.stringFor(lang, "back", context)
+    val cdMenu = LocalizedStrings.stringFor(lang, "cd_menu", context)
     TopAppBar(
         title = {
             Column {
                 Text(
-                    text = "Trash",
+                    text = trashTitle,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
                     color = AppColors.PrimaryText
                 )
                 Text(
-                    text = if (trashCount == 1) "1 item" else "$trashCount items",
+                    text = countSubtitle,
                     fontSize = 12.sp,
                     color = AppColors.SecondaryText
                 )
@@ -233,7 +256,7 @@ private fun TrashTopBar(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = cdBack,
                     tint = AppColors.BackIcon
                 )
             }
@@ -243,7 +266,7 @@ private fun TrashTopBar(
                 IconButton(onClick = { onShowMenuChange(true) }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Menu",
+                        contentDescription = cdMenu,
                         tint = AppColors.PrimaryText
                     )
                 }
@@ -252,13 +275,18 @@ private fun TrashTopBar(
                     onDismissRequest = { onShowMenuChange(false) }
                 ) {
                     Text(
-                        text = "Sort by",
+                        text = LocalizedStrings.stringFor(lang, "trash_sort_menu_title", context),
                         fontSize = 12.sp,
                         color = AppColors.SecondaryText,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                     DropdownMenuItem(
-                        text = { Text("Deleted date (newest)", color = AppColors.PrimaryText) },
+                        text = {
+                            Text(
+                                LocalizedStrings.stringFor(lang, "trash_sort_deleted_new", context),
+                                color = AppColors.PrimaryText
+                            )
+                        },
                         onClick = {
                             onSortChange(TrashSortOrder.DELETED_NEW)
                             onShowMenuChange(false)
@@ -270,7 +298,12 @@ private fun TrashTopBar(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Deleted date (oldest)", color = AppColors.PrimaryText) },
+                        text = {
+                            Text(
+                                LocalizedStrings.stringFor(lang, "trash_sort_deleted_old", context),
+                                color = AppColors.PrimaryText
+                            )
+                        },
                         onClick = {
                             onSortChange(TrashSortOrder.DELETED_OLD)
                             onShowMenuChange(false)
@@ -282,7 +315,12 @@ private fun TrashTopBar(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Alphabetical", color = AppColors.PrimaryText) },
+                        text = {
+                            Text(
+                                LocalizedStrings.stringFor(lang, "trash_sort_alphabetical", context),
+                                color = AppColors.PrimaryText
+                            )
+                        },
                         onClick = {
                             onSortChange(TrashSortOrder.ALPHABETICAL)
                             onShowMenuChange(false)
@@ -295,7 +333,12 @@ private fun TrashTopBar(
                     )
                     HorizontalDivider(color = AppColors.Divider)
                     DropdownMenuItem(
-                        text = { Text("Empty Trash", color = AppColors.Urgent) },
+                        text = {
+                            Text(
+                                LocalizedStrings.stringFor(lang, "trash_menu_empty", context),
+                                color = AppColors.Urgent
+                            )
+                        },
                         onClick = { onEmptyTrashRequest() }
                     )
                 }
@@ -312,15 +355,22 @@ private fun TrashNoteCard(
     onPermanentDelete: () -> Unit,
     onOpenDetail: () -> Unit
 ) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete forever?", color = AppColors.PrimaryText) },
+            title = {
+                Text(
+                    LocalizedStrings.stringFor(lang, "trash_delete_forever_dialog_title", context),
+                    color = AppColors.PrimaryText
+                )
+            },
             text = {
                 Text(
-                    "This note will be permanently deleted and cannot be recovered.",
+                    LocalizedStrings.stringFor(lang, "trash_delete_forever_dialog_body", context),
                     color = AppColors.SecondaryText
                 )
             },
@@ -331,12 +381,16 @@ private fun TrashNoteCard(
                         showDeleteConfirm = false
                     }
                 ) {
-                    Text("Delete Forever", color = AppColors.Urgent, fontWeight = FontWeight.Medium)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "trash_delete_forever_confirm", context),
+                        color = AppColors.Urgent,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = AppColors.SecondaryText)
+                    Text(LocalizedStrings.stringFor(lang, "cancel", context), color = AppColors.SecondaryText)
                 }
             }
         )
@@ -363,14 +417,15 @@ private fun TrashNoteCard(
                     )
                     Spacer(modifier = Modifier.width(AppSpacing.CompactGap))
                     Text(
-                        text = topicEnglishLabel[note.primaryCategory] ?: note.primaryCategory,
+                        text = TopicDisplayStrings.primaryLabel(note.primaryCategory, lang, context),
                         fontSize = 12.sp,
                         color = AppColors.SecondaryText
                     )
                 }
+                val noSummary = LocalizedStrings.stringFor(lang, "trash_note_no_summary", context)
                 val summaryText = note.behaviorSummary.ifBlank {
                     note.body.trim().lineSequence().firstOrNull().orEmpty()
-                        .ifBlank { "(No summary)" }
+                        .ifBlank { noSummary }
                 }
                 Text(
                     text = summaryText,
@@ -381,7 +436,12 @@ private fun TrashNoteCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Deleted ${formatDeletedTime(note.updatedAt)}",
+                    text = LocalizedStrings.stringFor(
+                        lang,
+                        "trash_deleted_at",
+                        context,
+                        formatDeletedTime(note.updatedAt, lang, context),
+                    ),
                     fontSize = 11.sp,
                     color = AppColors.SecondaryText.copy(alpha = 0.7f)
                 )
@@ -401,7 +461,11 @@ private fun TrashNoteCard(
                         tint = AppColors.PrimaryText
                     )
                     Spacer(modifier = Modifier.width(AppSpacing.CompactGap))
-                    Text("Restore", fontSize = 12.sp, color = AppColors.PrimaryText)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "trash_restore", context),
+                        fontSize = 12.sp,
+                        color = AppColors.PrimaryText
+                    )
                 }
                 OutlinedButton(
                     onClick = { showDeleteConfirm = true },
@@ -415,7 +479,10 @@ private fun TrashNoteCard(
                         tint = AppColors.Urgent
                     )
                     Spacer(modifier = Modifier.width(AppSpacing.CompactGap))
-                    Text("Delete Forever", fontSize = 12.sp)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "trash_delete_forever_confirm", context),
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
@@ -424,6 +491,8 @@ private fun TrashNoteCard(
 
 @Composable
 private fun EmptyTrashState(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -432,14 +501,14 @@ private fun EmptyTrashState(modifier: Modifier = Modifier) {
             Text(text = "🗑️", fontSize = 64.sp)
             Spacer(modifier = Modifier.height(AppSpacing.SectionXLarge))
             Text(
-                text = "Trash is empty",
+                text = LocalizedStrings.stringFor(lang, "trash_empty_state_title", context),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = AppColors.PrimaryText
             )
             Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
             Text(
-                text = "Deleted notes will appear here",
+                text = LocalizedStrings.stringFor(lang, "trash_empty_state_subtitle", context),
                 fontSize = 14.sp,
                 color = AppColors.SecondaryText
             )
@@ -447,26 +516,20 @@ private fun EmptyTrashState(modifier: Modifier = Modifier) {
     }
 }
 
-private fun formatDeletedTime(timestamp: Long): String {
+private fun formatDeletedTime(
+    timestamp: Long,
+    lang: LocalizationManager.Language,
+    context: Context,
+): String {
     val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val days = diff / (24 * 60 * 60 * 1000)
-    val hours = diff / (60 * 60 * 1000)
-    val minutes = diff / (60 * 1000)
-
-    return when {
-        minutes < 1 -> "just now"
-        minutes == 1L -> "1 minute ago"
-        minutes < 60 -> "$minutes minutes ago"
-        hours == 1L -> "1 hour ago"
-        hours < 24 -> "$hours hours ago"
-        days == 1L -> "1 day ago"
-        days < 30 -> "$days days ago"
-        else -> {
-            val date = Instant.ofEpochMilli(timestamp)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
-            date.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH))
-        }
+    val days = ((now - timestamp) / (24 * 60 * 60 * 1000)).toInt()
+    if (days < 30) {
+        return UserVisibleStrings.relativeTimeAgo(timestamp, lang, context)
     }
+    val date = Instant.ofEpochMilli(timestamp)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
+    val pattern = if (lang == LocalizationManager.Language.ZH) "yyyy年M月d日" else "MMM d, yyyy"
+    return date.format(DateTimeFormatter.ofPattern(pattern, locale))
 }

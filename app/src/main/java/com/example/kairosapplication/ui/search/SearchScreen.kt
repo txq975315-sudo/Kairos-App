@@ -237,7 +237,7 @@ fun SearchScreen(
             note = n,
             onDismiss = { commentNoteId = null },
             onAppendComment = { note, text ->
-                taskViewModel.updateNote(appendReviewCommentToNote(note, text))
+                taskViewModel.updateNote(appendReviewCommentToNote(note, text, lang, context))
             }
         )
     }

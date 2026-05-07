@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.EssayChangeTopicDialog
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
@@ -73,6 +74,18 @@ fun ViewScreen(
     var showWeekCreateLimitDialog by remember { mutableStateOf(false) }
     var weekCreateLimitDate by remember { mutableStateOf<LocalDate?>(null) }
     var lastTaskToggleUptimeMs by remember { mutableLongStateOf(0L) }
+
+    val deleteNoteTitle = LocalizedStrings.get("essay_note_delete_title_question")
+    val deleteNoteBody = LocalizedStrings.get("essay_note_delete_body")
+    val deleteNoteConfirm = LocalizedStrings.get("essay_note_delete_confirm")
+    val cancelLabel = LocalizedStrings.get("cancel")
+    val dailyLimitTitle = LocalizedStrings.get("task_daily_limit_title")
+    val dailyLimitMessage = LocalizedStrings.get(
+        "task_daily_limit_message",
+        TaskViewModel.DAILY_PENDING_LIMIT,
+    )
+    val dailyLimitGotIt = LocalizedStrings.get("task_daily_limit_confirm")
+    val dailyLimitClearDay = LocalizedStrings.get("task_daily_limit_clear_day")
 
     LaunchedEffect(Unit) {
         taskViewModel.syncFromCreationBus()
@@ -205,8 +218,8 @@ fun ViewScreen(
         deleteConfirmNoteId?.let { nid ->
             AlertDialog(
                 onDismissRequest = { deleteConfirmNoteId = null },
-                title = { Text("Delete note?", color = PrimaryTextColor) },
-                text = { Text("This note will be moved to trash.", color = SecondaryTextColor) },
+                title = { Text(deleteNoteTitle, color = PrimaryTextColor) },
+                text = { Text(deleteNoteBody, color = SecondaryTextColor) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -215,12 +228,12 @@ fun ViewScreen(
                             deleteConfirmNoteId = null
                         },
                     ) {
-                        Text("Delete", color = PrimaryTextColor)
+                        Text(deleteNoteConfirm, color = PrimaryTextColor)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { deleteConfirmNoteId = null }) {
-                        Text("Cancel", color = SecondaryTextColor)
+                        Text(cancelLabel, color = SecondaryTextColor)
                     }
                 },
             )
@@ -289,16 +302,16 @@ fun ViewScreen(
             val limitDate = weekCreateLimitDate!!
             AlertDialog(
                 onDismissRequest = { showWeekCreateLimitDialog = false },
-                title = { Text("Daily to-do limit reached", color = PrimaryTextColor) },
+                title = { Text(dailyLimitTitle, color = PrimaryTextColor) },
                 text = {
                     Text(
-                        "You can have at most ${TaskViewModel.DAILY_PENDING_LIMIT} incomplete tasks per day. Clear tasks for that day to add more.",
+                        dailyLimitMessage,
                         color = SecondaryTextColor,
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = { showWeekCreateLimitDialog = false }) {
-                        Text("Got it", color = PrimaryTextColor)
+                        Text(dailyLimitGotIt, color = PrimaryTextColor)
                     }
                 },
                 dismissButton = {
@@ -308,7 +321,7 @@ fun ViewScreen(
                             showWeekCreateLimitDialog = false
                         },
                     ) {
-                        Text("Clear day's tasks", color = PrimaryTextColor)
+                        Text(dailyLimitClearDay, color = PrimaryTextColor)
                     }
                 },
             )

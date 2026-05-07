@@ -36,9 +36,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppReviewLayout
@@ -65,16 +67,51 @@ fun DailyReviewScreen(
 ) {
     val today = LocalDate.now()
     val yesterday = today.minusDays(1)
-    val tasks = remember(allTasks) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val tasks = remember(allTasks, lang) {
         if (allTasks.isNotEmpty()) {
             mutableStateListOf<Task>().apply { addAll(allTasks) }
         } else {
             mutableStateListOf(
-                Task(1001, "Sport", timeBlock = TaskConstants.TIME_BLOCK_ANYTIME, urgency = TaskConstants.URGENCY_HIGH, taskDate = yesterday),
-                Task(1002, "Write a PRD", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = TaskConstants.URGENCY_NORMAL, taskDate = yesterday),
-                Task(1003, "Learn SQL", timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON, urgency = TaskConstants.URGENCY_LOW, isCompleted = true, taskDate = yesterday),
-                Task(1004, "READING", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = TaskConstants.URGENCY_LOW, isCompleted = true, taskDate = yesterday),
-                Task(1005, "Learn Figma", timeBlock = TaskConstants.TIME_BLOCK_MORNING, urgency = TaskConstants.URGENCY_NORMAL, isCompleted = true, taskDate = yesterday)
+                Task(
+                    1001,
+                    LocalizedStrings.stringFor(lang, "daily_review_demo_1", context),
+                    timeBlock = TaskConstants.TIME_BLOCK_ANYTIME,
+                    urgency = TaskConstants.URGENCY_HIGH,
+                    taskDate = yesterday,
+                ),
+                Task(
+                    1002,
+                    LocalizedStrings.stringFor(lang, "daily_review_demo_2", context),
+                    timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON,
+                    urgency = TaskConstants.URGENCY_NORMAL,
+                    taskDate = yesterday,
+                ),
+                Task(
+                    1003,
+                    LocalizedStrings.stringFor(lang, "daily_review_demo_3", context),
+                    timeBlock = TaskConstants.TIME_BLOCK_AFTERNOON,
+                    urgency = TaskConstants.URGENCY_LOW,
+                    isCompleted = true,
+                    taskDate = yesterday,
+                ),
+                Task(
+                    1004,
+                    LocalizedStrings.stringFor(lang, "daily_review_demo_4", context),
+                    timeBlock = TaskConstants.TIME_BLOCK_EVENING,
+                    urgency = TaskConstants.URGENCY_LOW,
+                    isCompleted = true,
+                    taskDate = yesterday,
+                ),
+                Task(
+                    1005,
+                    LocalizedStrings.stringFor(lang, "daily_review_demo_5", context),
+                    timeBlock = TaskConstants.TIME_BLOCK_MORNING,
+                    urgency = TaskConstants.URGENCY_NORMAL,
+                    isCompleted = true,
+                    taskDate = yesterday,
+                ),
             )
         }
     }

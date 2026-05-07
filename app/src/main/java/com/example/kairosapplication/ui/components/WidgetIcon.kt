@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 object WidgetIcon {
     fun createImageVector(tint: Color = Color(0xFF666666)): ImageVector {
@@ -162,7 +163,7 @@ fun WidgetNavigationIcon(
 ) {
     Icon(
         imageVector = WidgetIcon.createImageVector(tint),
-        contentDescription = "Widget",
+        contentDescription = LocalizedStrings.get("cd_widget"),
         modifier = modifier.size(size),
         tint = tint
     )

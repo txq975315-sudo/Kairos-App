@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.kairosapplication.core.ui.AppSpacing
@@ -172,7 +173,7 @@ fun NoteCardTopic(
                         onClick = { onNoteClick(note.id) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Edit", color = AppColors.PrimaryText)
+                        Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
                     }
                 }
             }

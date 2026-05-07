@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 @Composable
 fun CommonBackButton(onClick: () -> Unit) {
@@ -21,7 +22,7 @@ fun CommonBackButton(onClick: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.ArrowBackIosNew,
-            contentDescription = "Back",
+            contentDescription = LocalizedStrings.get("back"),
             tint = Color(0xFF1A1A1A),
             modifier = Modifier.size(20.dp)
         )

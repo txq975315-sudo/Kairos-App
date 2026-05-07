@@ -99,6 +99,8 @@ import coil.compose.AsyncImage
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.UserVisibleStrings
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabelWithConfig
@@ -342,11 +344,6 @@ fun NoteEditorScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) {
-        taskViewModel.noteValidationErrors.collect { msg ->
-            snackbarHostState.showSnackbar(msg)
-        }
-    }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -371,6 +368,13 @@ fun NoteEditorScreen(
 
     val categoryConfig = uiState.essayCategoryConfig
     val lang = LocalCurrentLanguage.current.value
+    LaunchedEffect(lang, context) {
+        taskViewModel.noteValidationErrors.collect { msg ->
+            snackbarHostState.showSnackbar(
+                UserVisibleStrings.noteValidationSnackbar(msg, lang, context)
+            )
+        }
+    }
     val secondaryIds = remember(primaryCategory, categoryConfig) {
         EssayCategoryUi.mergedSecondaryIds(primaryCategory, categoryConfig)
     }
@@ -425,23 +429,37 @@ fun NoteEditorScreen(
         val topic = isTopicMode(primaryCategory)
         if (topic) {
             if (behaviorSummary.isBlank()) {
-                scope.launch { snackbarHostState.showSnackbar("Please add a short summary") }
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        LocalizedStrings.stringFor(lang, "essay_editor_snackbar_need_summary", context)
+                    )
+                }
                 return
             }
             if (secondaryCategory.isBlank()) {
-                scope.launch { snackbarHostState.showSnackbar("Please select a secondary category") }
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        LocalizedStrings.stringFor(lang, "essay_editor_snackbar_need_secondary", context)
+                    )
+                }
                 return
             }
         }
         if (requireBodyForPost && bodyText.isBlank()) {
-            scope.launch { snackbarHostState.showSnackbar("Please add note content") }
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    LocalizedStrings.stringFor(lang, "essay_editor_snackbar_need_body", context)
+                )
+            }
             return
         }
         if (existingNote?.projectIds?.isNotEmpty() == true &&
             primaryCategory == NotePrimaryCategory.FREESTYLE
         ) {
             scope.launch {
-                snackbarHostState.showSnackbar("This note is in a project — choose a topic first")
+                snackbarHostState.showSnackbar(
+                    LocalizedStrings.stringFor(lang, "essay_editor_snackbar_project_need_topic", context)
+                )
             }
             return
         }
@@ -466,13 +484,13 @@ fun NoteEditorScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "This note is published. Open it from the timeline or topic view, expand the card, and use Change topic, Change project, or Continue. Full-body editing is not available here.",
+                text = LocalizedStrings.stringFor(lang, "essay_editor_published_readonly_hint", context),
                 color = AppColors.PrimaryText,
                 fontSize = 15.sp
             )
             Spacer(modifier = Modifier.height(20.dp))
             TextButton(onClick = onBackClick) {
-                Text("Back", color = AppColors.PrimaryText)
+                Text(LocalizedStrings.stringFor(lang, "back", context), color = AppColors.PrimaryText)
             }
         }
         return
@@ -484,12 +502,12 @@ fun NoteEditorScreen(
                 showAddSecondaryDialog = false
                 newSecondaryDialogText = ""
             },
-            title = { Text("New category", color = PrimaryTextColor) },
+            title = { Text(LocalizedStrings.get("essay_editor_dialog_new_secondary_title"), color = PrimaryTextColor) },
             text = {
                 OutlinedTextField(
                     value = newSecondaryDialogText,
                     onValueChange = { newSecondaryDialogText = it },
-                    label = { Text("Name") },
+                    label = { Text(LocalizedStrings.get("essay_editor_dialog_name_label")) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -503,12 +521,12 @@ fun NoteEditorScreen(
                         newSecondaryDialogText = ""
                     }
                 ) {
-                    Text("Add", color = Color(0xFF8A7CF8))
+                    Text(LocalizedStrings.get("essay_editor_dialog_add"), color = Color(0xFF8A7CF8))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddSecondaryDialog = false }) {
-                    Text("Cancel", color = SecondaryTextColor)
+                    Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
                 }
             }
         )
@@ -527,7 +545,9 @@ fun NoteEditorScreen(
                 onSaveDraft = {
                     if (!draftEnabled && isTopicMode(primaryCategory)) {
                         scope.launch {
-                            snackbarHostState.showSnackbar("Add summary and secondary category first")
+                            snackbarHostState.showSnackbar(
+                                LocalizedStrings.stringFor(lang, "essay_editor_snackbar_draft_prereq", context)
+                            )
                         }
                     } else {
                         performSave(requireBodyForPost = false)
@@ -537,8 +557,11 @@ fun NoteEditorScreen(
                     if (!postEnabled) {
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                if (bodyText.isBlank()) "Please add note content"
-                                else "Add summary and secondary category"
+                                if (bodyText.isBlank()) {
+                                    LocalizedStrings.stringFor(lang, "essay_editor_snackbar_post_need_body", context)
+                                } else {
+                                    LocalizedStrings.stringFor(lang, "essay_editor_snackbar_post_prereq", context)
+                                }
                             )
                         }
                     } else {
@@ -651,7 +674,9 @@ fun NoteEditorScreen(
                                 linkedCategories = linkedCategories + key
                             } else {
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("You can link at most 2 topic categories")
+                                    snackbarHostState.showSnackbar(
+                                        LocalizedStrings.stringFor(lang, "essay_editor_snackbar_link_limit", context)
+                                    )
                                 }
                             }
                         }
@@ -759,7 +784,7 @@ private fun EditorTopBar(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = LocalizedStrings.get("essay_editor_cd_back"),
                     tint = AppColors.PrimaryText
                 )
             }
@@ -772,7 +797,7 @@ private fun EditorTopBar(
                     enabled = draftEnabled,
                     modifier = Modifier.padding(0.dp)
                 ) {
-                    Text("Save draft", fontSize = 13.sp, color = AppColors.SecondaryText)
+                    Text(LocalizedStrings.get("essay_editor_save_draft"), fontSize = 13.sp, color = AppColors.SecondaryText)
                 }
                 Button(
                     onClick = onPost,
@@ -786,7 +811,7 @@ private fun EditorTopBar(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(18.dp)
                 ) {
-                    Text("Post", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text(LocalizedStrings.get("essay_editor_post"), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -854,7 +879,7 @@ private fun PrimaryCategoryLockedBanner(primaryCategory: String, categoryConfig:
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Primary topic",
+                text = LocalizedStrings.get("essay_dialog_primary_topic_label"),
                 fontSize = 11.sp,
                 color = AppColors.SecondaryText,
                 lineHeight = 13.sp
@@ -867,7 +892,7 @@ private fun PrimaryCategoryLockedBanner(primaryCategory: String, categoryConfig:
             )
         }
         Text(
-            text = "Fixed",
+            text = LocalizedStrings.get("essay_editor_fixed"),
             fontSize = 11.sp,
             color = AppColors.SecondaryText,
             fontWeight = FontWeight.Medium
@@ -1117,7 +1142,7 @@ private fun SecondaryCategoryTwoRows(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add",
+                        contentDescription = LocalizedStrings.get("cd_add"),
                         tint = AppColors.SecondaryText,
                         modifier = Modifier.size(16.dp)
                     )
@@ -1378,7 +1403,7 @@ private fun ImageSectionCompact(
             ) {
                 Icon(
                     Icons.Default.AddPhotoAlternate,
-                    contentDescription = "Add",
+                    contentDescription = LocalizedStrings.get("cd_add"),
                     tint = AppColors.HintText,
                     modifier = Modifier.size(28.dp)
                 )
@@ -1444,7 +1469,11 @@ private fun EditorBottomToolBar(
                 onAppendToBody("@")
             }
             Text(
-                text = if (showMoodExpand) "Mood ▲" else "Mood",
+                text = if (showMoodExpand) {
+                    LocalizedStrings.get("essay_editor_mood_expanded")
+                } else {
+                    LocalizedStrings.get("essay_editor_mood")
+                },
                 fontSize = 13.sp,
                 color = AppColors.SecondaryText,
                 modifier = Modifier
@@ -1474,7 +1503,11 @@ private fun EditorBottomToolBar(
                 ) {
                     Text("📁", fontSize = 15.sp)
                     Text(
-                        text = if (selectedProjectIds.isEmpty()) "Project" else "${selectedProjectIds.size}",
+                        text = if (selectedProjectIds.isEmpty()) {
+                            LocalizedStrings.get("essay_editor_project")
+                        } else {
+                            "${selectedProjectIds.size}"
+                        },
                         fontSize = 13.sp,
                         color = AppColors.SecondaryText
                     )
@@ -1488,7 +1521,7 @@ private fun EditorBottomToolBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Done",
+                    contentDescription = LocalizedStrings.get("essay_editor_cd_done"),
                     tint = AppColors.PrimaryText,
                     modifier = Modifier.size(22.dp)
                 )

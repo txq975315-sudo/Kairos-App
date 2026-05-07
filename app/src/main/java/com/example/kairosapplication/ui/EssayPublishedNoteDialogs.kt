@@ -27,12 +27,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabelWithConfig
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabelWithConfig
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.constants.NotePrimaryCategory
@@ -74,7 +77,7 @@ internal fun EssayChangeTopicDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Change topic", color = PrimaryTextColor) },
+        title = { Text(LocalizedStrings.get("essay_dialog_change_topic_title"), color = PrimaryTextColor) },
         text = {
             Column(
                 modifier = Modifier
@@ -83,7 +86,7 @@ internal fun EssayChangeTopicDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Primary topic", fontSize = 12.sp, color = SecondaryTextColor)
+                Text(LocalizedStrings.get("essay_dialog_primary_topic_label"), fontSize = 12.sp, color = SecondaryTextColor)
                 primaryKeys.forEach { key ->
                     val label = rememberTopicPrimaryLabelWithConfig(key, essayCategoryConfig)
                     Row(
@@ -106,7 +109,7 @@ internal fun EssayChangeTopicDialog(
                 }
                 if (NotePrimaryCategory.isTopic(selPrimary) && secondaries.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
-                    Text("Secondary topic", fontSize = 12.sp, color = SecondaryTextColor)
+                    Text(LocalizedStrings.get("essay_dialog_secondary_topic_label"), fontSize = 12.sp, color = SecondaryTextColor)
                     secondaries.forEach { sec ->
                         val secLabel = rememberTopicSecondaryLabelWithConfig(selPrimary, sec, essayCategoryConfig)
                         Row(
@@ -137,12 +140,12 @@ internal fun EssayChangeTopicDialog(
                 onClick = { onConfirm(selPrimary, selSecondary) },
                 enabled = canConfirm
             ) {
-                Text("OK", color = PrimaryTextColor)
+                Text(LocalizedStrings.get("confirm"), color = PrimaryTextColor)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SecondaryTextColor)
+                Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
             }
         }
     )
@@ -158,7 +161,7 @@ internal fun EssayChangeProjectDialog(
     var selected by remember(note.id) { mutableStateOf(note.projectIds.toSet()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Change project", color = PrimaryTextColor) },
+        title = { Text(LocalizedStrings.get("essay_dialog_change_project_title"), color = PrimaryTextColor) },
         text = {
             LazyColumn(
                 modifier = Modifier
@@ -190,12 +193,12 @@ internal fun EssayChangeProjectDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selected.toList()) }) {
-                Text("Done", color = PrimaryTextColor)
+                Text(LocalizedStrings.get("essay_dialog_project_done"), color = PrimaryTextColor)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SecondaryTextColor)
+                Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
             }
         }
     )
@@ -209,12 +212,12 @@ internal fun EssayContinueCreateProjectDialog(
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Continue", color = PrimaryTextColor) },
+        title = { Text(LocalizedStrings.get("essay_dialog_continue_title"), color = PrimaryTextColor) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("New project name") },
+                label = { Text(LocalizedStrings.get("essay_dialog_new_project_name")) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -227,12 +230,12 @@ internal fun EssayContinueCreateProjectDialog(
                 },
                 enabled = name.trim().isNotEmpty()
             ) {
-                Text("Next", color = PrimaryTextColor)
+                Text(LocalizedStrings.get("essay_dialog_next"), color = PrimaryTextColor)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SecondaryTextColor)
+                Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
             }
         }
     )
@@ -245,22 +248,22 @@ internal fun EssayDeletePublishedNoteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete note", color = PrimaryTextColor) },
+        title = { Text(LocalizedStrings.get("essay_note_delete_dialog_title"), color = PrimaryTextColor) },
         text = {
             Text(
-                "Move this note to trash?",
+                LocalizedStrings.get("essay_note_delete_body"),
                 fontSize = 14.sp,
                 color = SecondaryTextColor
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirmDelete) {
-                Text("Delete", color = PrimaryTextColor)
+                Text(LocalizedStrings.get("essay_note_delete_confirm"), color = PrimaryTextColor)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SecondaryTextColor)
+                Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
             }
         }
     )
@@ -287,6 +290,11 @@ fun PublishedNoteActionDialogsHost(
     onDeleteConfirmNoteId: (Long?) -> Unit,
     onNoteDeleted: (Long) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val defaultBehaviorSummary = remember(lang, context) {
+        LocalizedStrings.stringFor(lang, "note_default_behavior_summary", context)
+    }
     changeTopicNoteId?.let { nid ->
         resolveNote(nid)?.let { n ->
             EssayChangeTopicDialog(
@@ -296,7 +304,7 @@ fun PublishedNoteActionDialogsHost(
                 onConfirm = { pri, sec ->
                     val topic = NotePrimaryCategory.isTopic(pri)
                     val newSummary = if (topic && n.behaviorSummary.isBlank()) {
-                        "Add behavior summary"
+                        defaultBehaviorSummary
                     } else {
                         n.behaviorSummary
                     }

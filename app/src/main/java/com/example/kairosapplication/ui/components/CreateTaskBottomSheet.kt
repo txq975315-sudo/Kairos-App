@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.components
 
+import com.example.kairosapplication.BuildConfig
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,6 +43,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +65,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.text.TaskUiLocalLabels
 import com.example.kairosapplication.core.text.rememberTaskTextProvider
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppTypography
@@ -270,6 +274,9 @@ internal fun CreateTaskBottomSheet(
         dragHandle = null,
         shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
     ) {
+        // Bottom sheet window may not inherit composition locals; re-attach app language for i18n.
+        CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
+        val sheetLang = LocalCurrentLanguage.current.value
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -286,14 +293,16 @@ internal fun CreateTaskBottomSheet(
                 textAlign = TextAlign.Center
             )
 
-            debugRepeatRuleText?.let { repeatRule ->
-                Text(
-                    text = "repeatRule: $repeatRule",
-                    color = Color.Red,
-                    fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+            if (BuildConfig.DEBUG) {
+                debugRepeatRuleText?.let { repeatRule ->
+                    Text(
+                        text = "repeatRule: $repeatRule",
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -402,7 +411,16 @@ internal fun CreateTaskBottomSheet(
                         )
                         if (!meta.label.isNullOrBlank()) {
                             Spacer(Modifier.width(4.dp))
-                            Text(text = "# ${meta.label}", fontSize = 12.sp, color = config.titleColor)
+                            Text(
+                                text = TaskUiLocalLabels.labelDisplay(
+                                    sheetLang,
+                                    context,
+                                    meta.label!!,
+                                    withHashPrefixForNonNone = true,
+                                ),
+                                fontSize = 12.sp,
+                                color = config.titleColor,
+                            )
                         }
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -437,7 +455,11 @@ internal fun CreateTaskBottomSheet(
                         IconButton(onClick = onStopClick) {
                             Icon(
                                 imageVector = Icons.Default.Stop,
-                                contentDescription = "Stop repeating",
+                                contentDescription = LocalizedStrings.stringFor(
+                                    sheetLang,
+                                    "task_sheet_stop_repeating",
+                                    context,
+                                ),
                                 tint = Color(0xFFFF9800)
                             )
                         }
@@ -446,7 +468,11 @@ internal fun CreateTaskBottomSheet(
                         IconButton(onClick = onDeleteClick) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete task",
+                                contentDescription = LocalizedStrings.stringFor(
+                                    sheetLang,
+                                    "task_sheet_delete_task",
+                                    context,
+                                ),
                                 tint = Color(0xFFD32F2F)
                             )
                         }
@@ -535,7 +561,12 @@ internal fun CreateTaskBottomSheet(
                             ) {
                                 labelOptions.forEach { option ->
                                     OptionRow(
-                                        text = option,
+                                        text = TaskUiLocalLabels.labelDisplay(
+                                            sheetLang,
+                                            context,
+                                            option,
+                                            withHashPrefixForNonNone = false,
+                                        ),
                                         leadingIcon = TaskConstants.LABEL_ICONS[option] ?: taskText.labelFallbackIcon,
                                         selected = (option != TaskConstants.LABEL_NONE && option == meta.label) ||
                                             (option == TaskConstants.LABEL_NONE && meta.label == null),
@@ -585,6 +616,7 @@ internal fun CreateTaskBottomSheet(
                     }
                 }
             }
+        }
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 object TodayIcon {
     fun createImageVector(tint: Color = Color(0xFF666666)): ImageVector {
@@ -227,7 +228,7 @@ fun TodayNavigationIcon(
 ) {
     Icon(
         imageVector = TodayIcon.createImageVector(tint),
-        contentDescription = "Today",
+        contentDescription = LocalizedStrings.get("cd_today"),
         modifier = modifier.size(size),
         tint = tint
     )

@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.animation.AnimatedContent
@@ -36,12 +37,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.findActivity
 import com.example.kairosapplication.notification.NotificationHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +58,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
+import com.example.kairosapplication.ui.FirstRunLanguageOverlay
 import com.example.kairosapplication.ui.EssayNavHost
 import com.example.kairosapplication.ui.mine.MineAllRecordsCustomizeScreen
 import com.example.kairosapplication.ui.mine.MineAllRecordsScreen
@@ -84,6 +88,7 @@ import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 private enum class AppTab(val icon: ImageVector) {
     Today(Icons.Default.CalendarToday),
@@ -112,7 +117,15 @@ fun MainScreen(
     val dataStoreManager = remember(context) { DataStoreManager(context.applicationContext) }
     val localizationManager = remember { LocalizationManager(dataStoreManager) }
     val notificationHelper = remember(context) { NotificationHelper(context.applicationContext) }
-    LaunchedEffect(Unit) { localizationManager.loadLanguage() }
+    val scope = rememberCoroutineScope()
+    var bootReady by remember { mutableStateOf(false) }
+    var needsLanguageOnboarding by remember { mutableStateOf(false) }
+    LaunchedEffect(dataStoreManager, localizationManager) {
+        dataStoreManager.ensureLanguageOnboardingMigration()
+        needsLanguageOnboarding = !dataStoreManager.isLanguageOnboardingDone()
+        localizationManager.loadLanguage()
+        bootReady = true
+    }
     val languageState = localizationManager.currentLanguage.collectAsState()
     val taskViewModel: TaskViewModel = viewModel(
         factory = TaskViewModel.factory(context.applicationContext)
@@ -212,7 +225,13 @@ fun MainScreen(
         }
     }
 
-    CompositionLocalProvider(LocalCurrentLanguage provides languageState) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundColor),
+    ) {
+        if (bootReady && !needsLanguageOnboarding) {
+            CompositionLocalProvider(LocalCurrentLanguage provides languageState) {
     if (overlay != null) {
         AnimatedContent(
             targetState = overlay,
@@ -499,16 +518,24 @@ fun MainScreen(
                     onDismissRequest = {
                         showCreatePendingLimitDialog = false
                     },
-                    title = { Text("Daily to-do limit reached", color = PrimaryTextColor) },
+                    title = {
+                        Text(
+                            LocalizedStrings.get("task_daily_limit_title"),
+                            color = PrimaryTextColor,
+                        )
+                    },
                     text = {
                         Text(
-                            "You can have at most ${TaskViewModel.DAILY_PENDING_LIMIT} incomplete tasks per day. Clear tasks for that day to add more.",
-                            color = SecondaryTextColor
+                            LocalizedStrings.get(
+                                "task_daily_limit_message",
+                                TaskViewModel.DAILY_PENDING_LIMIT,
+                            ),
+                            color = SecondaryTextColor,
                         )
                     },
                     confirmButton = {
                         TextButton(onClick = { showCreatePendingLimitDialog = false }) {
-                            Text("Got it", color = PrimaryTextColor)
+                            Text(LocalizedStrings.get("task_daily_limit_confirm"), color = PrimaryTextColor)
                         }
                     },
                     dismissButton = {
@@ -518,13 +545,36 @@ fun MainScreen(
                                 showCreatePendingLimitDialog = false
                             }
                         ) {
-                            Text("Clear today's tasks", color = PrimaryTextColor)
+                            Text(LocalizedStrings.get("task_daily_limit_clear_day"), color = PrimaryTextColor)
                         }
                     }
                 )
             }
         }
     }
+    }
+        }
+        if (!bootReady) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(BackgroundColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        if (bootReady && needsLanguageOnboarding) {
+            FirstRunLanguageOverlay(
+                onSelect = { language ->
+                    scope.launch {
+                        localizationManager.setLanguage(language)
+                        dataStoreManager.markLanguageOnboardingDone()
+                        context.findActivity()?.recreate()
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -542,7 +592,7 @@ private fun QuoteSettingScreen(onBack: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Daily Sentence",
+                text = LocalizedStrings.get("main_daily_sentence"),
                 fontSize = 22.sp,
                 color = SecondaryTextColor
             )

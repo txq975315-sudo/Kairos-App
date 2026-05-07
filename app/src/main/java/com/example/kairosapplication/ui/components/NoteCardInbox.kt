@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +23,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.model.Note
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -40,11 +45,20 @@ fun NoteCardInbox(
     today: LocalDate,
     modifier: Modifier = Modifier
 ) {
-    val statusText = remember(note.needsManualClassification) {
-        if (note.needsManualClassification) "Needs classification" else ""
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val statusText = remember(note.needsManualClassification, lang, context) {
+        if (note.needsManualClassification) {
+            LocalizedStrings.stringFor(lang, "inbox_status_needs_classification", context)
+        } else {
+            ""
+        }
     }
-    val deadlineText = remember(note.deadline, today, note.needsManualClassification) {
-        inboxDeadlineLabel(note.deadline, today, note.needsManualClassification)
+    val deadlineText = remember(note.deadline, today, note.needsManualClassification, lang, context) {
+        inboxDeadlineLabel(note.deadline, today, note.needsManualClassification, lang, context)
+    }
+    val noBody = remember(lang, context) {
+        LocalizedStrings.stringFor(lang, "inbox_no_body", context)
     }
 
     Card(
@@ -100,7 +114,7 @@ fun NoteCardInbox(
                 Spacer(Modifier.height(10.dp))
             }
             Text(
-                text = note.body.ifBlank { "(No body)" },
+                text = note.body.ifBlank { noBody },
                 fontSize = 14.sp,
                 color = AppColors.PrimaryText,
                 maxLines = 2,
@@ -117,13 +131,25 @@ fun NoteCardInbox(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 TextButton(onClick = { onQuickAction(NoteAction.Classify(note.id)) }) {
-                    Text("Classify", fontSize = 13.sp, color = AppColors.PrimaryText)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "inbox_action_classify", context),
+                        fontSize = 13.sp,
+                        color = AppColors.PrimaryText
+                    )
                 }
                 TextButton(onClick = { onQuickAction(NoteAction.Tag(note.id)) }) {
-                    Text("Tags", fontSize = 13.sp, color = AppColors.PrimaryText)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "inbox_action_tags", context),
+                        fontSize = 13.sp,
+                        color = AppColors.PrimaryText
+                    )
                 }
                 TextButton(onClick = { onQuickAction(NoteAction.LinkProject(note.id)) }) {
-                    Text("Project", fontSize = 13.sp, color = AppColors.PrimaryText)
+                    Text(
+                        LocalizedStrings.stringFor(lang, "inbox_action_project", context),
+                        fontSize = 13.sp,
+                        color = AppColors.PrimaryText
+                    )
                 }
             }
         }
@@ -133,17 +159,25 @@ fun NoteCardInbox(
 private fun inboxDeadlineLabel(
     deadline: LocalDate?,
     today: LocalDate,
-    needsManual: Boolean
+    needsManual: Boolean,
+    lang: LocalizationManager.Language,
+    context: Context,
 ): String {
-    if (deadline == null) return if (needsManual) "Pending classification" else ""
+    if (deadline == null) {
+        return if (needsManual) {
+            LocalizedStrings.stringFor(lang, "inbox_deadline_pending_classification", context)
+        } else {
+            ""
+        }
+    }
     val days = ChronoUnit.DAYS.between(today, deadline)
     return when {
         days > 0 -> if (days == 1L) {
-            "Moves to freestyle in 1 day"
+            LocalizedStrings.stringFor(lang, "inbox_deadline_moves_freestyle_one", context)
         } else {
-            "Moves to freestyle in $days days"
+            LocalizedStrings.stringFor(lang, "inbox_deadline_moves_freestyle_n", context, days.toInt())
         }
-        days == 0L -> "Due today"
-        else -> "⚠️ Overdue"
+        days == 0L -> LocalizedStrings.stringFor(lang, "inbox_deadline_due_today", context)
+        else -> LocalizedStrings.stringFor(lang, "inbox_card_overdue_badge", context)
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 @Composable
 fun NoteImageRow(
@@ -27,7 +28,7 @@ fun NoteImageRow(
         imageUris.take(maxImages).forEach { uriString ->
             AsyncImage(
                 model = Uri.parse(uriString),
-                contentDescription = "Note image",
+                contentDescription = LocalizedStrings.get("cd_note_image"),
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)

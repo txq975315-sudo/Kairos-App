@@ -40,14 +40,22 @@ object TopicDisplayStrings {
         if (trimmed.equals(UncategorizedSecondaryEn, ignoreCase = true)) {
             return LocalizedStrings.stringFor(lang, "note_uncategorized", context)
         }
+        val canonical = NoteSecondaryCategories.canonicalSecondary(primaryKey, trimmed)
+        if (canonical.equals(UncategorizedSecondaryEn, ignoreCase = true)) {
+            return LocalizedStrings.stringFor(lang, "note_uncategorized", context)
+        }
         val official = NoteSecondaryCategories.defaults[primaryKey].orEmpty()
-        if (trimmed !in official) return stored
-        val mapKey = secondaryLocalizationKey(trimmed)
+        if (canonical !in official) return trimmed
+        val mapKey = secondaryLocalizationKey(canonical)
         return LocalizedStrings.stringFor(lang, mapKey, context)
     }
 
+    /**
+     * Must match `i18n_essay_sec_*` in strings.xml: Android resource names are lowercase;
+     * hyphens (e.g. Self-actualization) become underscores.
+     */
     private fun secondaryLocalizationKey(englishOfficial: String): String =
-        "essay_sec_" + englishOfficial.replace(" ", "_")
+        ("essay_sec_" + englishOfficial.replace(" ", "_").replace("-", "_")).lowercase()
 
     /** Compact primary for narrow sidebar: first word (EN) or first chars (ZH). */
     fun primaryNavShort(categoryKey: String, lang: LocalizationManager.Language, context: Context): String {

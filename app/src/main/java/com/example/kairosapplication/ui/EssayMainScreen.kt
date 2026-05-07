@@ -99,6 +99,7 @@ import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.UserVisibleStrings
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.NotePrimaryCategory
@@ -263,12 +264,12 @@ fun EssayMainScreen(
                         showDatePicker = false
                     }
                 ) {
-                    Text("OK", color = PrimaryTextColor)
+                    Text(LocalizedStrings.get("confirm"), color = PrimaryTextColor)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel", color = SecondaryTextColor)
+                    Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
                 }
             }
         ) {
@@ -286,7 +287,7 @@ fun EssayMainScreen(
             note = noteForComment,
             onDismiss = { commentNoteId = null },
             onAppendComment = { n, text ->
-                taskViewModel.updateNote(appendReviewCommentToNote(n, text))
+                taskViewModel.updateNote(appendReviewCommentToNote(n, text, essayLang, context))
             }
         )
     }
@@ -329,7 +330,7 @@ fun EssayMainScreen(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_feather),
-                    contentDescription = "New note",
+                    contentDescription = LocalizedStrings.get("cd_new_note"),
                     tint = Color.Unspecified,
                     modifier = Modifier.size(32.dp)
                 )
@@ -377,19 +378,19 @@ fun EssayMainScreen(
                     ) {
                         EssayCircleIconButton(
                             imageVector = Icons.Default.Inbox,
-                            contentDescription = "Inbox",
+                            contentDescription = LocalizedStrings.get("cd_inbox"),
                             onClick = onNavigateToInbox
                         )
                     }
                     EssayCircleIconButton(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
+                        contentDescription = LocalizedStrings.get("cd_search"),
                         onClick = onNavigateToSearch
                     )
                     Box {
                         EssayCircleIconButton(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More options",
+                            contentDescription = LocalizedStrings.get("cd_more_options"),
                             onClick = { menuOpen = true }
                         )
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -1370,6 +1371,11 @@ private fun ProjectSummaryCard(
     noteCount: Int,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val noteCountLine = LocalizedStrings.stringFor(lang, "essay_project_note_count", context, noteCount)
+    val relative = UserVisibleStrings.relativeTimeAgo(project.updatedAt, lang, context)
+    val updatedLine = LocalizedStrings.stringFor(lang, "essay_project_updated_line", context, relative)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1397,31 +1403,17 @@ private fun ProjectSummaryCard(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$noteCount notes",
+                    text = noteCountLine,
                     fontSize = 14.sp,
                     color = SecondaryTextColor
                 )
                 Text(
-                    text = "Updated ${formatRelativeTime(project.updatedAt)}",
+                    text = updatedLine,
                     fontSize = 12.sp,
                     color = SecondaryTextColor.copy(alpha = 0.7f)
                 )
             }
         }
-    }
-}
-
-private fun formatRelativeTime(updatedAt: Long): String {
-    val now = System.currentTimeMillis()
-    val diffMs = (now - updatedAt).coerceAtLeast(0L)
-    val minutes = diffMs / (60 * 1000)
-    val hours = diffMs / (60 * 60 * 1000)
-    val days = diffMs / (24 * 60 * 60 * 1000)
-    return when {
-        days >= 1 -> "${days}d ago"
-        hours >= 1 -> "${hours}h ago"
-        minutes >= 1 -> "${minutes}m ago"
-        else -> "just now"
     }
 }
 
@@ -1435,13 +1427,13 @@ private fun EmptyProjectState(modifier: Modifier = Modifier) {
             Text(text = "📂", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No projects yet",
+                text = LocalizedStrings.get("essay_projects_empty_title"),
                 fontSize = 16.sp,
                 color = SecondaryTextColor
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Add projects to organize your notes",
+                text = LocalizedStrings.get("essay_projects_empty_subtitle"),
                 fontSize = 14.sp,
                 color = SecondaryTextColor.copy(alpha = 0.7f)
             )

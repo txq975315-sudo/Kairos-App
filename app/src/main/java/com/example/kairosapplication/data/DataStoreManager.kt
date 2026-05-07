@@ -55,6 +55,7 @@ class DataStoreManager(context: Context) {
     private val keyEssayTimelineLayout = stringPreferencesKey("essay_timeline_layout")
     private val keyEssayIntegratedWallpaperUri = stringPreferencesKey("essay_integrated_wallpaper_uri")
     private val keyLanguage = stringPreferencesKey(KEY_SETTINGS_LANGUAGE)
+    private val keyLanguageOnboardingDone = booleanPreferencesKey("language_onboarding_done")
     private val keyDailyReminder = booleanPreferencesKey(KEY_SETTINGS_DAILY_REMINDER)
     private val keyDailyReminderTime = stringPreferencesKey(KEY_SETTINGS_DAILY_REMINDER_TIME)
     private val keyDailyReflection = booleanPreferencesKey(KEY_SETTINGS_DAILY_REFLECTION)
@@ -192,6 +193,32 @@ class DataStoreManager(context: Context) {
                 "en" -> "en"
                 else -> "zh"
             }
+        }
+    }
+
+    /**
+     * One-time migration: installs that already had language, profile, or moods set before this
+     * flag existed should not see the first-run language sheet.
+     */
+    suspend fun ensureLanguageOnboardingMigration() {
+        dataStore.edit { prefs ->
+            if (prefs[keyLanguageOnboardingDone] == true) return@edit
+            val legacy =
+                prefs[keyLanguage] != null ||
+                    prefs[KEY_PROFILE_JSON] != null ||
+                    prefs[KEY_MOODS_JSON] != null
+            if (legacy) {
+                prefs[keyLanguageOnboardingDone] = true
+            }
+        }
+    }
+
+    suspend fun isLanguageOnboardingDone(): Boolean =
+        dataStore.data.first()[keyLanguageOnboardingDone] == true
+
+    suspend fun markLanguageOnboardingDone() {
+        dataStore.edit { prefs ->
+            prefs[keyLanguageOnboardingDone] = true
         }
     }
 

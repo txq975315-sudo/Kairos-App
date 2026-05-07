@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.taskmodel.model.Note
@@ -48,13 +52,20 @@ fun NoteCardProject(
     onToggleExpand: () -> Unit = {},
     publishedActions: PublishedNoteCardActions? = null
 ) {
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
     val zone = ZoneId.systemDefault()
-    val updatedStr = remember(note.updatedAt) {
+    val updatedStr = remember(note.updatedAt, lang) {
         val z = Instant.ofEpochMilli(note.updatedAt).atZone(zone)
-        DateTimeFormatter.ofPattern("MM/dd HH:mm", Locale.ENGLISH).format(z)
+        val loc = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
+        val pattern = if (lang == LocalizationManager.Language.ZH) "M月d日 HH:mm" else "MM/dd HH:mm"
+        DateTimeFormatter.ofPattern(pattern, loc).format(z)
     }
-    val projectTitle = remember(note.projectIds, projectsById) {
-        note.projectIds.firstOrNull()?.let { projectsById[it] } ?: "Project"
+    val projectDefault = remember(lang, context) {
+        LocalizedStrings.stringFor(lang, "inbox_action_project", context)
+    }
+    val projectTitle = remember(note.projectIds, projectsById, projectDefault) {
+        note.projectIds.firstOrNull()?.let { projectsById[it] } ?: projectDefault
     }
     val headline = remember(projectTitle, note.behaviorSummary) {
         val summary = note.behaviorSummary.ifBlank { "—" }
@@ -151,7 +162,13 @@ fun NoteCardProject(
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Updated $updatedStr · Topics $projectCount",
+                text = LocalizedStrings.stringFor(
+                    lang,
+                    "essay_note_card_updated_topics",
+                    context,
+                    updatedStr,
+                    projectCount,
+                ),
                 fontSize = 12.sp,
                 color = AppColors.HintText
             )
@@ -167,7 +184,7 @@ fun NoteCardProject(
                         onClick = { onNoteClick(note.id) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Edit", color = AppColors.PrimaryText)
+                        Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
                     }
                 }
             }

@@ -45,6 +45,7 @@ import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.PublishedNoteActionDialogsHost
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardVariant
@@ -324,7 +325,7 @@ fun ProjectTimelineScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = LocalizedStrings.get("back"),
                         tint = contentPrimary
                     )
                 }
@@ -364,7 +365,7 @@ fun ProjectTimelineScreen(
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = LocalizedStrings.get("back"),
                                 tint = PrimaryTextColor
                             )
                         }
@@ -588,13 +589,13 @@ private fun EmptyProjectTimelineState(modifier: Modifier = Modifier) {
             Text(text = "📝", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No notes in this project",
+                text = LocalizedStrings.get("project_timeline_empty_title"),
                 fontSize = 16.sp,
                 color = SecondaryTextColor
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Add notes to this project",
+                text = LocalizedStrings.get("project_timeline_empty_subtitle"),
                 fontSize = 14.sp,
                 color = SecondaryTextColor.copy(alpha = 0.7f)
             )

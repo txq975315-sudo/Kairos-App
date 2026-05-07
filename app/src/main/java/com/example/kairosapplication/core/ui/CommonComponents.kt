@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.common.CommonBackButton as LegacyCommonBackButton
 
 /**
@@ -146,7 +147,7 @@ fun CommonTimeBlock(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add task",
+                            contentDescription = LocalizedStrings.get("cd_add_task"),
                             tint = Color.Black.copy(alpha = 0.18f),
                             modifier = Modifier.size(20.dp)
                         )

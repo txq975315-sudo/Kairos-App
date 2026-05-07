@@ -264,7 +264,7 @@ class TaskViewModel(
             try {
                 noteRepository.addNote(note)
             } catch (e: NoteValidationException) {
-                _noteValidationErrors.emit(e.message ?: "Validation failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
             }
         }
     }
@@ -277,7 +277,7 @@ class TaskViewModel(
             try {
                 noteRepository.updateNote(note)
             } catch (e: NoteValidationException) {
-                _noteValidationErrors.emit(e.message ?: "Validation failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
             }
         }
     }
@@ -301,9 +301,9 @@ class TaskViewModel(
                 }
                 onSuccess()
             } catch (e: NoteValidationException) {
-                _noteValidationErrors.emit(e.message ?: "Validation failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
             } catch (e: IllegalArgumentException) {
-                _noteValidationErrors.emit(e.message ?: "Save failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_save_failed")
             }
         }
     }
@@ -340,9 +340,9 @@ class TaskViewModel(
                 val published = note.toPublishedFromInbox(primaryCategory)
                 noteRepository.updateNote(published)
             } catch (e: NoteValidationException) {
-                _noteValidationErrors.emit(e.message ?: "Validation failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
             } catch (e: IllegalArgumentException) {
-                _noteValidationErrors.emit(e.message ?: "Update failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_update_failed")
             }
         }
     }
@@ -361,9 +361,9 @@ class TaskViewModel(
                     )
                 }
             } catch (e: NoteValidationException) {
-                _noteValidationErrors.emit(e.message ?: "Validation failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
             } catch (e: IllegalArgumentException) {
-                _noteValidationErrors.emit(e.message ?: "Update failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_update_failed")
             }
         }
     }
@@ -396,9 +396,9 @@ class TaskViewModel(
                     onReadyNavigate(listOf(pid))
                 }
             } catch (e: NoteValidationException) {
-                _noteValidationErrors.emit(e.message ?: "Validation failed")
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
             } catch (e: IllegalArgumentException) {
-                _noteValidationErrors.emit(e.message ?: "Failed to create project")
+                _noteValidationErrors.emit(e.message ?: "i18n|project_create_failed")
             }
         }
     }

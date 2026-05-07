@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui
 
+import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -40,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +64,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import com.example.kairosapplication.R
+import com.example.kairosapplication.core.text.TaskTextProvider
+import com.example.kairosapplication.core.text.TaskUiLocalLabels
+import com.example.kairosapplication.core.text.rememberTaskTextProvider
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
@@ -70,6 +78,7 @@ import com.example.taskmodel.util.TaskUtils
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
@@ -77,6 +86,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 @Composable
@@ -104,6 +114,16 @@ fun CreateScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    val taskTexts = rememberTaskTextProvider()
+    val mediumDateFormatter = remember(lang) {
+        val loc = when (lang) {
+            LocalizationManager.Language.ZH -> Locale.forLanguageTag("zh-Hans-CN")
+            LocalizationManager.Language.EN -> Locale.ENGLISH
+        }
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(loc)
+    }
+    val toastCreatedMessage = stringResource(R.string.task_toast_created)
     val titleFocusRequester = remember { FocusRequester() }
     val availableLabels = remember {
         TaskConstants.LABEL_OPTIONS.filter {
@@ -129,7 +149,7 @@ fun CreateScreen(
         if (speechText.isNotEmpty()) {
             titleInput = speechText
         } else {
-            Toast.makeText(context, "No speech recognized", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, taskTexts.toastNoSpeech, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -181,12 +201,23 @@ fun CreateScreen(
         }
     }
 
-    val repeatSummary = remember(repeatRule, repeatRange, customRepeatRule, customRepeatEndDate) {
+    val repeatSummary = remember(
+        repeatRule,
+        repeatRange,
+        customRepeatRule,
+        customRepeatEndDate,
+        lang,
+        context,
+        mediumDateFormatter,
+    ) {
         buildRepeatSummary(
             repeatRule = repeatRule,
             repeatRange = repeatRange,
             customRepeatRule = customRepeatRule,
-            customRepeatEndDate = customRepeatEndDate
+            customRepeatEndDate = customRepeatEndDate,
+            lang = lang,
+            context = context,
+            dateFormatter = mediumDateFormatter,
         )
     }
 
@@ -198,7 +229,7 @@ fun CreateScreen(
 
     val submitCreateTask: () -> Unit = {
         if (titleInput.isBlank()) {
-            Toast.makeText(context, "Enter a task title", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, taskTexts.toastEmptyTitle, Toast.LENGTH_SHORT).show()
         } else {
             val dates = resolveCreateDates(
                 selectedDate = selectedDate,
@@ -227,13 +258,14 @@ fun CreateScreen(
                 ).toTask(id = nowSeed + index)
             }
             onTasksCreated(tasks)
-            Toast.makeText(context, "Task created!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, toastCreatedMessage, Toast.LENGTH_SHORT).show()
             resetInputsAfterCreate()
             titleFocusRequester.requestFocus()
             keyboardController?.show()
         }
     }
 
+    CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -253,10 +285,10 @@ fun CreateScreen(
                 direction = ArrowDirection.LEFT,
                 size = 36.dp,
                 tint = Color(0xFF1A1A1A),
-                contentDescription = "Back"
+                contentDescription = taskTexts.contentDescBack
             )
             Text(
-                text = "Let's plan!",
+                text = stringResource(R.string.task_create_screen_title),
                 fontSize = AppScreenHeader.titleSp,
                 fontWeight = AppScreenHeader.titleWeight,
                 color = AppScreenHeader.titleColor,
@@ -296,7 +328,7 @@ fun CreateScreen(
                 // While typing, collapse options so keyboard + icon row stay visible.
                 activeTool = null
             },
-            placeholder = "What are you doing?",
+            placeholder = taskTexts.titlePlaceholder,
             modifier = Modifier.padding(top = 20.dp),
             focusRequester = titleFocusRequester,
             keyboardActions = KeyboardActions(
@@ -311,7 +343,7 @@ fun CreateScreen(
                 // While typing, collapse options so keyboard + icon row stay visible.
                 activeTool = null
             },
-            placeholder = "Describe it",
+            placeholder = taskTexts.descriptionPlaceholder,
             modifier = Modifier.padding(top = 8.dp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
@@ -321,21 +353,36 @@ fun CreateScreen(
 
         if (isRecording) {
             Text(
-                text = "Recording…",
+                text = taskTexts.recording,
                 color = Color(0xFFFF4444),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
 
-        Text(
-            text = buildDraftSummary(
+        val draftSummaryText = remember(
+            draftTask.timeBlock,
+            draftTask.urgency,
+            draftTask.label,
+            selectedDates.size,
+            repeatRule,
+            lang,
+            context,
+            mediumDateFormatter,
+        ) {
+            buildDraftSummary(
                 timeBlock = draftTask.timeBlock,
                 urgency = draftTask.urgency,
                 label = draftTask.label,
                 selectedDaysCount = selectedDates.size,
-                repeatRule = repeatRule
-            ),
+                repeatRule = repeatRule,
+                lang = lang,
+                context = context,
+                dateFormatter = mediumDateFormatter,
+            )
+        }
+        Text(
+            text = draftSummaryText,
             color = Color(0xFF757575),
             fontSize = 12.sp,
             modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
@@ -470,6 +517,7 @@ fun CreateScreen(
                 HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
             }
             ActionIconsRow(
+            taskTexts = taskTexts,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 0.dp),
@@ -490,18 +538,19 @@ fun CreateScreen(
                 isRecording = true
                 val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
                     putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
-                    putExtra("android.speech.extra.PROMPT", "Say your task title")
+                    putExtra("android.speech.extra.PROMPT", taskTexts.voicePrompt)
                 }
                 try {
                     speechLauncher.launch(intent)
                 } catch (_: Exception) {
                     isRecording = false
-                    Toast.makeText(context, "Voice input is not supported on this device", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, taskTexts.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
                 }
             },
             onSubmit = submitCreateTask
         )
         }
+    }
     }
 }
 
@@ -522,13 +571,23 @@ private fun CalendarSection(
     onDateSelected: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val monthLabel = remember(currentMonth) {
-        currentMonth.atDay(1).format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH))
-    }
-    val monthDays = remember(currentMonth) { buildCalendarDays(currentMonth) }
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
+    val monthLabel = remember(currentMonth, lang) {
+        val loc = when (lang) {
+            LocalizationManager.Language.ZH -> Locale.forLanguageTag("zh-Hans-CN")
+            LocalizationManager.Language.EN -> Locale.ENGLISH
+        }
+        currentMonth.atDay(1).format(DateTimeFormatter.ofPattern("MMMM yyyy", loc))
+    }
+    val monthDays = remember(currentMonth) { buildCalendarDays(currentMonth) }
     val weekTitles = remember(lang, ctx) { weekShortHeadersMondayFirst(ctx, lang) }
+    val monthPrevDesc = remember(lang, ctx) {
+        LocalizedStrings.stringFor(lang, "calendar_month_prev", ctx)
+    }
+    val monthNextDesc = remember(lang, ctx) {
+        LocalizedStrings.stringFor(lang, "calendar_month_next", ctx)
+    }
 
     Column(
         modifier = modifier
@@ -547,7 +606,7 @@ private fun CalendarSection(
                 direction = ArrowDirection.LEFT,
                 size = 28.dp,
                 tint = Color(0xFF1A1A1A),
-                contentDescription = "Previous month"
+                contentDescription = monthPrevDesc
             )
             Text(
                 text = monthLabel,
@@ -560,7 +619,7 @@ private fun CalendarSection(
                 direction = ArrowDirection.RIGHT,
                 size = 28.dp,
                 tint = Color(0xFF1A1A1A),
-                contentDescription = "Next month"
+                contentDescription = monthNextDesc
             )
         }
 
@@ -689,6 +748,7 @@ private fun InputField(
 
 @Composable
 private fun ActionIconsRow(
+    taskTexts: TaskTextProvider,
     modifier: Modifier = Modifier,
     selectedUrgency: Int,
     onTimeClick: () -> Unit,
@@ -710,38 +770,38 @@ private fun ActionIconsRow(
         ) {
             Icon(
                 imageVector = Icons.Default.AccessTime,
-                contentDescription = "Time",
+                contentDescription = taskTexts.contentDescTimeIcon,
                 tint = Color(0xFF757575),
                 modifier = Modifier.clickable { onTimeClick() }
             )
             Icon(
                 imageVector = Icons.Default.Flag,
-                contentDescription = "Urgency",
+                contentDescription = taskTexts.contentDescFlagIcon,
                 tint = TaskUtils.getUrgencyColor(selectedUrgency),
                 modifier = Modifier.clickable { onUrgencyClick() }
             )
             Icon(
                 imageVector = Icons.Default.Label,
-                contentDescription = "Label",
+                contentDescription = taskTexts.contentDescLabelIcon,
                 tint = Color(0xFF757575),
                 modifier = Modifier.clickable { onLabelClick() }
             )
             Icon(
                 imageVector = Icons.Default.AttachFile,
-                contentDescription = "Sticker",
+                contentDescription = taskTexts.contentDescAttachIcon,
                 tint = Color(0xFF757575),
                 modifier = Modifier.clickable { onStickerClick() }
             )
             Icon(
                 imageVector = Icons.Default.Mic,
-                contentDescription = "Voice",
+                contentDescription = taskTexts.contentDescMicIcon,
                 tint = Color(0xFF757575),
                 modifier = Modifier.clickable { onVoiceClick() }
             )
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.Send,
-            contentDescription = "Send create task",
+            contentDescription = taskTexts.contentDescAddTask,
             tint = Color(0xFF1A1A1A),
             modifier = Modifier.clickable { onSubmit() }
         )
@@ -775,6 +835,32 @@ private fun CreateToolPanel(
     onStickerSelected: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val panelCtx = LocalContext.current
+    val panelLang = LocalCurrentLanguage.current.value
+    val panelDateFormatter = remember(panelLang) {
+        val loc = when (panelLang) {
+            LocalizationManager.Language.ZH -> Locale.forLanguageTag("zh-Hans-CN")
+            LocalizationManager.Language.EN -> Locale.ENGLISH
+        }
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(loc)
+    }
+    val selectedDatesLine = remember(
+        selectedDates.size,
+        rangeStartDate,
+        rangeEndDate,
+        panelLang,
+        panelCtx,
+        panelDateFormatter,
+    ) {
+        formatCreateToolSelectedSummary(
+            selectedCount = selectedDates.size,
+            rangeStart = rangeStartDate,
+            rangeEnd = rangeEndDate,
+            lang = panelLang,
+            context = panelCtx,
+            dateFormatter = panelDateFormatter,
+        )
+    }
     // Full-width footer + flat card: same white shell as icon row, tight spacing.
     key(activeTool) {
         Column(
@@ -787,20 +873,24 @@ private fun CreateToolPanel(
         ) {
             when (activeTool) {
                 CreateTool.TIME -> {
-                    Text(text = "Date Selection", fontSize = 13.sp, color = Color(0xFF757575))
+                    Text(
+                        text = LocalizedStrings.stringFor(panelLang, "task_create_section_date_mode", panelCtx),
+                        fontSize = 13.sp,
+                        color = Color(0xFF757575),
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SelectionChip(
-                            text = "Single",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_date_mode_single", panelCtx),
                             selected = dateSelectionMode == DateSelectionMode.SINGLE,
                             onClick = { onSelectionModeChanged(DateSelectionMode.SINGLE) }
                         )
                         SelectionChip(
-                            text = "Multi",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_date_mode_multi", panelCtx),
                             selected = dateSelectionMode == DateSelectionMode.MULTI,
                             onClick = { onSelectionModeChanged(DateSelectionMode.MULTI) }
                         )
                         SelectionChip(
-                            text = "Range",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_date_mode_range", panelCtx),
                             selected = dateSelectionMode == DateSelectionMode.RANGE,
                             onClick = { onSelectionModeChanged(DateSelectionMode.RANGE) }
                         )
@@ -814,42 +904,46 @@ private fun CreateToolPanel(
                     )
 
                     Text(
-                        text = "Selected ${selectedDates.size} day(s) ${if (rangeStartDate != null) "from $rangeStartDate" else ""} ${if (rangeEndDate != null) "to $rangeEndDate" else ""}",
+                        text = selectedDatesLine,
                         fontSize = 12.sp,
                         color = Color(0xFF9E9E9E)
                     )
 
-                    Text(text = "Repeat Range", fontSize = 13.sp, color = Color(0xFF757575))
+                    Text(
+                        text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_range", panelCtx),
+                        fontSize = 13.sp,
+                        color = Color(0xFF757575),
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SelectionChip(
-                            text = "Infinite",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_infinite", panelCtx),
                             selected = repeatRange == RepeatRange.UNLIMITED,
                             onClick = { onRepeatRangeChanged(RepeatRange.UNLIMITED) }
                         )
                         SelectionChip(
-                            text = "Next 1 week",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_next_1w", panelCtx),
                             selected = repeatRange == RepeatRange.NEXT_1_WEEK,
                             onClick = { onRepeatRangeChanged(RepeatRange.NEXT_1_WEEK) }
                         )
                         SelectionChip(
-                            text = "Next 2 weeks",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_next_2w", panelCtx),
                             selected = repeatRange == RepeatRange.NEXT_2_WEEKS,
                             onClick = { onRepeatRangeChanged(RepeatRange.NEXT_2_WEEKS) }
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SelectionChip(
-                            text = "Next 4 weeks",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_next_4w", panelCtx),
                             selected = repeatRange == RepeatRange.NEXT_4_WEEKS,
                             onClick = { onRepeatRangeChanged(RepeatRange.NEXT_4_WEEKS) }
                         )
                         SelectionChip(
-                            text = "This month",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_this_month", panelCtx),
                             selected = repeatRange == RepeatRange.THIS_MONTH,
                             onClick = { onRepeatRangeChanged(RepeatRange.THIS_MONTH) }
                         )
                         SelectionChip(
-                            text = "Custom end date",
+                            text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_custom_end", panelCtx),
                             selected = repeatRange == RepeatRange.CUSTOM_END_DATE,
                             onClick = { onRepeatRangeChanged(RepeatRange.CUSTOM_END_DATE) }
                         )
@@ -857,29 +951,38 @@ private fun CreateToolPanel(
                     if (repeatRange == RepeatRange.CUSTOM_END_DATE) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             SelectionChip(
-                                text = "Today",
+                                text = LocalizedStrings.stringFor(panelLang, "task_create_end_today", panelCtx),
                                 selected = customRepeatEndDate == LocalDate.now(),
                                 onClick = { onCustomRepeatEndDateChanged(LocalDate.now()) }
                             )
                             SelectionChip(
-                                text = "In 7 days",
+                                text = LocalizedStrings.stringFor(panelLang, "task_create_end_plus_7", panelCtx),
                                 selected = customRepeatEndDate == LocalDate.now().plusDays(7),
                                 onClick = { onCustomRepeatEndDateChanged(LocalDate.now().plusDays(7)) }
                             )
                             SelectionChip(
-                                text = "In 30 days",
+                                text = LocalizedStrings.stringFor(panelLang, "task_create_end_plus_30", panelCtx),
                                 selected = customRepeatEndDate == LocalDate.now().plusDays(30),
                                 onClick = { onCustomRepeatEndDateChanged(LocalDate.now().plusDays(30)) }
                             )
                         }
                     }
 
-                    Text(text = "Repeat Rules", fontSize = 13.sp, color = Color(0xFF757575))
+                    Text(
+                        text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_rules", panelCtx),
+                        fontSize = 13.sp,
+                        color = Color(0xFF757575),
+                    )
                     val weekdayRules = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         weekdayRules.forEach { weekday ->
+                            val chipLabel = LocalizedStrings.stringFor(
+                                panelLang,
+                                weekdayChipI18nKey(weekday),
+                                panelCtx,
+                            )
                             SelectionChip(
-                                text = weekday,
+                                text = chipLabel,
                                 selected = repeatRule == "WEEKLY_$weekday",
                                 enabled = repeatRange != null,
                                 onClick = { onRepeatRuleChanged("WEEKLY_$weekday") }
@@ -887,12 +990,17 @@ private fun CreateToolPanel(
                         }
                     }
                     SelectionChip(
-                        text = "Custom Repeat",
+                        text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_custom", panelCtx),
                         selected = repeatRule == "CUSTOM",
                         enabled = repeatRange != null,
                         onClick = { onRepeatRuleChanged("CUSTOM") }
                     )
                     if (repeatRule == "CUSTOM" && repeatRange != null) {
+                        val customRuleHint = LocalizedStrings.stringFor(
+                            panelLang,
+                            "task_create_custom_rule_hint",
+                            panelCtx,
+                        )
                         BasicTextField(
                             value = customRepeatRule,
                             onValueChange = onCustomRepeatRuleChanged,
@@ -904,7 +1012,7 @@ private fun CreateToolPanel(
                             textStyle = TextStyle(fontSize = 13.sp, color = Color(0xFF1A1A1A)),
                             decorationBox = { inner ->
                                 if (customRepeatRule.isBlank()) {
-                                    Text("Custom rule...", fontSize = 13.sp, color = Color(0xFF9E9E9E))
+                                    Text(customRuleHint, fontSize = 13.sp, color = Color(0xFF9E9E9E))
                                 }
                                 inner()
                             }
@@ -913,7 +1021,7 @@ private fun CreateToolPanel(
 
                     TaskConstants.TIME_BLOCKS.forEach { block ->
                         OptionPill(
-                            text = block,
+                            text = LocalizedStrings.timeBlockLabelFor(block, panelLang, panelCtx),
                             selected = selectedTimeBlock == block,
                             leadingEmoji = timeBlockEmoji(block),
                             onClick = { onTimeSelected(block) }
@@ -924,7 +1032,11 @@ private fun CreateToolPanel(
                 CreateTool.URGENCY -> {
                     TaskConstants.URGENCY_LEVELS.entries.forEach { entry ->
                         OptionPill(
-                            text = entry.value,
+                            text = LocalizedStrings.stringFor(
+                                panelLang,
+                                "task_urgency_${entry.key}",
+                                panelCtx,
+                            ),
                             selected = selectedUrgency == entry.key,
                             colorDot = TaskUtils.getUrgencyColor(entry.key),
                             onClick = { onUrgencySelected(entry.key) }
@@ -935,8 +1047,9 @@ private fun CreateToolPanel(
                 CreateTool.LABEL -> {
                     labelOptions.forEach { label ->
                         val isNone = label == TaskConstants.LABEL_NONE
+                        val display = TaskUiLocalLabels.labelDisplay(panelLang, panelCtx, label, !isNone)
                         OptionPill(
-                            text = if (isNone) label else "# $label",
+                            text = display,
                             selected = if (isNone) selectedLabel == null else selectedLabel == label,
                             leadingEmoji = labelEmoji(label),
                             onClick = { onLabelSelected(if (isNone) null else label) }
@@ -960,7 +1073,7 @@ private fun CreateToolPanel(
                         }
                     }
                     OptionPill(
-                        text = "Clear Sticker",
+                        text = LocalizedStrings.stringFor(panelLang, "task_create_clear_sticker", panelCtx),
                         selected = selectedSticker == null,
                         onClick = { onStickerSelected(null) }
                     )
@@ -1064,34 +1177,144 @@ private fun generateDateSequence(start: LocalDate, end: LocalDate): List<LocalDa
     return days
 }
 
+private fun weekdayChipI18nKey(code: String): String = when (code) {
+    "MON" -> "calendar_week_mon"
+    "TUE" -> "calendar_week_tue"
+    "WED" -> "calendar_week_wed"
+    "THU" -> "calendar_week_thu"
+    "FRI" -> "calendar_week_fri"
+    "SAT" -> "calendar_week_sat"
+    "SUN" -> "calendar_week_sun"
+    else -> "calendar_week_mon"
+}
+
+private fun formatCreateToolSelectedSummary(
+    selectedCount: Int,
+    rangeStart: LocalDate?,
+    rangeEnd: LocalDate?,
+    lang: LocalizationManager.Language,
+    context: Context,
+    dateFormatter: DateTimeFormatter,
+): String {
+    val countPart = LocalizedStrings.stringFor(lang, "task_create_selected_count", context, selectedCount)
+    val extras = buildList {
+        if (rangeStart != null) {
+            add(
+                LocalizedStrings.stringFor(
+                    lang,
+                    "task_create_range_from",
+                    context,
+                    rangeStart.format(dateFormatter),
+                ),
+            )
+        }
+        if (rangeEnd != null) {
+            add(
+                LocalizedStrings.stringFor(
+                    lang,
+                    "task_create_range_to",
+                    context,
+                    rangeEnd.format(dateFormatter),
+                ),
+            )
+        }
+    }
+    return if (extras.isEmpty()) countPart else (listOf(countPart) + extras).joinToString(" ")
+}
+
+private fun weeklyRepeatSummary(lang: LocalizationManager.Language, context: Context, repeatRule: String): String {
+    val suffix = repeatRule.removePrefix("WEEKLY_")
+    val weekday = LocalizedStrings.stringFor(lang, weekdayChipI18nKey(suffix), context)
+    return LocalizedStrings.stringFor(lang, "task_create_weekly_pattern", context, weekday)
+}
+
+private fun repeatRuleSummaryLine(
+    lang: LocalizationManager.Language,
+    context: Context,
+    repeatRule: String?,
+    customRepeatRule: String,
+): String {
+    if (repeatRule == null) {
+        return LocalizedStrings.stringFor(lang, "task_create_no_repeat_rule", context)
+    }
+    if (repeatRule.startsWith("WEEKLY_")) {
+        return weeklyRepeatSummary(lang, context, repeatRule)
+    }
+    if (repeatRule == TaskConstants.REPEAT_RULE_NONE) {
+        return LocalizedStrings.stringFor(lang, "task_create_repeat_rule_none_short", context)
+    }
+    if (repeatRule == TaskConstants.REPEAT_RULE_DAILY) {
+        return LocalizedStrings.stringFor(lang, "task_create_repeat_rule_daily_short", context)
+    }
+    if (repeatRule == "CUSTOM") {
+        return if (customRepeatRule.isBlank()) {
+            LocalizedStrings.stringFor(lang, "task_create_custom_rule_fallback", context)
+        } else {
+            customRepeatRule
+        }
+    }
+    return repeatRule
+}
+
+private fun repeatRangeSummaryLine(
+    lang: LocalizationManager.Language,
+    context: Context,
+    repeatRange: RepeatRange?,
+    customRepeatEndDate: LocalDate?,
+    dateFormatter: DateTimeFormatter,
+): String {
+    if (repeatRange == null) {
+        return LocalizedStrings.stringFor(lang, "task_create_range_not_selected", context)
+    }
+    return when (repeatRange) {
+        RepeatRange.UNLIMITED -> LocalizedStrings.stringFor(lang, "task_create_repeat_infinite", context)
+        RepeatRange.NEXT_1_WEEK -> LocalizedStrings.stringFor(lang, "task_create_repeat_next_1w", context)
+        RepeatRange.NEXT_2_WEEKS -> LocalizedStrings.stringFor(lang, "task_create_repeat_next_2w", context)
+        RepeatRange.NEXT_4_WEEKS -> LocalizedStrings.stringFor(lang, "task_create_repeat_next_4w", context)
+        RepeatRange.THIS_MONTH -> LocalizedStrings.stringFor(lang, "task_create_repeat_this_month", context)
+        RepeatRange.CUSTOM_END_DATE -> {
+            val endLabel = customRepeatEndDate?.format(dateFormatter)
+                ?: LocalizedStrings.stringFor(lang, "task_create_date_not_set", context)
+            LocalizedStrings.stringFor(lang, "task_create_range_until", context, endLabel)
+        }
+    }
+}
+
 private fun buildRepeatSummary(
     repeatRule: String?,
     repeatRange: RepeatRange?,
     customRepeatRule: String,
-    customRepeatEndDate: LocalDate?
+    customRepeatEndDate: LocalDate?,
+    lang: LocalizationManager.Language,
+    context: Context,
+    dateFormatter: DateTimeFormatter,
 ): String {
-    val ruleText = when {
-        repeatRule == null -> "No repeat rule selected"
-        repeatRule.startsWith("WEEKLY_") -> {
-            val weekday = repeatRule.removePrefix("WEEKLY_")
-            "Weekly $weekday"
-        }
-        repeatRule == "CUSTOM" -> {
-            if (customRepeatRule.isBlank()) "Custom rule" else customRepeatRule
-        }
-        else -> "No repeat"
-    }
+    val ruleText = repeatRuleSummaryLine(lang, context, repeatRule, customRepeatRule)
+    val rangeText = repeatRangeSummaryLine(lang, context, repeatRange, customRepeatEndDate, dateFormatter)
+    val join = LocalizedStrings.stringFor(lang, "task_create_summary_join", context)
+    return ruleText + join + rangeText
+}
 
-    val rangeText = when (repeatRange) {
-        RepeatRange.UNLIMITED -> "Infinite"
-        RepeatRange.NEXT_1_WEEK -> "Next 1 week"
-        RepeatRange.NEXT_2_WEEKS -> "Next 2 weeks"
-        RepeatRange.NEXT_4_WEEKS -> "Next 4 weeks"
-        RepeatRange.THIS_MONTH -> "This month"
-        RepeatRange.CUSTOM_END_DATE -> "Until ${customRepeatEndDate ?: "date not set"}"
-        null -> "No range selected"
+private fun repeatRuleDraftSnippet(
+    lang: LocalizationManager.Language,
+    context: Context,
+    repeatRule: String?,
+): String {
+    val r = repeatRule?.trim().orEmpty()
+    if (r.isEmpty()) return ""
+    if (r == TaskConstants.REPEAT_RULE_NONE) {
+        return LocalizedStrings.stringFor(lang, "task_create_repeat_rule_none_short", context)
     }
-    return "$ruleText，$rangeText"
+    if (r == TaskConstants.REPEAT_RULE_DAILY) {
+        return LocalizedStrings.stringFor(lang, "task_create_repeat_rule_daily_short", context)
+    }
+    if (r.startsWith("WEEKLY_")) {
+        return weeklyRepeatSummary(lang, context, r)
+    }
+    if (r == "CUSTOM") {
+        return LocalizedStrings.stringFor(lang, "task_create_repeat_custom", context)
+    }
+    return r
 }
 
 private fun buildDraftSummary(
@@ -1099,27 +1322,26 @@ private fun buildDraftSummary(
     urgency: Int,
     label: String?,
     selectedDaysCount: Int,
-    repeatRule: String?
+    repeatRule: String?,
+    lang: LocalizationManager.Language,
+    context: Context,
+    dateFormatter: DateTimeFormatter,
 ): String {
-    val urgencyText = when (urgency) {
-        TaskConstants.URGENCY_URGENT -> "Urgent"
-        TaskConstants.URGENCY_HIGH -> "High Priority"
-        TaskConstants.URGENCY_NORMAL -> "Normal"
-        else -> "Low Priority"
-    }
+    val sep = LocalizedStrings.stringFor(lang, "task_create_summary_join", context)
     val parts = mutableListOf<String>()
-    parts += timeBlock
-    parts += urgencyText
+    parts += LocalizedStrings.timeBlockLabelFor(timeBlock, lang, context)
+    parts += LocalizedStrings.stringFor(lang, "task_urgency_$urgency", context)
     if (!label.isNullOrBlank()) {
-        parts += label
+        parts += TaskUiLocalLabels.labelDisplay(lang, context, label, withHashPrefixForNonNone = true)
     }
     if (selectedDaysCount > 0) {
-        parts += "$selectedDaysCount days"
+        parts += LocalizedStrings.stringFor(lang, "task_create_draft_days", context, selectedDaysCount)
     }
-    if (!repeatRule.isNullOrBlank()) {
-        parts += repeatRule
+    val ruleSnippet = repeatRuleDraftSnippet(lang, context, repeatRule)
+    if (ruleSnippet.isNotBlank()) {
+        parts += ruleSnippet
     }
-    return parts.joinToString(" · ")
+    return parts.joinToString(sep)
 }
 
 private fun timeBlockEmoji(timeBlock: String): String {

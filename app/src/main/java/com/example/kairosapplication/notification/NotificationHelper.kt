@@ -10,11 +10,18 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.kairosapplication.MainActivity
 import com.example.kairosapplication.R
+import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import java.util.Calendar
 
 class NotificationHelper(private val context: Context) {
 
     private val appCtx = context.applicationContext
+    private val dataStoreManager by lazy { DataStoreManager(appCtx) }
+
+    private fun appLanguage(): LocalizationManager.Language =
+        LocalizationManager.Language.fromCode(dataStoreManager.getLanguageSync())
     private val alarmManager: AlarmManager
         get() = appCtx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -29,27 +36,33 @@ class NotificationHelper(private val context: Context) {
 
     fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val lang = appLanguage()
         val nm = appCtx.getSystemService(NotificationManager::class.java)
+        val reminderName = LocalizedStrings.stringFor(lang, "notif_channel_reminder_name", appCtx)
+        val reminderDesc = LocalizedStrings.stringFor(lang, "notif_channel_reminder_desc", appCtx)
         val chReminder = NotificationChannel(
             CHANNEL_DAILY_REMINDER,
-            "每日待办提醒",
+            reminderName,
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "每日待办提醒"
+            description = reminderDesc
             lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         }
+        val reflectionName = LocalizedStrings.stringFor(lang, "notif_channel_reflection_name", appCtx)
+        val reflectionDesc = LocalizedStrings.stringFor(lang, "notif_channel_reflection_desc", appCtx)
         val chReflection = NotificationChannel(
             CHANNEL_DAILY_REFLECTION,
-            "每日反思提醒",
+            reflectionName,
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "每日反思提醒"
+            description = reflectionDesc
         }
         nm.createNotificationChannel(chReminder)
         nm.createNotificationChannel(chReflection)
     }
 
     fun showDailyReminderNotification() {
+        val lang = appLanguage()
         val nm = appCtx.getSystemService(NotificationManager::class.java) ?: return
         val tap = PendingIntent.getActivity(
             appCtx,
@@ -61,8 +74,8 @@ class NotificationHelper(private val context: Context) {
         )
         val notification = NotificationCompat.Builder(appCtx, CHANNEL_DAILY_REMINDER)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("每日待办提醒")
-            .setContentText("今天还有任务待完成，点击查看")
+            .setContentTitle(LocalizedStrings.stringFor(lang, "notif_reminder_title", appCtx))
+            .setContentText(LocalizedStrings.stringFor(lang, "notif_reminder_body", appCtx))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(tap)
             .setAutoCancel(true)
@@ -71,6 +84,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun showDailyReflectionNotification() {
+        val lang = appLanguage()
         val nm = appCtx.getSystemService(NotificationManager::class.java) ?: return
         val tap = PendingIntent.getActivity(
             appCtx,
@@ -82,8 +96,8 @@ class NotificationHelper(private val context: Context) {
         )
         val notification = NotificationCompat.Builder(appCtx, CHANNEL_DAILY_REFLECTION)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("每日反思提醒")
-            .setContentText("今天记录了吗？点击写下今日反思")
+            .setContentTitle(LocalizedStrings.stringFor(lang, "notif_reflection_title", appCtx))
+            .setContentText(LocalizedStrings.stringFor(lang, "notif_reflection_body", appCtx))
             .setContentIntent(tap)
             .setAutoCancel(true)
             .build()

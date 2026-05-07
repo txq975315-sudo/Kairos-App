@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.components
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.taskmodel.model.Note
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -57,6 +60,7 @@ fun NoteCommentBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val focusRequester = remember { FocusRequester() }
     var text by remember(note.id) { mutableStateOf("") }
+    val commentToastEmpty = LocalizedStrings.get("essay_comment_toast_empty")
 
     val sheetBg = Color(0xFFE8E4F5)
     val titleColor = Color(0xFF4A3F6B)
@@ -86,7 +90,7 @@ fun NoteCommentBottomSheet(
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "Comment",
+                text = LocalizedStrings.get("essay_comment_sheet_title"),
                 modifier = Modifier.fillMaxWidth(),
                 color = titleColor,
                 fontSize = 22.sp,
@@ -111,7 +115,7 @@ fun NoteCommentBottomSheet(
                 decorationBox = { inner ->
                     if (text.isEmpty()) {
                         Text(
-                            text = "Write a short self-review…",
+                            text = LocalizedStrings.get("essay_comment_placeholder"),
                             fontSize = 18.sp,
                             color = AppColors.SecondaryText.copy(alpha = 0.65f)
                         )
@@ -124,7 +128,7 @@ fun NoteCommentBottomSheet(
                 onClick = {
                     val t = text.trim()
                     if (t.isEmpty()) {
-                        Toast.makeText(context, "Enter a comment", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, commentToastEmpty, Toast.LENGTH_SHORT).show()
                     } else {
                         onAppendComment(note, t)
                         keyboard?.hide()
@@ -134,7 +138,7 @@ fun NoteCommentBottomSheet(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Save")
+                Text(LocalizedStrings.get("save"))
             }
             TextButton(
                 onClick = {
@@ -144,16 +148,27 @@ fun NoteCommentBottomSheet(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Cancel", color = AppColors.SecondaryText)
+                Text(LocalizedStrings.get("cancel"), color = AppColors.SecondaryText)
             }
         }
     }
 }
 
-fun appendReviewCommentToNote(note: Note, comment: String): Note {
+fun appendReviewCommentToNote(
+    note: Note,
+    comment: String,
+    language: LocalizationManager.Language,
+    context: Context,
+): Note {
     val stamp = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
     val sep = if (note.body.isBlank()) "" else "\n\n"
-    val block = "— Review · $stamp\n$comment"
+    val block = LocalizedStrings.stringFor(
+        language,
+        "essay_comment_review_block",
+        context,
+        stamp,
+        comment.trim(),
+    )
     val newBody = "${note.body}$sep$block"
     return note.copy(body = newBody, updatedAt = System.currentTimeMillis())
 }

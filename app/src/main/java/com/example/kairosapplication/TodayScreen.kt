@@ -226,6 +226,8 @@ fun TodayScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var showDailyLimitDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
 
     val blockBounds = remember { mutableStateMapOf<String, Rect>() }
     val dragHandleCenterY = remember { mutableStateMapOf<Int, Float>() }
@@ -246,8 +248,8 @@ fun TodayScreen(
         scope.launch {
             when (
                 snackbarHostState.showSnackbar(
-                    message = "Task deleted",
-                    actionLabel = "Undo",
+                    message = LocalizedStrings.stringFor(lang, "task_snackbar_deleted", context),
+                    actionLabel = LocalizedStrings.stringFor(lang, "task_snackbar_undo", context),
                     duration = SnackbarDuration.Short
                 )
             ) {
@@ -394,11 +396,24 @@ fun TodayScreen(
     if (showDailyLimitDialog) {
         AlertDialog(
             onDismissRequest = { showDailyLimitDialog = false },
-            title = { Text("Daily to-do limit reached") },
-            text = { Text("You can have at most ${TaskViewModel.DAILY_PENDING_LIMIT} incomplete tasks per day. Clear tasks for that day to add more.") },
+            title = {
+                Text(
+                    LocalizedStrings.stringFor(lang, "task_daily_limit_title", context),
+                )
+            },
+            text = {
+                Text(
+                    LocalizedStrings.stringFor(
+                        lang,
+                        "task_daily_limit_message",
+                        context,
+                        TaskViewModel.DAILY_PENDING_LIMIT,
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { showDailyLimitDialog = false }) {
-                    Text("Got it")
+                    Text(LocalizedStrings.stringFor(lang, "task_daily_limit_confirm", context))
                 }
             },
             dismissButton = {
@@ -408,7 +423,7 @@ fun TodayScreen(
                         showDailyLimitDialog = false
                     }
                 ) {
-                    Text("Clear today's tasks")
+                    Text(LocalizedStrings.stringFor(lang, "task_daily_limit_clear_day", context))
                 }
             }
         )
@@ -492,8 +507,8 @@ fun TodayScreen(
                 scope.launch {
                     when (
                         snackbarHostState.showSnackbar(
-                            message = "Task deleted",
-                            actionLabel = "Undo",
+                            message = LocalizedStrings.stringFor(lang, "task_snackbar_deleted", context),
+                            actionLabel = LocalizedStrings.stringFor(lang, "task_snackbar_undo", context),
                             duration = SnackbarDuration.Short
                         )
                     ) {
@@ -537,13 +552,13 @@ private fun FirstUseOnboarding(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                text = "Welcome to Kairos",
+                text = LocalizedStrings.get("today_welcome_title"),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.PrimaryText
             )
             Text(
-                text = "Welcome. Load sample tasks to explore, or start from an empty list.",
+                text = LocalizedStrings.get("today_welcome_subtitle"),
                 fontSize = 14.sp,
                 color = AppColors.SecondaryText
             )
@@ -556,7 +571,7 @@ private fun FirstUseOnboarding(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF8A7CF8))
                 ) {
                     Text(
-                        text = "Load sample data",
+                        text = LocalizedStrings.get("today_welcome_load_sample"),
                         color = Color.White,
                         modifier = Modifier.padding(vertical = 10.dp),
                         textAlign = TextAlign.Center
@@ -570,7 +585,7 @@ private fun FirstUseOnboarding(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0))
                 ) {
                     Text(
-                        text = "Start empty",
+                        text = LocalizedStrings.get("today_welcome_start_empty"),
                         color = AppColors.PrimaryText,
                         modifier = Modifier.padding(vertical = 10.dp),
                         textAlign = TextAlign.Center
@@ -673,7 +688,7 @@ private fun TopBar(
         ) {
             Icon(
                 imageVector = Icons.Default.MoreHoriz,
-                contentDescription = "Daily Review",
+                contentDescription = LocalizedStrings.get("cd_daily_review"),
                 tint = AppColors.PrimaryText,
                 modifier = Modifier.size(26.dp)
             )
@@ -708,7 +723,7 @@ private fun DateSection(
             direction = ArrowDirection.LEFT,
             size = 32.dp,
             tint = AppColors.PrimaryText,
-            contentDescription = "Previous day"
+            contentDescription = LocalizedStrings.get("cd_prev_day")
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
@@ -729,7 +744,7 @@ private fun DateSection(
             direction = ArrowDirection.RIGHT,
             size = 32.dp,
             tint = AppColors.PrimaryText,
-            contentDescription = "Next day"
+            contentDescription = LocalizedStrings.get("cd_next_day")
         )
     }
 }

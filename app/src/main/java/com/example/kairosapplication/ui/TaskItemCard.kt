@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
@@ -173,7 +174,7 @@ fun TaskItemCard(
                     if (task.isCompleted) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Completed",
+                            contentDescription = LocalizedStrings.get("cd_completed_task"),
                             tint = Color(0xFF9E9E9E),
                             modifier = Modifier.size(14.dp)
                         )
@@ -197,7 +198,7 @@ fun TaskItemCard(
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     Text(
-                        text = "Delete",
+                        text = LocalizedStrings.get("task_swipe_delete"),
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold

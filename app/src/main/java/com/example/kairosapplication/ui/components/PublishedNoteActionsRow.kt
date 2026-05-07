@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 private val PublishedActionBlue = Color(0xFF1976D2)
 private val PublishedActionBlueOnDark = Color(0xFF90CAF9)
@@ -69,7 +70,7 @@ internal fun PublishedNoteActionsRow(
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             CompactActionIconLabel(
                 icon = Icons.Outlined.Category,
-                label = "topic",
+                label = LocalizedStrings.get("essay_card_action_topic"),
                 tint = blue,
                 onClick = actions.onChangeTopic
             )
@@ -78,14 +79,14 @@ internal fun PublishedNoteActionsRow(
             if (hasProjects) {
                 CompactActionIconLabel(
                     icon = Icons.Outlined.FolderOpen,
-                    label = "project",
+                    label = LocalizedStrings.get("essay_card_action_project"),
                     tint = blue,
                     onClick = actions.onChangeProject
                 )
             } else {
                 CompactActionIconLabel(
                     icon = Icons.Outlined.AutoAwesome,
-                    label = "continue",
+                    label = LocalizedStrings.get("essay_card_action_continue"),
                     tint = blue,
                     onClick = actions.onContinueCreate
                 )
@@ -94,7 +95,7 @@ internal fun PublishedNoteActionsRow(
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             CompactActionIconLabel(
                 icon = Icons.Outlined.ChatBubbleOutline,
-                label = "comment",
+                label = LocalizedStrings.get("essay_card_action_comment"),
                 tint = blue,
                 onClick = actions.onComment
             )
@@ -102,7 +103,7 @@ internal fun PublishedNoteActionsRow(
         Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             CompactActionIconLabel(
                 icon = Icons.Outlined.DeleteOutline,
-                label = "delete",
+                label = LocalizedStrings.get("essay_card_action_delete"),
                 tint = red,
                 onClick = actions.onDelete
             )

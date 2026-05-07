@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 object EssayIcon {
     fun createImageVector(tint: Color = Color(0xFF666666)): ImageVector {
@@ -104,7 +105,7 @@ fun EssayNavigationIcon(
 ) {
     Icon(
         imageVector = EssayIcon.createImageVector(tint),
-        contentDescription = "Essay",
+        contentDescription = LocalizedStrings.get("cd_essay"),
         modifier = modifier.size(size),
         tint = tint
     )

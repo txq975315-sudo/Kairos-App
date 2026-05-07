@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.i18n.LocalizedStrings
 
 object MineIcon {
     fun createImageVector(tint: Color = Color(0xFF666666)): ImageVector {
@@ -161,7 +162,7 @@ fun MineNavigationIcon(
 ) {
     Icon(
         imageVector = MineIcon.createImageVector(tint),
-        contentDescription = "Mine",
+        contentDescription = LocalizedStrings.get("cd_mine"),
         modifier = modifier.size(size),
         tint = tint
     )
