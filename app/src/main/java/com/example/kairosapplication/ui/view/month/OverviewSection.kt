@@ -1,6 +1,8 @@
 package com.example.kairosapplication.ui.view.month
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,23 +23,42 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.view.Overview
 
 @Composable
 fun OverviewSection(
     overview: Overview,
+    metrics: List<MonthOverviewMetric>,
+    onCustomizeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val lang = LocalCurrentLanguage.current.value
     Column(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onCustomizeClick)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = LocalizedStrings.stringFor(lang, "view_month_summary"),
+                    color = AppColors.HintText,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
             Text(
-                text = LocalizedStrings.get("view_month_summary"),
+                text = "›",
                 color = AppColors.HintText,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(),
+                fontSize = 18.sp,
+                modifier = Modifier.padding(start = 4.dp),
             )
-            Spacer(modifier = Modifier.height(4.dp))
         }
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
@@ -46,36 +69,20 @@ fun OverviewSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            OverviewMetricCell(
-                valueText = overview.totalNotes.toString(),
-                label = LocalizedStrings.get("view_metric_notes"),
-                modifier = Modifier.weight(1f),
-            )
-            OverviewVerticalDivider()
-            OverviewMetricCell(
-                valueText = overview.totalTasks.toString(),
-                label = LocalizedStrings.get("view_metric_tasks"),
-                modifier = Modifier.weight(1f),
-            )
-            OverviewVerticalDivider()
-            OverviewMetricCell(
-                valueText = "${overview.completionRate}%",
-                label = LocalizedStrings.get("view_metric_done"),
-                modifier = Modifier.weight(1f),
-            )
-            OverviewVerticalDivider()
-            OverviewMetricCell(
-                valueText = if (overview.consecutiveDays == 1) {
-                    LocalizedStrings.get("view_streak_one")
-                } else {
-                    LocalizedStrings.get("view_streak_many").replace("{n}", overview.consecutiveDays.toString())
-                },
-                label = LocalizedStrings.get("view_metric_streak"),
-                modifier = Modifier.weight(1f),
-            )
+            metrics.distinct().forEachIndexed { index, metric ->
+                if (index > 0) {
+                    OverviewVerticalDivider()
+                }
+                OverviewMetricCell(
+                    valueText = formatOverviewMetricValue(overview, metric, lang),
+                    label = LocalizedStrings.stringFor(lang, metric.labelKey()),
+                    modifier = Modifier.widthIn(min = 76.dp),
+                )
+            }
         }
     }
 }
@@ -87,7 +94,7 @@ private fun OverviewMetricCell(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -96,6 +103,7 @@ private fun OverviewMetricCell(
             fontWeight = FontWeight.Bold,
             color = AppColors.PrimaryText,
             textAlign = TextAlign.Center,
+            maxLines = 2,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -104,7 +112,27 @@ private fun OverviewMetricCell(
             fontWeight = FontWeight.Normal,
             color = AppColors.HintText,
             textAlign = TextAlign.Center,
+            maxLines = 2,
         )
+    }
+}
+
+private fun formatOverviewMetricValue(
+    overview: Overview,
+    metric: MonthOverviewMetric,
+    lang: LocalizationManager.Language,
+): String {
+    val raw = overview.displayValue(metric)
+    return when (metric) {
+        MonthOverviewMetric.STREAK_RECORD,
+        MonthOverviewMetric.STREAK_ALL_TASKS_DONE,
+        MonthOverviewMetric.STREAK_BOTH_MODULES,
+        -> {
+            val n = raw.toIntOrNull() ?: 0
+            if (n == 1) LocalizedStrings.stringFor(lang, "view_streak_one")
+            else LocalizedStrings.stringFor(lang, "view_streak_many").replace("{n}", n.toString())
+        }
+        else -> raw
     }
 }
 
@@ -114,6 +142,7 @@ private fun OverviewVerticalDivider() {
         modifier = Modifier
             .width(0.5.dp)
             .height(40.dp)
+            .padding(horizontal = 6.dp)
             .background(AppColors.Divider),
     )
 }

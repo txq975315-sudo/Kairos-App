@@ -1,7 +1,8 @@
 package com.example.taskmodel.constants
 
 /**
- * Essay [Note] primary category keys (English, stable storage).
+ * Essay [Note] primary category keys: stable, lowercase snake-case storage identifiers.
+ * UI copy is localized separately (see app `TopicDisplayStrings` / `LocalizedStrings`); do not persist translated labels here.
  */
 object NotePrimaryCategory {
     const val FREESTYLE = "freestyle"

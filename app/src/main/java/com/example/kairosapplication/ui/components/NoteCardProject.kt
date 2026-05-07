@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import com.example.taskmodel.constants.NoteStatus
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.taskmodel.model.Note
 import java.time.Instant
@@ -61,9 +61,7 @@ fun NoteCardProject(
         "$projectTitle · $summary"
     }
     val projectCount = note.projectIds.size
-    val categoryLabel = remember(note.primaryCategory) {
-        NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
-    }
+    val categoryLabel = rememberTopicPrimaryLabel(note.primaryCategory)
     val emoji = remember(note.primaryCategory) {
         NoteCardConstants.categoryEmoji(note.primaryCategory)
     }
@@ -159,7 +157,7 @@ fun NoteCardProject(
             )
             if (expandable && expanded) {
                 Spacer(Modifier.height(8.dp))
-                if (publishedActions != null && note.status == NoteStatus.PUBLISHED) {
+                if (publishedActions != null) {
                     PublishedNoteActionsRow(
                         actions = publishedActions,
                         hasProjects = note.projectIds.isNotEmpty()

@@ -36,15 +36,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.ui.PublishedNoteActionDialogsHost
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardVariant
+import com.example.kairosapplication.ui.components.NoteTimelineIntegrated
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
@@ -53,7 +57,8 @@ import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.Month
+import java.time.format.TextStyle
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +71,13 @@ fun ProjectTimelineScreen(
     onNavigateToNewNote: () -> Unit,
     /** When true: no [Scaffold] top bar; use under Essay tabs with external navigation. */
     embedded: Boolean = false,
+    integratedNotes: Boolean = false,
+    accentColor: Color = Color(0xFF5C6BC0),
+    contentPrimary: Color = PrimaryTextColor,
+    contentSecondary: Color = SecondaryTextColor,
+    lightForeground: Boolean = false,
+    /** When set (e.g. Essay tab), used for note action row; otherwise falls back to publish-only actions. */
+    notePublishedActions: ((Note) -> PublishedNoteCardActions)? = null,
 ) {
     val uiState by taskViewModel.uiState.collectAsState()
     val projectName = uiState.noteProjects.find { it.id == projectId }?.name ?: "Project"
@@ -112,7 +124,7 @@ fun ProjectTimelineScreen(
                 ?: uiState.notePublished.find { it.id == id }
         },
         noteProjects = uiState.noteProjects,
-        customSecondaryCategories = uiState.customSecondaryCategories,
+        essayCategoryConfig = uiState.essayCategoryConfig,
         taskViewModel = taskViewModel,
         onNavigateToNewNote = onNavigateToNewNote,
         changeTopicNoteId = changeTopicNoteId,
@@ -127,6 +139,33 @@ fun ProjectTimelineScreen(
             if (expandedPublishedNoteId == nid) expandedPublishedNoteId = null
         }
     )
+
+    fun resolvePublishedActions(note: Note): PublishedNoteCardActions? {
+        notePublishedActions?.invoke(note)?.let { return it }
+        return if (note.status == NoteStatus.PUBLISHED) {
+            PublishedNoteCardActions(
+                onChangeTopic = {
+                    changeTopicNoteId = note.id
+                    expandedPublishedNoteId = null
+                },
+                onChangeProject = {
+                    changeProjectNoteId = note.id
+                    expandedPublishedNoteId = null
+                },
+                onContinueCreate = {
+                    continueCreateNoteId = note.id
+                    expandedPublishedNoteId = null
+                },
+                onDelete = {
+                    deleteConfirmNoteId = note.id
+                    expandedPublishedNoteId = null
+                },
+                onComment = { onNoteClick(note.id) }
+            )
+        } else {
+            null
+        }
+    }
 
     val listContent: @Composable (Modifier) -> Unit = { mod ->
         LazyColumn(
@@ -161,7 +200,10 @@ fun ProjectTimelineScreen(
                                 } else {
                                     expandedYears + year
                                 }
-                            }
+                            },
+                            titleColor = contentPrimary,
+                            iconTint = contentSecondary,
+                            useGutter = !integratedNotes
                         )
                     }
                     if (yearExpanded) {
@@ -186,7 +228,10 @@ fun ProjectTimelineScreen(
                                         } else {
                                             expandedMonths + monthKey
                                         }
-                                    }
+                                    },
+                                    titleColor = contentPrimary,
+                                    iconTint = contentSecondary,
+                                    useGutter = !integratedNotes,
                                 )
                             }
                             if (monthExpanded) {
@@ -201,21 +246,26 @@ fun ProjectTimelineScreen(
 
                                 dateGroups.forEach { (date, dayNotes) ->
                                     item(key = "date_${year}_${month}_$date") {
-                                        ProjectTimelineDateHeader(date = date)
+                                        ProjectTimelineDateHeader(
+                                            date = date,
+                                            titleColor = contentPrimary,
+                                            useGutter = !integratedNotes,
+                                            integratedNotesLayout = integratedNotes,
+                                        )
                                     }
                                     items(
                                         items = dayNotes.sortedByDescending { it.createdAt },
                                         key = { it.id }
                                     ) { note ->
-                                        ProjectTimelineGutterRow {
-                                            NoteCard(
+                                        if (integratedNotes) {
+                                            NoteTimelineIntegrated(
                                                 note = note,
-                                                variant = NoteCardVariant.PROJECT,
+                                                accentColor = accentColor,
                                                 onNoteClick = onNoteClick,
                                                 projectsById = projectsById,
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(bottom = AppSpacing.BlockGap),
+                                                    .padding(bottom = 12.dp),
                                                 expandable = true,
                                                 expanded = note.id == expandedPublishedNoteId,
                                                 onToggleExpand = {
@@ -226,29 +276,32 @@ fun ProjectTimelineScreen(
                                                             note.id
                                                         }
                                                 },
-                                                publishedActions = if (note.status == NoteStatus.PUBLISHED) {
-                                                    PublishedNoteCardActions(
-                                                        onChangeTopic = {
-                                                            changeTopicNoteId = note.id
-                                                            expandedPublishedNoteId = null
-                                                        },
-                                                        onChangeProject = {
-                                                            changeProjectNoteId = note.id
-                                                            expandedPublishedNoteId = null
-                                                        },
-                                                        onContinueCreate = {
-                                                            continueCreateNoteId = note.id
-                                                            expandedPublishedNoteId = null
-                                                        },
-                                                        onDelete = {
-                                                            deleteConfirmNoteId = note.id
-                                                            expandedPublishedNoteId = null
-                                                        }
-                                                    )
-                                                } else {
-                                                    null
-                                                }
+                                                publishedActions = resolvePublishedActions(note),
+                                                lightForeground = lightForeground
                                             )
+                                        } else {
+                                            ProjectTimelineGutterRow {
+                                                NoteCard(
+                                                    note = note,
+                                                    variant = NoteCardVariant.PROJECT,
+                                                    onNoteClick = onNoteClick,
+                                                    projectsById = projectsById,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(bottom = AppSpacing.BlockGap),
+                                                    expandable = true,
+                                                    expanded = note.id == expandedPublishedNoteId,
+                                                    onToggleExpand = {
+                                                        expandedPublishedNoteId =
+                                                            if (expandedPublishedNoteId == note.id) {
+                                                                null
+                                                            } else {
+                                                                note.id
+                                                            }
+                                                    },
+                                                    publishedActions = resolvePublishedActions(note)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -272,14 +325,14 @@ fun ProjectTimelineScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = PrimaryTextColor
+                        tint = contentPrimary
                     )
                 }
                 Text(
                     text = "$projectName (${projectNotes.size})",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = PrimaryTextColor,
+                    color = contentPrimary,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -332,8 +385,15 @@ fun ProjectTimelineScreen(
 @Composable
 private fun ProjectTimelineGutterRow(
     modifier: Modifier = Modifier,
+    showGutter: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    if (!showGutter) {
+        Box(modifier = modifier.fillMaxWidth()) {
+            content()
+        }
+        return
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -363,9 +423,12 @@ private fun YearHeader(
     year: Int,
     essayCount: Int,
     isExpanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    titleColor: Color = PrimaryTextColor,
+    iconTint: Color = SecondaryTextColor,
+    useGutter: Boolean = true,
 ) {
-    ProjectTimelineGutterRow {
+    ProjectTimelineGutterRow(showGutter = useGutter) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -378,12 +441,12 @@ private fun YearHeader(
                 text = "${year} ($essayCount)",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryTextColor
+                color = titleColor
             )
             Icon(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = SecondaryTextColor
+                tint = iconTint
             )
         }
     }
@@ -394,9 +457,18 @@ private fun MonthHeader(
     month: Int,
     essayCount: Int,
     isExpanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    titleColor: Color = PrimaryTextColor,
+    iconTint: Color = SecondaryTextColor,
+    useGutter: Boolean = true,
 ) {
-    ProjectTimelineGutterRow {
+    val lang = LocalCurrentLanguage.current.value
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val monthLabel = remember(month, lang, locale) {
+        val style = if (lang == LocalizationManager.Language.ZH) TextStyle.FULL else TextStyle.SHORT
+        Month.of(month).getDisplayName(style, locale)
+    }
+    ProjectTimelineGutterRow(showGutter = useGutter) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -406,56 +478,102 @@ private fun MonthHeader(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "${monthName(month)} ($essayCount)",
+                text = "$monthLabel ($essayCount)",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = PrimaryTextColor
+                color = titleColor
             )
             Icon(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = SecondaryTextColor
+                tint = iconTint
             )
         }
     }
 }
 
-private fun monthName(month: Int): String = when (month) {
-    1 -> "January"
-    2 -> "February"
-    3 -> "March"
-    4 -> "April"
-    5 -> "May"
-    6 -> "June"
-    7 -> "July"
-    8 -> "August"
-    9 -> "September"
-    10 -> "October"
-    11 -> "November"
-    12 -> "December"
-    else -> "Unknown"
-}
-
 @Composable
-private fun ProjectTimelineDateHeader(date: LocalDate) {
-    val dateStr = remember(date) {
-        DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH).format(date)
+private fun ProjectTimelineDateHeader(
+    date: LocalDate,
+    titleColor: Color = PrimaryTextColor,
+    useGutter: Boolean = true,
+    /** Matches [NoteTimelineIntegrated] rail width: day num column aligns with the timeline. */
+    integratedNotesLayout: Boolean = false,
+) {
+    val lang = LocalCurrentLanguage.current.value
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val monthPart = remember(date, locale, lang) {
+        val style = if (lang == LocalizationManager.Language.ZH) TextStyle.FULL else TextStyle.SHORT
+        date.month.getDisplayName(style, locale)
     }
-    ProjectTimelineGutterRow {
+    val dayStr = remember(date) { date.dayOfMonth.toString() }
+    val monthYear = remember(monthPart, date.year) { "$monthPart/${date.year}" }
+
+    @Composable
+    fun dateRow(modifier: Modifier = Modifier) {
         Row(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, top = AppSpacing.SectionSmall, bottom = AppSpacing.SectionSmall),
+                .padding(
+                    start = if (integratedNotesLayout) 0.dp else 8.dp,
+                    top = AppSpacing.SectionSmall,
+                    bottom = AppSpacing.SectionSmall
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "📅", fontSize = 14.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = dateStr,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = PrimaryTextColor
-            )
+            if (integratedNotesLayout) {
+                Box(
+                    modifier = Modifier.width(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = dayStr,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = titleColor
+                    )
+                }
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = monthYear,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = titleColor
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = dayStr,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = titleColor
+                    )
+                    Spacer(modifier = Modifier.width(20.dp))
+                    Text(
+                        text = monthYear,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = titleColor
+                    )
+                }
+            }
+        }
+    }
+
+    if (integratedNotesLayout) {
+        dateRow()
+    } else {
+        ProjectTimelineGutterRow(showGutter = useGutter) {
+            dateRow()
         }
     }
 }

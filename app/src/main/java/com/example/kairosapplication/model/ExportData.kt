@@ -1,5 +1,6 @@
 package com.example.kairosapplication.model
 
+import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.model.LocalProfile
 import com.example.taskmodel.model.MoodRecord
 import com.example.taskmodel.model.Note
@@ -53,7 +54,7 @@ data class TaskExportDto(
 fun NoteExportDto.toNote(): Note = Note(
     id = id,
     primaryCategory = primaryCategory,
-    secondaryCategory = secondaryCategory,
+    secondaryCategory = NoteSecondaryCategories.canonicalSecondary(primaryCategory, secondaryCategory),
     behaviorSummary = behaviorSummary.ifBlank { title },
     body = content,
     sceneTags = sceneTags,

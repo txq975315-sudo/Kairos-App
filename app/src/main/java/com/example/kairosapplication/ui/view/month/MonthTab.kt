@@ -11,6 +11,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.kairosapplication.core.ui.AppColors
@@ -24,8 +28,11 @@ fun MonthTab(
     yearMonth: YearMonth,
     onDateClick: (LocalDate) -> Unit,
     onMonthChange: (YearMonth) -> Unit,
+    monthOverviewMetrics: List<MonthOverviewMetric>,
+    onMonthOverviewMetricsChange: (List<MonthOverviewMetric>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var customizeOverviewOpen by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
     Column(
         modifier = modifier
@@ -61,11 +68,24 @@ fun MonthTab(
         ) {
             OverviewSection(
                 overview = uiState.monthOverview,
+                metrics = monthOverviewMetrics,
+                onCustomizeClick = { customizeOverviewOpen = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
             )
         }
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (customizeOverviewOpen) {
+        MonthOverviewCustomizeSheet(
+            selected = monthOverviewMetrics,
+            onDismiss = { customizeOverviewOpen = false },
+            onConfirm = {
+                onMonthOverviewMetricsChange(it)
+                customizeOverviewOpen = false
+            },
+        )
     }
 }

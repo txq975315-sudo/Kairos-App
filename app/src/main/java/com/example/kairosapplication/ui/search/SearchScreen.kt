@@ -59,11 +59,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.ui.topic.TopicDisplayStrings
 import com.example.kairosapplication.ui.PublishedNoteActionDialogsHost
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.components.NoteCardVariant
+import com.example.kairosapplication.ui.components.NoteCommentBottomSheet
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
+import com.example.kairosapplication.ui.components.appendReviewCommentToNote
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -136,6 +140,7 @@ fun SearchScreen(
     var changeProjectNoteId by remember { mutableStateOf<Long?>(null) }
     var continueCreateNoteId by remember { mutableStateOf<Long?>(null) }
     var deleteConfirmNoteId by remember { mutableStateOf<Long?>(null) }
+    var commentNoteId by remember { mutableStateOf<Long?>(null) }
 
     val filteredNotes = remember(
         searchQuery,
@@ -186,10 +191,11 @@ fun SearchScreen(
         uiState.noteProjects.associate { it.id to it.name }
     }
 
-    val categoryDialogOptions = remember {
+    val lang = LocalCurrentLanguage.current.value
+    val categoryDialogOptions = remember(lang) {
         listOf(CategoryAllKey to "All") +
             categoryFilterOrder.map { key ->
-                key to NoteCardConstants.primaryCategoryLabel(key)
+                key to TopicDisplayStrings.primaryLabel(key, lang)
             }
     }
 
@@ -214,13 +220,31 @@ fun SearchScreen(
         listOf(MoodAnyKey to "Any") + moodOptions.map { emoji -> emoji to emoji }
     }
 
+    LaunchedEffect(commentNoteId, filteredNotes) {
+        val id = commentNoteId ?: return@LaunchedEffect
+        if (filteredNotes.none { it.id == id }) commentNoteId = null
+    }
+    val searchCommentNote = commentNoteId?.let { id ->
+        filteredNotes.find { it.id == id }
+            ?: uiState.notePublished.find { it.id == id }
+    }
+    searchCommentNote?.let { n ->
+        NoteCommentBottomSheet(
+            note = n,
+            onDismiss = { commentNoteId = null },
+            onAppendComment = { note, text ->
+                taskViewModel.updateNote(appendReviewCommentToNote(note, text))
+            }
+        )
+    }
+
     PublishedNoteActionDialogsHost(
         resolveNote = { id ->
             filteredNotes.find { it.id == id }
                 ?: uiState.notePublished.find { it.id == id }
         },
         noteProjects = uiState.noteProjects,
-        customSecondaryCategories = uiState.customSecondaryCategories,
+        essayCategoryConfig = uiState.essayCategoryConfig,
         taskViewModel = taskViewModel,
         onNavigateToNewNote = onNavigateToNewNote,
         changeTopicNoteId = changeTopicNoteId,
@@ -275,7 +299,7 @@ fun SearchScreen(
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
                     FilterRow(
                         label = "Category",
-                        value = selectedCategory?.let { NoteCardConstants.primaryCategoryLabel(it) } ?: "All",
+                        value = selectedCategory?.let { TopicDisplayStrings.primaryLabel(it, lang) } ?: "All",
                         onClick = { showCategoryDialog = true }
                     )
                     HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
@@ -376,6 +400,10 @@ fun SearchScreen(
                                         },
                                         onDelete = {
                                             deleteConfirmNoteId = note.id
+                                            expandedNoteId = null
+                                        },
+                                        onComment = {
+                                            commentNoteId = note.id
                                             expandedNoteId = null
                                         }
                                     )

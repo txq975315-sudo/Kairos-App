@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.util.TypedValue
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -73,7 +74,10 @@ private class Widget3x3CalendarRemoteViewsFactory(
 
     override fun onDestroy() {}
 
-    override fun getCount(): Int = 6
+    override fun getCount(): Int {
+        val n = weeks.length()
+        return if (n > 0) n else 1
+    }
 
     override fun getViewAt(position: Int): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_3x3_week_row)
@@ -129,6 +133,7 @@ private class Widget3x3CalendarRemoteViewsFactory(
                     views.setViewVisibility(lid, View.GONE)
                     views.setTextViewText(lid, "")
                     views.setInt(lid, "setBackgroundColor", Color.TRANSPARENT)
+                    views.setViewPadding(lid, 0, 0, 0, 0)
                     continue
                 }
                 val tid = line.optInt("i", -1)
@@ -155,6 +160,13 @@ private class Widget3x3CalendarRemoteViewsFactory(
                     views.setTextColor(lid, WidgetTaskStyle.titleColorArgb(false))
                 }
                 views.setInt(lid, "setBackgroundColor", WidgetTaskStyle.widget3x3TaskLineBackgroundArgb(urg, done))
+                views.setBoolean(lid, "setIncludeFontPadding", false)
+                val pad = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    1f,
+                    context.resources.displayMetrics
+                ).toInt()
+                views.setViewPadding(lid, pad, pad, pad, pad)
                 views.setViewVisibility(lid, View.VISIBLE)
                 views.setOnClickFillInIntent(
                     lid,

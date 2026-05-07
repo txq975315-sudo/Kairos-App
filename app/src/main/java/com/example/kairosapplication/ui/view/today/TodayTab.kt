@@ -178,9 +178,8 @@ fun TodayTab(
                         }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            previewNotes.forEachIndexed { index, note ->
+                            previewNotes.forEach { note ->
                                 key(note.id) {
-                                    val last = index == previewNotes.lastIndex
                                     NoteCard(
                                         note = note,
                                         variant = NoteCardVariant.TIMELINE,
@@ -199,11 +198,6 @@ fun TodayTab(
                                             )
                                         } else {
                                             null
-                                        },
-                                        timelineRailExtensionBelowDot = when {
-                                            previewNotes.size == 1 -> 40.dp
-                                            last -> 12.dp
-                                            else -> 28.dp
                                         },
                                         timelineCompactThreeLines = true,
                                     )

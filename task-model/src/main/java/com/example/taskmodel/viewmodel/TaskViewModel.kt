@@ -8,6 +8,7 @@ import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Essay
+import com.example.taskmodel.model.EssayCategoryConfig
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.NoteRoomState
 import com.example.taskmodel.model.Project
@@ -46,7 +47,8 @@ data class TaskUiState(
     val noteProjects: List<Project> = emptyList(),
     /** Essay module (Room) — soft-deleted notes (Trash) */
     val noteTrash: List<Note> = emptyList(),
-    val customSecondaryCategories: Map<String, List<String>> = emptyMap()
+    /** Essay taxonomy (primaries + secondaries); replaces legacy custom-secondary map. */
+    val essayCategoryConfig: EssayCategoryConfig = EssayCategoryConfig.buildInitial(emptyMap()),
 )
 
 class TaskViewModel(
@@ -87,8 +89,8 @@ class TaskViewModel(
         repository.essaysFlow,
         repository.dailyQuoteEssayIdFlow,
         noteRepository.observeNoteRoomState(),
-        repository.customSecondaryCategoriesFlow
-    ) { taskPair, essays, dailyQuoteEssayId, noteRoom: NoteRoomState, customSecondaries ->
+        repository.essayCategoryConfigFlow
+    ) { taskPair, essays, dailyQuoteEssayId, noteRoom: NoteRoomState, categoryConfig ->
         val (tasks, onboardingHandled) = taskPair
         TaskUiState(
             tasks = tasks,
@@ -99,7 +101,7 @@ class TaskViewModel(
             noteInbox = noteRoom.inbox,
             noteProjects = noteRoom.projects,
             noteTrash = noteRoom.trash,
-            customSecondaryCategories = customSecondaries
+            essayCategoryConfig = categoryConfig,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -403,7 +405,13 @@ class TaskViewModel(
 
     fun addCustomSecondaryCategory(primary: String, label: String) {
         viewModelScope.launch {
-            repository.addCustomSecondaryCategory(primary, label)
+            repository.appendSecondaryToEssayCategory(primary, label)
+        }
+    }
+
+    fun saveEssayCategoryConfig(config: EssayCategoryConfig) {
+        viewModelScope.launch {
+            repository.saveEssayCategoryConfig(config)
         }
     }
 

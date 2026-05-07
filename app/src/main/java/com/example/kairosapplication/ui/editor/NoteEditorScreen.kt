@@ -98,10 +98,16 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.ui.components.NoteCardConstants
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.ui.topic.EssayCategoryUi
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabelWithConfig
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
+import com.example.taskmodel.model.EssayCategoryConfig
+import com.example.taskmodel.model.EssaySecondaryCategoryConfig
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Project
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -198,16 +204,6 @@ private fun secondaryLinkedFillFromPrimary(primaryBrand: Color): Color {
     return Color(r, g, b)
 }
 
-private fun summaryPlaceholder(category: String): String = when (category) {
-    NotePrimaryCategory.FREESTYLE -> "Optional: briefly summarize…"
-    NotePrimaryCategory.SELF_AWARENESS -> "What did I do?"
-    NotePrimaryCategory.INTERPERSONAL -> "What did I do?"
-    NotePrimaryCategory.INTIMACY_FAMILY -> "What did I do?"
-    NotePrimaryCategory.SOMATIC_ENERGY -> "What are my body signals?"
-    NotePrimaryCategory.MEANING -> "What did I do and why?"
-    else -> "Optional…"
-}
-
 private val BodyHashTagRegex = Regex("#([^\\s#@]+)")
 private val BodyMentionRegex = Regex("@([^\\s#@]+)")
 
@@ -230,16 +226,6 @@ private fun stripHashTagsAndMentionsFromBody(body: String): Triple<String, List<
     stripped = stripped.replace(Regex("#+$"), "").replace(Regex("@+$"), "").trimEnd()
     val mentions = mentionNames.map { "@$it" }
     return Triple(stripped, tags, mentions)
-}
-
-private fun bodyPlaceholder(category: String): String = when (category) {
-    NotePrimaryCategory.FREESTYLE -> "Write anything you want…"
-    NotePrimaryCategory.SELF_AWARENESS -> "Describe emotions, behaviors, or discoveries…"
-    NotePrimaryCategory.INTERPERSONAL -> "Record interaction details and feelings…"
-    NotePrimaryCategory.INTIMACY_FAMILY -> "Record conflicts or warm moments…"
-    NotePrimaryCategory.SOMATIC_ENERGY -> "Describe body feelings or energy changes…"
-    NotePrimaryCategory.MEANING -> "Write your value questions or thoughts…"
-    else -> "Write…"
 }
 
 private fun isTopicMode(primary: String): Boolean =
@@ -298,7 +284,7 @@ fun NoteEditorScreen(
     var bodyFocused by remember { mutableStateOf(false) }
     var primaryCategoryLocked by remember { mutableStateOf(false) }
 
-    LaunchedEffect(noteId, existingNote?.id, existingNote?.updatedAt, lockedPrimaryCategory) {
+    LaunchedEffect(noteId, existingNote?.id, existingNote?.updatedAt, lockedPrimaryCategory, uiState.essayCategoryConfig) {
         val n = existingNote
         if (n != null) {
             primaryCategoryLocked = false
@@ -330,8 +316,7 @@ fun NoteEditorScreen(
                 moodIcon = null
                 selectedProjectIds = emptyList()
                 imageUris = emptyList()
-                val opts =
-                    NoteCardConstants.mergedSecondaryLabels(locked, uiState.customSecondaryCategories)
+                val opts = EssayCategoryUi.mergedSecondaryIds(locked, uiState.essayCategoryConfig)
                 secondaryCategory = opts.firstOrNull().orEmpty()
                 val prefillProjects = taskViewModel.takePendingNewNoteProjectIds()
                 if (!prefillProjects.isNullOrEmpty()) {
@@ -384,11 +369,22 @@ fun NoteEditorScreen(
         imageUris = imageUris + uri
     }
 
-    val mergedSecondaryOptions = remember(primaryCategory, uiState.customSecondaryCategories) {
-        NoteCardConstants.mergedSecondaryLabels(primaryCategory, uiState.customSecondaryCategories)
+    val categoryConfig = uiState.essayCategoryConfig
+    val lang = LocalCurrentLanguage.current.value
+    val secondaryIds = remember(primaryCategory, categoryConfig) {
+        EssayCategoryUi.mergedSecondaryIds(primaryCategory, categoryConfig)
     }
-    val secondaryDistinctCount =
-        mergedSecondaryOptions.distinctBy { it.lowercase() }.size
+    val secondaryChipOptions = remember(secondaryIds, categoryConfig, lang) {
+        secondaryIds.map { id ->
+            val sec = EssayCategoryUi.secondaryEntry(primaryCategory, id, categoryConfig)
+                ?: EssaySecondaryCategoryConfig(id = id)
+            id to EssayCategoryUi.secondaryDisplayLabel(primaryCategory, sec, lang)
+        }
+    }
+    val secondaryGuideText = remember(primaryCategory, secondaryCategory, categoryConfig) {
+        EssayCategoryUi.secondaryGuide(primaryCategory, secondaryCategory, categoryConfig)
+    }
+    val secondaryDistinctCount = secondaryIds.distinct().size
     val canAddMoreSecondary =
         isTopicMode(primaryCategory) && secondaryDistinctCount < 8
 
@@ -580,10 +576,14 @@ fun NoteEditorScreen(
 
                 Column(Modifier.padding(horizontal = 12.dp)) {
                 if (primaryCategoryLocked) {
-                    PrimaryCategoryLockedBanner(primaryCategory = primaryCategory)
+                    PrimaryCategoryLockedBanner(
+                        primaryCategory = primaryCategory,
+                        categoryConfig = categoryConfig,
+                    )
                 } else {
                     PrimaryCategoryTextRow(
                         selected = primaryCategory,
+                        categoryConfig = categoryConfig,
                         onSelect = { cat ->
                             primaryCategory = cat
                             if (noteId == null) lastPrimaryForNewNote = cat
@@ -591,11 +591,7 @@ fun NoteEditorScreen(
                                 secondaryCategory = ""
                                 linkedCategories = emptyList()
                             } else {
-                                val opts =
-                                    NoteCardConstants.mergedSecondaryLabels(
-                                        cat,
-                                        uiState.customSecondaryCategories
-                                    )
+                                val opts = EssayCategoryUi.mergedSecondaryIds(cat, categoryConfig)
                                 if (secondaryCategory.isBlank() || secondaryCategory !in opts) {
                                     secondaryCategory = opts.firstOrNull().orEmpty()
                                 }
@@ -604,7 +600,7 @@ fun NoteEditorScreen(
                                     .distinct()
                                     .take(MaxLinkedCategories)
                             }
-                        }
+                        },
                     )
                 }
                 }
@@ -615,7 +611,7 @@ fun NoteEditorScreen(
                 BehaviorSummaryField(
                     text = behaviorSummary,
                     onTextChange = { if (it.length <= 50) behaviorSummary = it },
-                    placeholder = summaryPlaceholder(primaryCategory),
+                    placeholder = EssayCategoryUi.summaryPlaceholder(primaryCategory, categoryConfig),
                     focused = summaryFocused,
                     onFocusChange = { summaryFocused = it },
                     counter = "${behaviorSummary.length}/50"
@@ -631,12 +627,13 @@ fun NoteEditorScreen(
 
                     Column(Modifier.padding(horizontal = 12.dp)) {
                     SecondaryCategoryTwoRows(
-                        options = mergedSecondaryOptions,
-                        selected = secondaryCategory,
+                        chipOptions = secondaryChipOptions,
+                        selectedId = secondaryCategory,
                         primaryColor = NoteCardConstants.categoryColor(primaryCategory),
                         showAdd = canAddMoreSecondary,
+                        guideBelow = secondaryGuideText,
                         onSelect = { secondaryCategory = it },
-                        onAddClick = { showAddSecondaryDialog = true }
+                        onAddClick = { showAddSecondaryDialog = true },
                     )
                     }
 
@@ -645,6 +642,7 @@ fun NoteEditorScreen(
                     Column(Modifier.padding(horizontal = 12.dp)) {
                     LinkedCategoriesTextRow(
                         primaryCategory = primaryCategory,
+                        categoryConfig = categoryConfig,
                         selected = linkedCategories,
                         onToggle = { key ->
                             if (key in linkedCategories) {
@@ -669,7 +667,7 @@ fun NoteEditorScreen(
                 BodyEditorField(
                     text = bodyText,
                     onTextChange = { bodyText = it },
-                    placeholder = bodyPlaceholder(primaryCategory),
+                    placeholder = EssayCategoryUi.bodyPlaceholder(primaryCategory, categoryConfig),
                     focused = bodyFocused,
                     onFocusChange = { bodyFocused = it },
                     focusRequester = bodyFocusRequester
@@ -842,7 +840,7 @@ private fun PrimaryCategorySelectionLayers(brandColor: Color, shape: RoundedCorn
 }
 
 @Composable
-private fun PrimaryCategoryLockedBanner(primaryCategory: String) {
+private fun PrimaryCategoryLockedBanner(primaryCategory: String, categoryConfig: EssayCategoryConfig) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -850,7 +848,7 @@ private fun PrimaryCategoryLockedBanner(primaryCategory: String) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = NoteCardConstants.categoryEmoji(primaryCategory),
+            text = EssayCategoryUi.primaryEmoji(primaryCategory, categoryConfig),
             fontSize = 20.sp,
             modifier = Modifier.padding(end = 10.dp)
         )
@@ -862,7 +860,7 @@ private fun PrimaryCategoryLockedBanner(primaryCategory: String) {
                 lineHeight = 13.sp
             )
             Text(
-                text = NoteCardConstants.primaryCategoryLabel(primaryCategory),
+                text = rememberTopicPrimaryLabelWithConfig(primaryCategory, categoryConfig),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = NoteCardConstants.categoryColor(primaryCategory)
@@ -880,7 +878,8 @@ private fun PrimaryCategoryLockedBanner(primaryCategory: String) {
 @Composable
 private fun PrimaryCategoryTextRow(
     selected: String,
-    onSelect: (String) -> Unit
+    categoryConfig: EssayCategoryConfig,
+    onSelect: (String) -> Unit,
 ) {
     val chipShape = PrimaryCategoryChipShape
     val density = LocalDensity.current
@@ -907,7 +906,11 @@ private fun PrimaryCategoryTextRow(
             val interactionSource = remember(key) { MutableInteractionSource() }
             val isSel = key == selected
             val color = NoteCardConstants.categoryColor(key)
-            val words = NoteCardConstants.primaryCategoryLabel(key).split(" ")
+            val primaryLoc = rememberTopicPrimaryLabelWithConfig(key, categoryConfig)
+            val words = remember(key, primaryLoc) {
+                val parts = primaryLoc.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+                if (parts.isEmpty()) listOf(primaryLoc) else parts
+            }
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -1042,14 +1045,15 @@ private fun BehaviorSummaryField(
 
 @Composable
 private fun SecondaryCategoryTwoRows(
-    options: List<String>,
-    selected: String,
+    chipOptions: List<Pair<String, String>>,
+    selectedId: String,
     primaryColor: Color,
     showAdd: Boolean,
+    guideBelow: String?,
     onSelect: (String) -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
 ) {
-    val distinctOptions = remember(options) { options.distinct() }
+    val distinctOptions = remember(chipOptions) { chipOptions.distinctBy { it.first } }
     val showAddButton = showAdd && distinctOptions.size < 8
     val itemsPerRow = 4
     val firstRowItems = if (showAddButton && distinctOptions.size >= itemsPerRow) {
@@ -1069,12 +1073,12 @@ private fun SecondaryCategoryTwoRows(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            firstRowItems.forEach { option ->
-                val isSelected = selected == option
+            firstRowItems.forEach { (id, label) ->
+                val isSelected = selectedId == id
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { onSelect(option) }
+                        .clickable { onSelect(id) }
                         .background(
                             if (isSelected) {
                                 secondaryLinkedFillFromPrimary(primaryColor)
@@ -1086,7 +1090,7 @@ private fun SecondaryCategoryTwoRows(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = option,
+                        text = label,
                         maxLines = 1,
                         overflow = TextOverflow.Visible,
                         style = if (isSelected) {
@@ -1126,12 +1130,12 @@ private fun SecondaryCategoryTwoRows(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                secondRowItems.forEach { option ->
-                    val isSelected = selected == option
+                secondRowItems.forEach { (id, label) ->
+                    val isSelected = selectedId == id
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onSelect(option) }
+                            .clickable { onSelect(id) }
                             .background(
                                 if (isSelected) {
                                     secondaryLinkedFillFromPrimary(primaryColor)
@@ -1143,7 +1147,7 @@ private fun SecondaryCategoryTwoRows(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = option,
+                            text = label,
                             maxLines = 1,
                             overflow = TextOverflow.Visible,
                             style = if (isSelected) {
@@ -1165,14 +1169,25 @@ private fun SecondaryCategoryTwoRows(
                 }
             }
         }
+        guideBelow?.let { g ->
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = g,
+                fontSize = 11.sp,
+                color = AppColors.HintText,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
     }
 }
 
 @Composable
 private fun LinkedCategoriesTextRow(
     primaryCategory: String,
+    categoryConfig: EssayCategoryConfig,
     selected: List<String>,
-    onToggle: (String) -> Unit
+    onToggle: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -1185,7 +1200,11 @@ private fun LinkedCategoriesTextRow(
         linkedCategoriesOrder.forEach { key ->
             val isPrimary = key == primaryCategory
             val isSel = key in selected
-            val words = NoteCardConstants.primaryCategoryLabel(key).split(" ")
+            val primaryLoc = rememberTopicPrimaryLabelWithConfig(key, categoryConfig)
+            val words = remember(key, primaryLoc) {
+                val parts = primaryLoc.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+                if (parts.isEmpty()) listOf(primaryLoc) else parts
+            }
             val bg = when {
                 isPrimary -> linkedFill
                 isSel -> linkedFill

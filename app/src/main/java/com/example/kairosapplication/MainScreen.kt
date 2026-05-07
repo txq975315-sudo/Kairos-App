@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.notification.NotificationHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
 import com.example.kairosapplication.ui.EssayNavHost
+import com.example.kairosapplication.ui.mine.MineAllRecordsCustomizeScreen
 import com.example.kairosapplication.ui.mine.MineScreen
 import com.example.kairosapplication.ui.mine.MineViewModel
 import com.example.kairosapplication.ui.mine.MoodCalendarScreen
@@ -69,7 +71,8 @@ import com.example.kairosapplication.ui.mine.settings.SettingsScreen
 import com.example.kairosapplication.ui.mine.settings.SettingsViewModel
 import com.example.kairosapplication.ui.mine.settings.ThemeSettingsScreen
 import com.example.kairosapplication.ui.mine.settings.WidgetSettingsScreen
-import com.example.taskmodel.constants.NotePrimaryCategory
+import com.example.kairosapplication.ui.topic.manage.TopicManageHubScreen
+import com.example.kairosapplication.ui.topic.manage.TopicPrimaryEditScreen
 import com.example.kairosapplication.ui.view.ViewScreen
 import com.example.kairosapplication.ui.widget.WidgetMainScreen
 import com.example.kairosapplication.widget.WidgetClickHandler
@@ -81,12 +84,21 @@ import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
 
-private enum class AppTab(val label: String, val icon: ImageVector) {
-    Today("Today", Icons.Default.CalendarToday),
-    Essay("Essay", Icons.Default.Edit),
-    View("View", Icons.Default.ViewList),
-    Widget("Widget", Icons.Default.Widgets),
-    Mine("Mine", Icons.Default.Person)
+private enum class AppTab(val icon: ImageVector) {
+    Today(Icons.Default.CalendarToday),
+    Essay(Icons.Default.Edit),
+    View(Icons.Default.ViewList),
+    Widget(Icons.Default.Widgets),
+    Mine(Icons.Default.Person)
+}
+
+@Composable
+private fun mainNavLabel(tab: AppTab): String = when (tab) {
+    AppTab.Today -> LocalizedStrings.get("nav_todo")
+    AppTab.Essay -> LocalizedStrings.get("nav_essay")
+    AppTab.View -> LocalizedStrings.get("nav_view")
+    AppTab.Widget -> LocalizedStrings.get("nav_widget")
+    AppTab.Mine -> LocalizedStrings.get("nav_mine")
 }
 
 private enum class Overlay { DailyReview }
@@ -147,6 +159,9 @@ fun MainScreen(
     }
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     var showMoodCalendar by remember { mutableStateOf(false) }
+    var showMineAllRecordsCustomize by remember { mutableStateOf(false) }
+    var showTopicManageHub by remember { mutableStateOf(false) }
+    var topicManageEditPrimaryKey by remember { mutableStateOf<String?>(null) }
     var showSettingsScreen by remember { mutableStateOf(false) }
     var showExportScreen by remember { mutableStateOf(false) }
     var showImportScreen by remember { mutableStateOf(false) }
@@ -168,8 +183,8 @@ fun MainScreen(
         (selectedTab == AppTab.Today && currentRoute == "create") ||
             (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main") ||
             (selectedTab == AppTab.Mine &&
-                (showMoodCalendar || showSettingsScreen || showExportScreen || showImportScreen ||
-                    showNotificationSettings || showThemeSettings || showMoodSettings ||
+                (showTopicManageHub || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
+                    showImportScreen || showNotificationSettings || showThemeSettings || showMoodSettings ||
                     showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -177,6 +192,9 @@ fun MainScreen(
 
     LaunchedEffect(selectedTab) {
         if (selectedTab != AppTab.Mine) {
+            showTopicManageHub = false
+            topicManageEditPrimaryKey = null
+            showMineAllRecordsCustomize = false
             showMoodCalendar = false
             showSettingsScreen = false
             showExportScreen = false
@@ -229,15 +247,16 @@ fun MainScreen(
                 ) {
                     AppTab.entries.forEach { tab ->
                         val selected = selectedTab == tab
+                        val labelText = mainNavLabel(tab)
                         NavigationBarItem(
                             selected = selected,
                             onClick = { selectedTab = tab },
                             icon = {
-                                Icon(imageVector = tab.icon, contentDescription = tab.label)
+                                Icon(imageVector = tab.icon, contentDescription = labelText)
                             },
                             label = {
                                 Text(
-                                    text = tab.label,
+                                    text = labelText,
                                     fontSize = 11.sp,
                                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                                 )
@@ -315,6 +334,23 @@ fun MainScreen(
                 WidgetMainScreen(taskViewModel = taskViewModel)
             } else if (selectedTab == AppTab.Mine) {
                 when {
+                    showTopicManageHub && topicManageEditPrimaryKey != null -> TopicPrimaryEditScreen(
+                        primaryKey = topicManageEditPrimaryKey!!,
+                        taskViewModel = taskViewModel,
+                        onBack = { topicManageEditPrimaryKey = null },
+                    )
+                    showTopicManageHub -> TopicManageHubScreen(
+                        taskViewModel = taskViewModel,
+                        onBack = {
+                            showTopicManageHub = false
+                            topicManageEditPrimaryKey = null
+                        },
+                        onEditPrimary = { topicManageEditPrimaryKey = it },
+                    )
+                    showMineAllRecordsCustomize -> MineAllRecordsCustomizeScreen(
+                        mineViewModel = mineViewModel,
+                        onBack = { showMineAllRecordsCustomize = false }
+                    )
                     showMoodCalendar -> MoodCalendarScreen(
                         mineViewModel = mineViewModel,
                         onBack = { showMoodCalendar = false }
@@ -423,17 +459,18 @@ fun MainScreen(
                             showSettingsScreen = false
                             showMiscSettings = true
                         },
-                        onOpenEssayTopics = {
-                            essayOpenTopicPrimary = NotePrimaryCategory.SELF_AWARENESS
-                            selectedTab = AppTab.Essay
+                        onOpenTopicManage = {
                             showSettingsScreen = false
-                        }
+                            showTopicManageHub = true
+                            topicManageEditPrimaryKey = null
+                        },
                     )
                     else -> MineScreen(
                         mineViewModel = mineViewModel,
                         onNavigateToMoodCalendar = { showMoodCalendar = true },
                         onOpenSettings = { showSettingsScreen = true },
-                        onOpenTheme = { showThemeSettings = true }
+                        onOpenTheme = { showThemeSettings = true },
+                        onCustomizeAllRecords = { showMineAllRecordsCustomize = true }
                     )
                 }
             }

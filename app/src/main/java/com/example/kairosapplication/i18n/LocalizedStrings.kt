@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
+import com.example.taskmodel.constants.TaskConstants
 
 val LocalCurrentLanguage =
     compositionLocalOf<State<LocalizationManager.Language>> { mutableStateOf(LocalizationManager.Language.ZH) }
@@ -62,6 +63,28 @@ object LocalizedStrings {
             "mood_records" -> if (zh) "心情与记录" else "Mood & records"
             "mood_vocab" -> if (zh) "心情词库" else "Mood vocabulary"
             "topic_manage" -> if (zh) "课题管理" else "Topics"
+            "topic_manage_locked_badge" -> if (zh) "默认" else "Default"
+            "topic_manage_footer_hint" -> if (zh) {
+                "主课题固定；点击卡片仅可管理该课题下的二级分类（最多 8 个）。自由随想不可编辑。"
+            } else {
+                "Primary topics are fixed. Tap a card to edit secondaries only (max 8). Freestyle is locked."
+            }
+            "topic_manage_secondary_only_subtitle" -> if (zh) {
+                "仅编辑二级课题"
+            } else {
+                "Secondaries only"
+            }
+            "topic_primary_meaning_section" -> if (zh) "主课题含义" else "Primary topic"
+            "topic_icon_label" -> if (zh) "图标 Emoji" else "Emoji icon"
+            "topic_name_label" -> if (zh) "显示名称" else "Display name"
+            "topic_summary_guide_label" -> if (zh) "摘要引导（行为摘要 placeholder）" else "Summary placeholder"
+            "topic_body_guide_label" -> if (zh) "正文引导（正文 placeholder）" else "Body placeholder"
+            "topic_secondary_manage" -> if (zh) "二级课题管理" else "Secondary topics"
+            "topic_secondary_add" -> if (zh) "添加" else "Add"
+            "topic_secondary_edit" -> if (zh) "编辑二级课题" else "Edit secondary"
+            "topic_secondary_name_label" -> if (zh) "名称（必填）" else "Name (required)"
+            "topic_advanced_settings" -> if (zh) "高级设置：引导词 ▾" else "Advanced: guide text ▾"
+            "topic_secondary_guide_hint" -> if (zh) "可选引导词（显示在分类选择下方）" else "Optional guide under picker"
             "widget_nav" -> if (zh) "Widget 设置" else "Widget"
             "tools" -> if (zh) "工具" else "Tools"
             "data_export" -> if (zh) "数据导出" else "Export data"
@@ -116,6 +139,17 @@ object LocalizedStrings {
             "view_metric_tasks" -> if (zh) "任务" else "Tasks"
             "view_metric_done" -> if (zh) "完成率" else "Done"
             "view_metric_streak" -> if (zh) "连续" else "Streak"
+            "view_metric_completion_rate" -> if (zh) "完成率" else "Completion"
+            "view_metric_streak_record" -> if (zh) "连续记录" else "Active streak"
+            "view_metric_streak_all_tasks" -> if (zh) "连续清空任务" else "All tasks done"
+            "view_metric_streak_both" -> if (zh) "双模块连续" else "Notes & tasks"
+            "view_metric_total_chars" -> if (zh) "日记总字数" else "Diary chars"
+            "view_metric_max_chars" -> if (zh) "单篇最高字数" else "Longest note"
+            "view_metric_avg_tasks" -> if (zh) "日均任务" else "Avg tasks/day"
+            "view_metric_avg_notes" -> if (zh) "日均笔记" else "Avg notes/day"
+            "view_month_customize_title" -> if (zh) "自定义本月概览" else "Customize overview"
+            "view_month_customize_subtitle" -> if (zh) "勾选要显示的指标（可多选）" else "Choose metrics to show"
+            "view_month_customize_done" -> if (zh) "完成" else "Done"
             "view_streak_one" -> if (zh) "1 天" else "1 day"
             "view_streak_many" -> if (zh) "{n} 天" else "{n} days"
             "widget_layout_section" -> if (zh) "布局选择" else "Layout"
@@ -176,6 +210,22 @@ object LocalizedStrings {
             "mine_records_completion_days" -> if (zh) "完成日天数" else "Completion days"
             "mine_records_completed_items" -> if (zh) "已完成项" else "Completed items"
             "mine_records_unfinished_today" -> if (zh) "今日未完成" else "Unfinished today"
+            "mine_metric_max_streak_record" -> if (zh) "最高连续有记录" else "Longest record streak"
+            "mine_checkin_title" -> if (zh) "打卡统计" else "Check-in stats"
+            "mine_checkin_week" -> if (zh) "周" else "Week"
+            "mine_checkin_month" -> if (zh) "月" else "Month"
+            "mine_checkin_legend" -> if (zh) {
+                "— 当日无待办；🌱 有待办但未完成；📌·💪·👏 部分完成（低→高）；🎉 当日待办全部完成。"
+            } else {
+                "— No todos that day; 🌱 Todos exist but none done; 📌 💪 👏 Partial progress (low→high); 🎉 All todos done."
+            }
+            "mine_records_customize_title" -> if (zh) "自定义统计与预览" else "Customize stats"
+            "mine_records_scope_heading" -> if (zh) "统计范围" else "Scope"
+            "mine_records_scope_year" -> if (zh) "本年度" else "This year"
+            "mine_records_scope_all" -> if (zh) "自首次记录以来" else "Since first record"
+            "mine_records_year_heading" -> if (zh) "年份" else "Year"
+            "mine_records_metrics_heading" -> if (zh) "显示的指标（可多选）" else "Metrics to show"
+            "mine_records_preview_heading" -> if (zh) "卡片预览" else "Card preview"
             "settings_export_csv_json" -> if (zh) "数据导出（CSV / JSON）" else "Data Export (CSV / JSON)"
             "settings_stat_analysis" -> if (zh) "数据统计分析" else "Statistic Analysis of Data"
             "settings_privacy_management" -> if (zh) "隐私管理" else "Privacy Management"
@@ -241,12 +291,91 @@ object LocalizedStrings {
             "emoji_annoying" -> if (zh) "担心" else "Worried"
             "emoji_sick" -> if (zh) "难受" else "Unwell"
             "emoji_mood_bubble" -> if (zh) "茫然" else "Blank"
+            "nav_todo" -> if (zh) "待办" else "Todo"
+            "nav_essay" -> if (zh) "随笔" else "Essay"
+            "nav_view" -> if (zh) "视图" else "View"
+            "nav_widget" -> if (zh) "小组件" else "Widget"
+            "nav_mine" -> if (zh) "我的" else "Mine"
+            "essay_tab_timeline" -> if (zh) "时间轴" else "Timeline"
+            "essay_tab_topic" -> if (zh) "主题" else "Topic"
+            "essay_tab_project" -> if (zh) "项目" else "Project"
+            "todo_hint_anytime" -> if (zh) "随时都可以安排" else "Anytime today works"
+            "todo_hint_morning" -> if (zh) "上午安排在这里" else "Morning today works"
+            "todo_hint_afternoon" -> if (zh) "下午安排在这里" else "Afternoon today works"
+            "todo_hint_evening" -> if (zh) "晚间安排在这里" else "Evening today works"
+            "todo_hint_default" -> if (zh) "添加任务" else "Add a task"
+            "task_urgency_0" -> if (zh) "紧急" else "Urgent"
+            "task_urgency_1" -> if (zh) "高" else "High"
+            "task_urgency_2" -> if (zh) "普通" else "Normal"
+            "task_urgency_3" -> if (zh) "低优先级" else "Low priority"
+            "essay_topic_empty_notes" -> if (zh) "该分类下暂无笔记" else "No notes in this category"
+            "note_uncategorized" -> if (zh) "未分类" else "Uncategorized"
+            "essay_timeline_empty_title" -> if (zh) "还没有笔记" else "No notes yet"
+            "essay_timeline_empty_subtitle" -> if (zh) "写第一条记录" else "Start your first entry"
+            "essay_topic_empty_title" -> if (zh) "还没有主题笔记" else "No topic notes yet"
+            "essay_topic_empty_subtitle" -> if (zh) "写第一条主题记录" else "Start your first topic entry"
+            "essay_primary_freestyle" -> if (zh) "自由随想" else "Free Recall"
+            "essay_primary_self_awareness" -> if (zh) "自我认知" else "Self Schema"
+            "essay_primary_interpersonal" -> if (zh) "社会人际" else "Social Bond"
+            "essay_primary_intimacy_family" -> if (zh) "亲密关系" else "Intimate Tie"
+            "essay_primary_somatic_energy" -> if (zh) "身心能量" else "Somatic Energy"
+            "essay_primary_meaning" -> if (zh) "存在探索" else "Existential Quest"
+            "essay_sec_Emotional_awareness" -> if (zh) "情感觉察" else "Emotional awareness"
+            "essay_sec_Behavioral_habits" -> if (zh) "行为习惯" else "Behavioral habits"
+            "essay_sec_Thinking_blind_spots" -> if (zh) "思维盲区" else "Thinking blind spots"
+            "essay_sec_Value_exploration" -> if (zh) "价值探索" else "Value exploration"
+            "essay_sec_Workplace_dynamics" -> if (zh) "职场动态" else "Workplace dynamics"
+            "essay_sec_Friendship_issues" -> if (zh) "友谊议题" else "Friendship issues"
+            "essay_sec_Stranger_encounters" -> if (zh) "陌生人互动" else "Stranger encounters"
+            "essay_sec_Social_anxiety" -> if (zh) "社交焦虑" else "Social anxiety"
+            "essay_sec_Partner_conflicts" -> if (zh) "伴侣冲突" else "Partner conflicts"
+            "essay_sec_Parenting_struggles" -> if (zh) "育儿困扰" else "Parenting struggles"
+            "essay_sec_Family_boundaries" -> if (zh) "家庭边界" else "Family boundaries"
+            "essay_sec_Love_language" -> if (zh) "爱的语言" else "Love language"
+            "essay_sec_Energy_levels" -> if (zh) "精力水平" else "Energy levels"
+            "essay_sec_Sleep_quality" -> if (zh) "睡眠质量" else "Sleep quality"
+            "essay_sec_Physical_pain" -> if (zh) "身体不适" else "Physical pain"
+            "essay_sec_Exercise_habits" -> if (zh) "运动习惯" else "Exercise habits"
+            "essay_sec_Career_direction" -> if (zh) "职业方向" else "Career direction"
+            "essay_sec_Life_goals" -> if (zh) "人生目标" else "Life goals"
+            "essay_sec_Meaning_questions" -> if (zh) "意义之问" else "Meaning questions"
+            "essay_sec_Self-actualization" -> if (zh) "自我实现" else "Self-actualization"
             else -> key
         }
     }
 
+    fun timeBlockLabelFor(blockKey: String, language: LocalizationManager.Language): String {
+        val key = when (blockKey) {
+            TaskConstants.TIME_BLOCK_ANYTIME -> "view_time_anytime"
+            TaskConstants.TIME_BLOCK_MORNING -> "view_time_morning"
+            TaskConstants.TIME_BLOCK_AFTERNOON -> "view_time_afternoon"
+            TaskConstants.TIME_BLOCK_EVENING -> "view_time_evening"
+            else -> return blockKey
+        }
+        return stringFor(language, key)
+    }
+
+    fun timeBlockEmptyHintFor(blockKey: String, language: LocalizationManager.Language): String {
+        val key = when (blockKey) {
+            TaskConstants.TIME_BLOCK_ANYTIME -> "todo_hint_anytime"
+            TaskConstants.TIME_BLOCK_MORNING -> "todo_hint_morning"
+            TaskConstants.TIME_BLOCK_AFTERNOON -> "todo_hint_afternoon"
+            TaskConstants.TIME_BLOCK_EVENING -> "todo_hint_evening"
+            else -> "todo_hint_default"
+        }
+        return stringFor(language, key)
+    }
+
     @Composable
     fun get(key: String): String = stringFor(LocalCurrentLanguage.current.value, key)
+
+    @Composable
+    fun timeBlockLabel(blockKey: String): String =
+        timeBlockLabelFor(blockKey, LocalCurrentLanguage.current.value)
+
+    @Composable
+    fun timeBlockEmptyHint(blockKey: String): String =
+        timeBlockEmptyHintFor(blockKey, LocalCurrentLanguage.current.value)
 
     @Composable
     fun emojiLabel(id: String): String = when (id) {

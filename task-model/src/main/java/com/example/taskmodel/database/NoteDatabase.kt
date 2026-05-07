@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [NoteEntity::class, ProjectEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -25,11 +25,12 @@ abstract class NoteDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): NoteDatabase {
             return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
+                instance ?:                 Room.databaseBuilder(
                     context.applicationContext,
                     NoteDatabase::class.java,
                     DB_NAME
                 )
+                    .addMigrations(MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .build()
                     .also { instance = it }

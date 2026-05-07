@@ -28,8 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.kairosapplication.core.ui.AppSpacing
-import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Note
 import java.time.Instant
 import java.time.ZoneId
@@ -51,10 +52,10 @@ fun NoteCardTopic(
         val z = Instant.ofEpochMilli(note.createdAt).atZone(zone)
         DateTimeFormatter.ofPattern("HH:mm").format(z)
     }
-    val topicLabelLine = remember(note.primaryCategory, note.secondaryCategory) {
-        val primary = NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
-        val secondary = note.secondaryCategory.trim()
-        if (secondary.isNotBlank()) "$primary · $secondary" else primary
+    val primaryLoc = rememberTopicPrimaryLabel(note.primaryCategory)
+    val secondaryLoc = rememberTopicSecondaryLabel(note.primaryCategory, note.secondaryCategory)
+    val topicLabelLine = remember(primaryLoc, secondaryLoc) {
+        if (secondaryLoc.isNotBlank()) "$primaryLoc · $secondaryLoc" else primaryLoc
     }
 
     val peekOnlySummaryBody =
@@ -161,7 +162,7 @@ fun NoteCardTopic(
             }
             if (expandable && expanded) {
                 Spacer(Modifier.height(8.dp))
-                if (publishedActions != null && note.status == NoteStatus.PUBLISHED) {
+                if (publishedActions != null) {
                     PublishedNoteActionsRow(
                         actions = publishedActions,
                         hasProjects = note.projectIds.isNotEmpty()

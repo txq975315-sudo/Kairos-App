@@ -1,5 +1,6 @@
 package com.example.taskmodel.repository
 
+import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.database.NoteEntity
 import com.example.taskmodel.database.ProjectEntity
 import com.example.taskmodel.model.Note
@@ -10,7 +11,7 @@ fun NoteEntity.toDomain(): Note =
     Note(
         id = id,
         primaryCategory = primaryCategory,
-        secondaryCategory = secondaryCategory.orEmpty(),
+        secondaryCategory = NoteSecondaryCategories.canonicalSecondary(primaryCategory, secondaryCategory),
         behaviorSummary = behaviorSummary.orEmpty(),
         body = body,
         sceneTags = sceneTags,
@@ -30,7 +31,8 @@ fun Note.toEntity(): NoteEntity =
     NoteEntity(
         id = id,
         primaryCategory = primaryCategory,
-        secondaryCategory = secondaryCategory.ifBlank { null },
+        secondaryCategory = NoteSecondaryCategories.canonicalSecondary(primaryCategory, secondaryCategory)
+            .ifBlank { null },
         behaviorSummary = behaviorSummary.ifBlank { null },
         body = body,
         sceneTags = sceneTags,

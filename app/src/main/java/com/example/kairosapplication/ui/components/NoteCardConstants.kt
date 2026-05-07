@@ -17,18 +17,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteSecondaryCategories
 
+/** Topic display names (EN/ZH) live in [com.example.kairosapplication.i18n.LocalizedStrings] via [com.example.kairosapplication.ui.topic.TopicDisplayStrings]. */
 object NoteCardConstants {
-
-    val TOPIC_TAB_ENGLISH_LABEL: Map<String, String> = mapOf(
-        NotePrimaryCategory.FREESTYLE to "Free Recall",
-        NotePrimaryCategory.SELF_AWARENESS to "Self Schema",
-        NotePrimaryCategory.INTERPERSONAL to "Social Bond",
-        NotePrimaryCategory.INTIMACY_FAMILY to "Intimate Tie",
-        NotePrimaryCategory.SOMATIC_ENERGY to "Somatic Energy",
-        NotePrimaryCategory.MEANING to "Existential Quest"
-    )
-
-    val PRIMARY_CATEGORY_LABEL: Map<String, String> = TOPIC_TAB_ENGLISH_LABEL
 
     val PRIMARY_CATEGORY_COLOR: Map<String, Color> = mapOf(
         NotePrimaryCategory.FREESTYLE to Color(0xFF9E9E9E),
@@ -63,12 +53,6 @@ object NoteCardConstants {
         val extra = custom[primary].orEmpty()
         return base + extra.filter { e -> base.none { it.equals(e, ignoreCase = true) } }
     }
-
-    fun topicTabEnglishLabel(key: String): String =
-        TOPIC_TAB_ENGLISH_LABEL[key] ?: key
-
-    fun primaryCategoryLabel(key: String): String =
-        topicTabEnglishLabel(key)
 
     fun categoryColor(key: String): Color =
         PRIMARY_CATEGORY_COLOR[key] ?: Color(0xFF9E9E9E)

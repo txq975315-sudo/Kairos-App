@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -38,6 +39,11 @@ private val KEY_WIDGET_CONFIG_1X1 = stringPreferencesKey("widget_config_1x1")
 private val KEY_WIDGET_CONFIG_2X2 = stringPreferencesKey("widget_config_2x2")
 private val KEY_WIDGET_CONFIG_3X1 = stringPreferencesKey("widget_config_3x1")
 private val KEY_WIDGET_CONFIG_3X3 = stringPreferencesKey("widget_config_3x3")
+private val KEY_MONTH_OVERVIEW_METRICS = stringPreferencesKey("month_overview_metrics")
+private val KEY_MINE_RECORDS_METRICS = stringPreferencesKey("mine_records_metrics")
+private val KEY_MINE_RECORDS_SCOPE = stringPreferencesKey("mine_records_scope")
+private val KEY_MINE_RECORDS_YEAR = intPreferencesKey("mine_records_year")
+private val KEY_CHECKIN_VIEW_MODE = stringPreferencesKey("mine_checkin_view_mode")
 
 class DataStoreManager(context: Context) {
 
@@ -46,6 +52,8 @@ class DataStoreManager(context: Context) {
 
     private val keyDarkMode = stringPreferencesKey(KEY_SETTINGS_DARK_MODE)
     private val keyThemeColor = stringPreferencesKey(KEY_SETTINGS_THEME_COLOR)
+    private val keyEssayTimelineLayout = stringPreferencesKey("essay_timeline_layout")
+    private val keyEssayIntegratedWallpaperUri = stringPreferencesKey("essay_integrated_wallpaper_uri")
     private val keyLanguage = stringPreferencesKey(KEY_SETTINGS_LANGUAGE)
     private val keyDailyReminder = booleanPreferencesKey(KEY_SETTINGS_DAILY_REMINDER)
     private val keyDailyReminderTime = stringPreferencesKey(KEY_SETTINGS_DAILY_REMINDER_TIME)
@@ -62,6 +70,62 @@ class DataStoreManager(context: Context) {
 
     val weeklyInsightsEnabledFlow: Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[KEY_SETTINGS_MY_WEEKLY_INSIGHTS] ?: true
+    }
+
+    /** Comma-separated [com.example.kairosapplication.ui.view.month.MonthOverviewMetric] names. */
+    fun getMonthOverviewMetricsEncoded(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_MONTH_OVERVIEW_METRICS]
+    }
+
+    suspend fun setMonthOverviewMetricsEncoded(encoded: String?) {
+        dataStore.edit { prefs ->
+            if (encoded.isNullOrBlank()) prefs.remove(KEY_MONTH_OVERVIEW_METRICS)
+            else prefs[KEY_MONTH_OVERVIEW_METRICS] = encoded
+        }
+    }
+
+    /** Comma-separated [com.example.kairosapplication.ui.mine.records.MineRecordsMetric] names. */
+    fun getMineRecordsMetricsEncoded(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_MINE_RECORDS_METRICS]
+    }
+
+    suspend fun setMineRecordsMetricsEncoded(encoded: String?) {
+        dataStore.edit { prefs ->
+            if (encoded.isNullOrBlank()) prefs.remove(KEY_MINE_RECORDS_METRICS)
+            else prefs[KEY_MINE_RECORDS_METRICS] = encoded
+        }
+    }
+
+    fun getMineRecordsScopeEncoded(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_MINE_RECORDS_SCOPE]
+    }
+
+    suspend fun setMineRecordsScopeEncoded(encoded: String?) {
+        dataStore.edit { prefs ->
+            if (encoded.isNullOrBlank()) prefs.remove(KEY_MINE_RECORDS_SCOPE)
+            else prefs[KEY_MINE_RECORDS_SCOPE] = encoded
+        }
+    }
+
+    fun getMineRecordsYearFlow(): Flow<Int> = dataStore.data.map { prefs ->
+        prefs[KEY_MINE_RECORDS_YEAR] ?: LocalDate.now().year
+    }
+
+    suspend fun setMineRecordsYear(year: Int) {
+        dataStore.edit { prefs ->
+            prefs[KEY_MINE_RECORDS_YEAR] = year
+        }
+    }
+
+    fun getCheckInViewModeEncoded(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[KEY_CHECKIN_VIEW_MODE]
+    }
+
+    suspend fun setCheckInViewModeEncoded(encoded: String?) {
+        dataStore.edit { prefs ->
+            if (encoded.isNullOrBlank()) prefs.remove(KEY_CHECKIN_VIEW_MODE)
+            else prefs[KEY_CHECKIN_VIEW_MODE] = encoded
+        }
     }
 
     val lastBackupTimestampFlow: Flow<Long> = dataStore.data.map { prefs ->
@@ -84,6 +148,32 @@ class DataStoreManager(context: Context) {
 
     fun getThemeColor(): Flow<String> = dataStore.data.map { prefs ->
         normalizeThemeColor(prefs[keyThemeColor])
+    }
+
+    /** `"card"` (default) or `"integrated"` (pure / no card chrome). */
+    fun getEssayTimelineLayout(): Flow<String> = dataStore.data.map { prefs ->
+        if (prefs[keyEssayTimelineLayout] == "integrated") "integrated" else "card"
+    }
+
+    suspend fun setEssayTimelineLayout(layout: String) {
+        dataStore.edit { prefs ->
+            prefs[keyEssayTimelineLayout] = if (layout == "integrated") "integrated" else "card"
+        }
+    }
+
+    /** Content URI string for Essay integrated-mode full-page wallpaper; null or blank = none. */
+    fun getEssayIntegratedWallpaperUri(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[keyEssayIntegratedWallpaperUri]?.takeIf { it.isNotBlank() }
+    }
+
+    suspend fun setEssayIntegratedWallpaperUri(uri: String?) {
+        dataStore.edit { prefs ->
+            if (uri.isNullOrBlank()) {
+                prefs.remove(keyEssayIntegratedWallpaperUri)
+            } else {
+                prefs[keyEssayIntegratedWallpaperUri] = uri
+            }
+        }
     }
 
     suspend fun setThemeColor(color: String) {

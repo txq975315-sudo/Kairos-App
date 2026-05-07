@@ -8,11 +8,12 @@ object Widget3x3CalendarStore {
     private fun key(appWidgetId: Int) = "weeks_$appWidgetId"
 
     fun save(context: Context, appWidgetId: Int, json: String) {
+        // commit() so RemoteViewsService reads consistent JSON immediately after updateAppWidget.
         context.applicationContext
             .getSharedPreferences(PREF, Context.MODE_PRIVATE)
             .edit()
             .putString(key(appWidgetId), json)
-            .apply()
+            .commit()
     }
 
     fun load(context: Context, appWidgetId: Int): String? =

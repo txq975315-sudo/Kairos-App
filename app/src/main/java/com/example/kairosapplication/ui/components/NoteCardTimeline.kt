@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,17 +22,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import com.example.taskmodel.constants.NoteStatus
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.taskmodel.model.Note
 import java.time.Instant
@@ -48,8 +51,6 @@ fun NoteCardTimeline(
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
     publishedActions: PublishedNoteCardActions? = null,
-    /** Vertical line segment below the time column dot (shorten when stacking multiple timeline cards). */
-    railExtensionBelowDot: Dp = 100.dp,
     /** When true and collapsed: one line each for topic (primary · secondary), summary, body; expand restores full layout. */
     timelineCompactThreeLines: Boolean = false,
 ) {
@@ -61,12 +62,11 @@ fun NoteCardTimeline(
     val categoryColor = remember(note.primaryCategory) {
         NoteCardConstants.categoryColor(note.primaryCategory)
     }
-    val categoryLabel = remember(note.primaryCategory) {
-        NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
+    val categoryLabel = rememberTopicPrimaryLabel(note.primaryCategory)
+    val categoryEmoji = remember(note.primaryCategory) {
+        NoteCardConstants.categoryEmoji(note.primaryCategory)
     }
-    val secondaryLine = remember(note.secondaryCategory) {
-        note.secondaryCategory.ifBlank { "" }
-    }
+    val secondaryLine = rememberTopicSecondaryLabel(note.primaryCategory, note.secondaryCategory)
     val tagsPreview = remember(note.sceneTags) {
         note.sceneTags.take(3).joinToString(" · ")
     }
@@ -75,10 +75,8 @@ fun NoteCardTimeline(
     }
     val projectCount = note.projectIds.size
 
-    val headlineTopic = remember(note.primaryCategory, note.secondaryCategory) {
-        val primary = NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
-        val sec = note.secondaryCategory.trim()
-        if (sec.isNotBlank()) "$primary · $sec" else primary
+    val headlineTopic = remember(categoryLabel, secondaryLine) {
+        if (secondaryLine.isNotBlank()) "$categoryLabel · $secondaryLine" else categoryLabel
     }
 
     val bodyMaxLines = when {
@@ -89,6 +87,7 @@ fun NoteCardTimeline(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Max)
             .clickable {
                 if (expandable) onToggleExpand() else onNoteClick(note.id)
             },
@@ -96,7 +95,9 @@ fun NoteCardTimeline(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(40.dp)
+            modifier = Modifier
+                .width(40.dp)
+                .fillMaxHeight()
         ) {
             Text(
                 text = timeStr,
@@ -107,7 +108,7 @@ fun NoteCardTimeline(
             Box(
                 modifier = Modifier
                     .width(2.dp)
-                    .height(railExtensionBelowDot)
+                    .weight(1f)
                     .background(AppColors.TimelineLine)
             )
         }
@@ -120,23 +121,34 @@ fun NoteCardTimeline(
             colors = CardDefaults.cardColors(containerColor = AppColors.CardBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
+                    .height(IntrinsicSize.Max)
             ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                        .background(categoryColor)
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(
+                            end = AppSpacing.CardHorizontal,
+                            top = AppSpacing.CardVertical,
+                            bottom = AppSpacing.CardVertical,
+                            start = AppSpacing.CardHorizontal
+                        )
+                ) {
                 if (timelineCompactThreeLines && !expanded) {
                     Row(
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(44.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(categoryColor)
-                        )
+                        TimelineCardCategoryEmoji(emoji = categoryEmoji, accent = categoryColor)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = headlineTopic,
@@ -168,16 +180,10 @@ fun NoteCardTimeline(
                     }
                 } else {
                     Row(
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(44.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(categoryColor)
-                        )
+                        TimelineCardCategoryEmoji(emoji = categoryEmoji, accent = categoryColor)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = categoryLabel,
@@ -263,7 +269,7 @@ fun NoteCardTimeline(
                 }
                 if (expandable && expanded) {
                     Spacer(Modifier.height(10.dp))
-                    if (publishedActions != null && note.status == NoteStatus.PUBLISHED) {
+                    if (publishedActions != null) {
                         PublishedNoteActionsRow(
                             actions = publishedActions,
                             hasProjects = note.projectIds.isNotEmpty()
@@ -277,8 +283,25 @@ fun NoteCardTimeline(
                         }
                     }
                 }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun TimelineCardCategoryEmoji(
+    emoji: String,
+    accent: Color,
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(accent.copy(alpha = 0.14f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = emoji, fontSize = 18.sp)
     }
 }
 

@@ -108,7 +108,12 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.i18n.LocalizationManager
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import android.widget.Toast
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateMapOf
@@ -187,8 +192,6 @@ fun TodayScreen(
     var createDescription by remember { mutableStateOf("") }
     var createUrgency by remember { mutableStateOf(3) }
     var createLabel by remember { mutableStateOf<String?>(null) }
-    var createEmojiImage by remember { mutableStateOf<String?>(null) }
-    var createLocalImageUri by remember { mutableStateOf<String?>(null) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var detailTask by remember { mutableStateOf<Task?>(null) }
 
@@ -279,7 +282,7 @@ fun TodayScreen(
         Spacer(Modifier.height(10.dp))
         QuoteSection(
             onClick = onQuoteClick,
-            quoteText = taskViewModel.dailyQuoteDisplayText("The wind rises; I keep going.")
+            quoteText = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default"))
         )
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
@@ -299,7 +302,8 @@ fun TodayScreen(
         ) {
 
             TimeBlock(
-                label = TaskConstants.TIME_BLOCK_ANYTIME,
+                blockKey = TaskConstants.TIME_BLOCK_ANYTIME,
+                displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_ANYTIME),
                 count = anytimeTasks.size,
                 backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_ANYTIME),
                 icon = Icons.Default.AccessTime,
@@ -318,7 +322,8 @@ fun TodayScreen(
             )
 
             TimeBlock(
-                label = TaskConstants.TIME_BLOCK_MORNING,
+                blockKey = TaskConstants.TIME_BLOCK_MORNING,
+                displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_MORNING),
                 count = morningTasks.size,
                 backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_MORNING),
                 icon = Icons.Default.WbTwilight,
@@ -336,7 +341,8 @@ fun TodayScreen(
             )
 
             TimeBlock(
-                label = TaskConstants.TIME_BLOCK_AFTERNOON,
+                blockKey = TaskConstants.TIME_BLOCK_AFTERNOON,
+                displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_AFTERNOON),
                 count = afternoonTasks.size,
                 backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_AFTERNOON),
                 icon = Icons.Default.WbSunny,
@@ -354,7 +360,8 @@ fun TodayScreen(
             )
 
             TimeBlock(
-                label = TaskConstants.TIME_BLOCK_EVENING,
+                blockKey = TaskConstants.TIME_BLOCK_EVENING,
+                displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_EVENING),
                 count = eveningTasks.size,
                 backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_EVENING),
                 icon = Icons.Default.DarkMode,
@@ -418,14 +425,12 @@ fun TodayScreen(
             meta = CreateTaskMeta(
                 urgency = createUrgency,
                 label = createLabel,
-                emojiImage = createEmojiImage,
-                localImageUri = createLocalImageUri
+                emojiImage = null,
+                localImageUri = null
             ),
             onMetaChange = { meta ->
                 createUrgency = meta.urgency
                 createLabel = meta.label
-                createEmojiImage = meta.emojiImage
-                createLocalImageUri = meta.localImageUri
             },
             onTimeBlockChange = { newTimeBlock ->
                 createSheetConfig = createSheetConfig?.copy(
@@ -451,8 +456,8 @@ fun TodayScreen(
                             timeBlock = timeBlock,
                             urgency = meta.urgency,
                             label = meta.label,
-                            emojiImage = meta.emojiImage,
-                            localImageUri = meta.localImageUri,
+                            emojiImage = null,
+                            localImageUri = null,
                             taskDate = currentDate
                         ).toTask(id = nextTaskId)
                         taskViewModel.saveTasks(allTasks + newTask)
@@ -682,16 +687,15 @@ private fun DateSection(
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
-    val dayOfWeek = currentDate.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }
-    val month = currentDate.month.name.lowercase().replaceFirstChar { it.uppercase() }
-    val dayOfMonth = currentDate.dayOfMonth
-    val year = currentDate.year
-    val dayWithSuffix = when {
-        dayOfMonth % 100 in 11..13 -> "${dayOfMonth}th"
-        dayOfMonth % 10 == 1 -> "${dayOfMonth}st"
-        dayOfMonth % 10 == 2 -> "${dayOfMonth}nd"
-        dayOfMonth % 10 == 3 -> "${dayOfMonth}rd"
-        else -> "${dayOfMonth}th"
+    val lang = LocalCurrentLanguage.current.value
+    val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val dayOfWeek = remember(currentDate, locale) {
+        currentDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale)
+    }
+    val dateSubtitle = remember(currentDate, locale, lang) {
+        val pattern =
+            if (lang == LocalizationManager.Language.ZH) "yyyy年M月d日" else "MMMM d, yyyy"
+        DateTimeFormatter.ofPattern(pattern, locale).format(currentDate)
     }
 
     Row(
@@ -715,7 +719,7 @@ private fun DateSection(
                 lineHeight = 48.sp
             )
             Text(
-                text = "$month $dayWithSuffix, $year",
+                text = dateSubtitle,
                 fontSize = 16.sp,
                 color = AppColors.SecondaryText
             )
@@ -814,7 +818,8 @@ private fun Task.isSwipeDeletableByPolicy(today: LocalDate = LocalDate.now()): B
 
 @Composable
 private fun TimeBlock(
-    label: String,
+    blockKey: String,
+    displayTitle: String,
     count: Int,
     backgroundColor: Color,
     icon: ImageVector,
@@ -835,7 +840,7 @@ private fun TimeBlock(
 
     Column(
         modifier = Modifier.onGloballyPositioned { coords ->
-            onBlockBounds(label, coords.boundsInRoot())
+            onBlockBounds(blockKey, coords.boundsInRoot())
         }
     ) {
         // Box keeps header layout stable
@@ -866,7 +871,7 @@ private fun TimeBlock(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = label,
+                            text = displayTitle,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppColors.PrimaryText
@@ -906,7 +911,7 @@ private fun TimeBlock(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (!hasTasks) {
-                    EmptyTaskCard(label = label, onCreateClick = onCreateClick)
+                    EmptyTaskCard(blockKey = blockKey, onCreateClick = onCreateClick)
                 }
 
                 tasks.forEach { task ->
@@ -936,11 +941,11 @@ private fun TimeBlock(
 
 @Composable
 private fun EmptyTaskCard(
-    label: String,
+    blockKey: String,
     onCreateClick: () -> Unit
 ) {
     val taskText = rememberTaskTextProvider()
-    val hintText = taskText.timeBlockHint(label)
+    val hintText = LocalizedStrings.timeBlockEmptyHint(blockKey)
 
     Card(
         modifier = Modifier.fillMaxWidth(),

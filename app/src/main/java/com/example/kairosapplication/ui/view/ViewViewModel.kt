@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.ui.view.month.MonthOverviewMetric
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.constants.TaskConstants
@@ -21,7 +23,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class DayCalendarData(
     val taskCount: Int,
@@ -40,6 +44,7 @@ data class ViewUiState(
     val weekTasks: Map<LocalDate, List<Task>> = emptyMap(),
     val weekNotes: Map<LocalDate, List<Note>> = emptyMap(),
     val monthOverview: Overview = Overview(),
+    val monthOverviewMetrics: List<MonthOverviewMetric> = MonthOverviewMetric.defaultSelection(),
     val monthCalendarData: Map<LocalDate, DayCalendarData> = emptyMap(),
     val currentWeekRange: Pair<LocalDate, LocalDate> = weekRangeForOffset(0),
     val noteProjects: List<Project> = emptyList(),
@@ -53,6 +58,7 @@ class ViewViewModel(
 
     private val taskRepository = TaskRepository(application)
     private val noteRepository = NoteRepository(application)
+    private val dataStoreManager = DataStoreManager(application)
     private val currentWeekOffset = MutableStateFlow(0)
     private val focusedDateFlow = MutableStateFlow(LocalDate.now())
     private val calendarYearMonthFlow = MutableStateFlow(YearMonth.now())
@@ -66,11 +72,17 @@ class ViewViewModel(
         ViewBaseInputs(tasks, publishedNotes, projects, weekOffset)
     }
 
+    private val monthOverviewMetricsFlow =
+        dataStoreManager.getMonthOverviewMetricsEncoded().map { raw ->
+            MonthOverviewMetric.parseStored(raw)
+        }
+
     val uiState: StateFlow<ViewUiState> = combine(
         baseInputs,
         focusedDateFlow,
         calendarYearMonthFlow,
-    ) { base, focusedDate, calYm ->
+        monthOverviewMetricsFlow,
+    ) { base, focusedDate, calYm, overviewMetrics ->
         buildViewUiState(
             base.tasks,
             base.publishedNotes,
@@ -78,6 +90,7 @@ class ViewViewModel(
             base.weekOffset,
             focusedDate,
             calYm,
+            overviewMetrics,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -111,6 +124,13 @@ class ViewViewModel(
 
     fun resetToCurrentWeek() {
         currentWeekOffset.value = 0
+    }
+
+    fun setMonthOverviewMetrics(metrics: List<MonthOverviewMetric>) {
+        val next = metrics.distinct().ifEmpty { MonthOverviewMetric.defaultSelection() }
+        viewModelScope.launch {
+            dataStoreManager.setMonthOverviewMetricsEncoded(MonthOverviewMetric.encode(next))
+        }
     }
 
     fun updateNoteTopic(noteId: Long, primary: String, secondary: String) {
@@ -269,6 +289,7 @@ private fun buildViewUiState(
     weekOffset: Int,
     focusedDate: LocalDate,
     calYm: YearMonth,
+    monthOverviewMetrics: List<MonthOverviewMetric>,
 ): ViewUiState {
     val todayTasks = sortTasksForView(tasks.filter { it.taskDate == focusedDate })
     val todayNotes = publishedNotesForDate(publishedNotes, focusedDate)
@@ -297,14 +318,31 @@ private fun buildViewUiState(
     val rate = if (totalT == 0) 0 else ((completed * 100f) / totalT).toInt().coerceIn(0, 100)
     val tasksByDateInMonth = tasksInMonth.groupBy { it.taskDate }
     val notesByDateInMonth = notesInMonth.groupBy { it.recordedDate }
+    val anchor = monthOverviewAnchor(calYm)
+    val dim = calYm.lengthOfMonth().coerceAtLeast(1)
+    val charLens = notesInMonth.map { it.body.length + it.behaviorSummary.length }
+    val totalChars = charLens.sumOf { it.toLong() }
+    val maxChars = charLens.maxOrNull() ?: 0
     val overview = Overview(
         totalNotes = notesInMonth.size,
         totalTasks = totalT,
         completionRate = rate,
-        consecutiveDays = calculateConsecutiveDays(
-            tasksByDate = tasksByDateInMonth,
-            notesByDate = notesByDateInMonth,
-        ),
+        consecutiveRecordDays = streakBackward(monthStart, anchor) { day ->
+            tasksByDateInMonth[day].orEmpty().isNotEmpty() ||
+                notesByDateInMonth[day].orEmpty().isNotEmpty()
+        },
+        consecutiveAllTasksDoneDays = streakBackward(monthStart, anchor) { day ->
+            val dt = tasksByDateInMonth[day].orEmpty()
+            dt.isNotEmpty() && dt.all { it.isCompleted }
+        },
+        consecutiveBothModulesDays = streakBackward(monthStart, anchor) { day ->
+            tasksByDateInMonth[day].orEmpty().isNotEmpty() &&
+                notesByDateInMonth[day].orEmpty().isNotEmpty()
+        },
+        totalDiaryChars = totalChars,
+        maxSingleNoteChars = maxChars,
+        avgDailyTasks = totalT.toFloat() / dim,
+        avgDailyNotes = notesInMonth.size.toFloat() / dim,
     )
     val monthCalendarData = buildMonthCalendarData(calYm, tasks, publishedNotes)
 
@@ -316,6 +354,9 @@ private fun buildViewUiState(
         weekTasks = weekTasks,
         weekNotes = weekNotes,
         monthOverview = overview,
+        monthOverviewMetrics = monthOverviewMetrics.distinct().ifEmpty {
+            MonthOverviewMetric.defaultSelection()
+        },
         monthCalendarData = monthCalendarData,
         currentWeekRange = weekStart to weekEnd,
         noteProjects = projects,
@@ -323,21 +364,27 @@ private fun buildViewUiState(
     )
 }
 
-private fun calculateConsecutiveDays(
-    tasksByDate: Map<LocalDate, List<Task>>,
-    notesByDate: Map<LocalDate, List<Note>>,
-): Int {
+private fun monthOverviewAnchor(ym: YearMonth): LocalDate {
     val today = LocalDate.now()
-    val ym = YearMonth.from(today)
-    val monthStart = ym.atDay(1)
-    val monthEnd = ym.atEndOfMonth()
-    if (today.isBefore(monthStart)) return 0
-    var d = if (today.isAfter(monthEnd)) monthEnd else today
+    val start = ym.atDay(1)
+    val end = ym.atEndOfMonth()
+    return when {
+        today.isBefore(start) -> end
+        today.isAfter(end) -> end
+        else -> today
+    }
+}
+
+private fun streakBackward(
+    monthStart: LocalDate,
+    anchor: LocalDate,
+    predicate: (LocalDate) -> Boolean,
+): Int {
+    if (anchor.isBefore(monthStart)) return 0
+    var d = anchor
     var streak = 0
     while (!d.isBefore(monthStart)) {
-        val hasTask = tasksByDate[d].orEmpty().isNotEmpty()
-        val hasNote = notesByDate[d].orEmpty().isNotEmpty()
-        if (hasTask || hasNote) {
+        if (predicate(d)) {
             streak++
             d = d.minusDays(1)
         } else {

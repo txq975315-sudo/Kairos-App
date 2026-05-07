@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.components.NoteCardConstants
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Project
@@ -41,6 +43,9 @@ fun NoteCardView(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFreestyle = note.primaryCategory == NotePrimaryCategory.FREESTYLE
+    val primaryLoc = rememberTopicPrimaryLabel(note.primaryCategory)
+    val secondaryLoc = rememberTopicSecondaryLabel(note.primaryCategory, note.secondaryCategory)
+    val freestyleLoc = rememberTopicPrimaryLabel(NotePrimaryCategory.FREESTYLE)
     val timeText = remember(note.id, note.createdAt) {
         Instant.ofEpochMilli(note.createdAt)
             .atZone(ZoneId.systemDefault())
@@ -78,11 +83,9 @@ fun NoteCardView(
             }
             Text(
                 text = if (isFreestyle) {
-                    NoteCardConstants.primaryCategoryLabel(NotePrimaryCategory.FREESTYLE)
+                    freestyleLoc
                 } else {
-                    val sec = note.secondaryCategory.trim()
-                    val label = NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
-                    if (sec.isNotEmpty()) "$label · $sec" else label
+                    if (secondaryLoc.isNotEmpty()) "$primaryLoc · $secondaryLoc" else primaryLoc
                 },
                 color = Color(0xFF9E9E9E),
                 fontSize = 12.sp,

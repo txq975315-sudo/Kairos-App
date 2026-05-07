@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.components.NoteCardConstants
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.model.Note
 
@@ -29,6 +31,9 @@ fun WeekNoteRow(
     modifier: Modifier = Modifier,
 ) {
     val isFreestyle = note.primaryCategory == NotePrimaryCategory.FREESTYLE
+    val primaryLoc = rememberTopicPrimaryLabel(note.primaryCategory)
+    val secondaryLoc = rememberTopicSecondaryLabel(note.primaryCategory, note.secondaryCategory)
+    val freestyleLoc = rememberTopicPrimaryLabel(NotePrimaryCategory.FREESTYLE)
     val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
@@ -53,13 +58,7 @@ fun WeekNoteRow(
             Spacer(modifier = Modifier.width(6.dp))
         }
         Text(
-            text = if (isFreestyle) {
-                NoteCardConstants.primaryCategoryLabel(NotePrimaryCategory.FREESTYLE)
-            } else {
-                note.secondaryCategory.trim().ifEmpty {
-                    NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
-                }
-            },
+            text = if (isFreestyle) freestyleLoc else secondaryLoc.trim().ifEmpty { primaryLoc },
             color = Color(0xFF9E9E9E),
             fontSize = 12.sp,
             maxLines = 1,

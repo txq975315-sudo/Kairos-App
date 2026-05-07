@@ -1,12 +1,10 @@
 package com.example.kairosapplication.ui.view.month
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,8 +43,10 @@ private val NoteEmptyBg = Color(0xFFF0F0F0)
 private val TaskEmptyBg = Color(0xFFF0F0F0)
 private val TodayCellBg = Color(0xFFF0F4FF)
 private val SummaryCardText = Color(0xFF1A1A1A)
-private val SummaryCardRadius = 3.dp
-private val SummaryCardHeight = 9.dp
+private val SummaryCardRadius = 4.dp
+private val SummaryCardHeight = 22.dp
+/** Tall enough for date number + two summary rows + spacing (non-square cells). */
+private val CalendarRowMinHeight = 108.dp
 
 private val WeekdayOrder = listOf(
     DayOfWeek.MONDAY,
@@ -129,7 +129,11 @@ fun MonthCalendar(
         Spacer(modifier = Modifier.height(4.dp))
         val rowCount = totalCells / 7
         for (row in 0 until rowCount) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(CalendarRowMinHeight),
+            ) {
                 repeat(7) { colInRow ->
                     val cell = row * 7 + colInRow
                     val dayNum = cell - firstCol + 1
@@ -137,7 +141,7 @@ fun MonthCalendar(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .aspectRatio(1f),
+                                .fillMaxSize(),
                         )
                     } else {
                         val date = yearMonth.atDay(dayNum)
@@ -149,7 +153,7 @@ fun MonthCalendar(
                             onClick = { onDateClick(date) },
                             modifier = Modifier
                                 .weight(1f)
-                                .aspectRatio(1f),
+                                .fillMaxSize(),
                         )
                     }
                 }
@@ -197,22 +201,22 @@ private fun CalendarDayCell(
             .fillMaxSize()
             .viewClickable(onClick)
             .background(if (isToday) TodayCellBg else Color.Transparent)
-            .padding(horizontal = 3.dp, vertical = 2.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = date.dayOfMonth.toString(),
             color = if (isToday) AppScreenHeader.titleColor else DateNumberMuted,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
             textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(5.dp))
         MonthDaySummaryCard(
             text = taskText,
             backgroundColor = taskCardBg,
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         MonthDaySummaryCard(
             text = if (data.noteCount > 0) data.noteCount.toString() else "—",
             backgroundColor = noteCardBg,
@@ -236,7 +240,7 @@ private fun MonthDaySummaryCard(
         Text(
             text = text,
             color = SummaryCardText,
-            fontSize = 13.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             textAlign = TextAlign.Center,

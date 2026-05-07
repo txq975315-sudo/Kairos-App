@@ -2,6 +2,7 @@ package com.example.taskmodel.repository
 
 import android.content.Context
 import com.example.taskmodel.constants.NotePrimaryCategory
+import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.database.NoteDao
 import com.example.taskmodel.database.NoteDatabase
@@ -323,7 +324,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.SELF_AWARENESS,
-            secondaryCategory = "Emotional trigger event",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.SELF_AWARENESS)[0], // Emotional awareness
             behaviorSummary = "Noticed anxiety before the meeting.",
             body = "Self-awareness reflection body text.",
             sceneTags = listOf("work"),
@@ -341,7 +343,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.INTERPERSONAL,
-            secondaryCategory = "Boundary breakthrough event",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.INTERPERSONAL)[0], // Workplace dynamics
             behaviorSummary = "Said no to an unreasonable request.",
             body = "Interpersonal note content.",
             sceneTags = emptyList(),
@@ -359,7 +362,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.INTIMACY_FAMILY,
-            secondaryCategory = "Power struggle scene",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.INTIMACY_FAMILY)[0], // Partner conflicts
             behaviorSummary = "Argument about chores distribution.",
             body = "Family dynamics note.",
             sceneTags = listOf("home"),
@@ -377,7 +381,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.SOMATIC_ENERGY,
-            secondaryCategory = "Body signal log",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.SOMATIC_ENERGY)[1], // Sleep quality
             behaviorSummary = "Poor sleep and afternoon crash.",
             body = "Energy tracking entry.",
             sceneTags = emptyList(),
@@ -395,7 +400,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.MEANING,
-            secondaryCategory = "Value ordering event",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.MEANING)[1], // Life goals
             behaviorSummary = "Chose rest over extra work.",
             body = "Meaning exploration note.",
             sceneTags = emptyList(),
@@ -413,7 +419,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.INTIMACY_FAMILY,
-            secondaryCategory = "Emotional flow record",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.INTIMACY_FAMILY)[0], // Partner conflicts
             behaviorSummary = "Partner and I repaired after conflict.",
             body = "Linked sample: also relevant to interpersonal.",
             sceneTags = listOf("repair"),
@@ -469,7 +476,8 @@ class NoteRepository private constructor(
         notes += NoteEntity(
             id = 0L,
             primaryCategory = NotePrimaryCategory.SELF_AWARENESS,
-            secondaryCategory = "Habit experiment record",
+            secondaryCategory = NoteSecondaryCategories.defaults
+                .getValue(NotePrimaryCategory.SELF_AWARENESS)[1], // Behavioral habits
             behaviorSummary = "Tried a new morning routine.",
             body = "Published note tied to project.",
             sceneTags = emptyList(),

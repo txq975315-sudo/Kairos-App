@@ -8,9 +8,13 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteSecondaryCategories
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Essay
+import com.example.taskmodel.model.EssayCategoryConfig
+import com.example.taskmodel.model.EssayPrimaryCategoryConfig
+import com.example.taskmodel.model.EssaySecondaryCategoryConfig
 import com.example.taskmodel.model.EssayTopic
 import com.example.taskmodel.model.Task
 import java.io.IOException
@@ -33,6 +37,7 @@ class TaskRepository(private val context: Context) {
         /** Essay id used as home daily quote; -1 if none */
         val dailyQuoteEssayId = longPreferencesKey("daily_quote_essay_id")
         val noteCustomSecondariesJson = stringPreferencesKey("note_custom_secondary_categories_v1")
+        val essayCategoryConfigJson = stringPreferencesKey("essay_category_config_v1")
     }
 
     val tasksFlow: Flow<List<Task>> = context.taskDataStore.data
@@ -72,26 +77,33 @@ class TaskRepository(private val context: Context) {
             if (v < 0) null else v
         }
 
-    val customSecondaryCategoriesFlow: Flow<Map<String, List<String>>> = context.taskDataStore.data
+    val essayCategoryConfigFlow: Flow<EssayCategoryConfig> = context.taskDataStore.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
         }
         .map { prefs ->
-            decodeSecondaryCategoriesMap(prefs[Keys.noteCustomSecondariesJson].orEmpty())
+            decodeEssayCategoryConfigResolved(prefs)
         }
 
-    suspend fun addCustomSecondaryCategory(primary: String, label: String) {
-        val trimmed = label.trim()
-        if (trimmed.isBlank()) return
+    suspend fun saveEssayCategoryConfig(config: EssayCategoryConfig) {
+        val normalized = normalizeEssayCategoryConfig(config)
         context.taskDataStore.edit { prefs ->
-            val current = decodeSecondaryCategoriesMap(prefs[Keys.noteCustomSecondariesJson].orEmpty())
-            val defaults = NoteSecondaryCategories.defaults[primary].orEmpty()
-            val prevCustom = current[primary].orEmpty()
-            val distinctLower = (defaults + prevCustom).map { it.lowercase(Locale.US) }.toMutableSet()
-            if (distinctLower.size >= 8) return@edit
-            if (trimmed.lowercase(Locale.US) in distinctLower) return@edit
-            val nextCustom = prevCustom + trimmed
-            prefs[Keys.noteCustomSecondariesJson] = encodeSecondaryCategoriesMap(current + (primary to nextCustom))
+            prefs[Keys.essayCategoryConfigJson] = encodeEssayCategoryConfig(normalized)
+        }
+    }
+
+    suspend fun appendSecondaryToEssayCategory(primary: String, label: String) {
+        val trimmed = label.trim()
+        if (trimmed.isBlank() || !NotePrimaryCategory.isTopic(primary)) return
+        context.taskDataStore.edit { prefs ->
+            val config = decodeEssayCategoryConfigResolved(prefs)
+            val prim = config.primaryOrNull(primary) ?: return@edit
+            if (prim.secondaries.size >= 8) return@edit
+            val lower = prim.secondaries.map { it.id.lowercase(Locale.US) }.toSet()
+            if (trimmed.lowercase(Locale.US) in lower) return@edit
+            val nextSec = prim.secondaries + EssaySecondaryCategoryConfig(id = trimmed, name = trimmed, guide = null)
+            val nextConfig = config.updatePrimary(primary) { it.copy(secondaries = nextSec) }
+            prefs[Keys.essayCategoryConfigJson] = encodeEssayCategoryConfig(normalizeEssayCategoryConfig(nextConfig))
         }
     }
 
@@ -158,6 +170,107 @@ class TaskRepository(private val context: Context) {
             Task(4, "Reading", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = TaskConstants.URGENCY_NORMAL, taskDate = today),
             Task(5, "Practice Kotlin", timeBlock = TaskConstants.TIME_BLOCK_EVENING, urgency = TaskConstants.URGENCY_URGENT, taskDate = today)
         )
+    }
+
+    private fun decodeEssayCategoryConfigResolved(prefs: Preferences): EssayCategoryConfig {
+        val raw = prefs[Keys.essayCategoryConfigJson]?.trim().orEmpty()
+        val legacy = prefs[Keys.noteCustomSecondariesJson].orEmpty()
+        if (raw.isNotBlank()) {
+            return runCatching { parseEssayCategoryConfig(raw) }.getOrElse {
+                EssayCategoryConfig.buildInitial(decodeSecondaryCategoriesMap(legacy))
+            }
+        }
+        return EssayCategoryConfig.buildInitial(decodeSecondaryCategoriesMap(legacy))
+    }
+
+    private fun normalizeEssayCategoryConfig(config: EssayCategoryConfig): EssayCategoryConfig {
+        val byKey = config.primaries.associateBy { it.key }
+        val seed = EssayCategoryConfig.buildInitial(emptyMap())
+        val primaries = EssayCategoryConfig.PRIMARY_KEYS_ORDER.map { key ->
+            val existing = byKey[key]
+            val fallback = seed.primary(key)
+            val merged = if (existing == null) {
+                fallback
+            } else {
+                existing.copy(
+                    secondaries = existing.secondaries.take(8).map { sec ->
+                        EssaySecondaryCategoryConfig(
+                            id = sec.id.trim(),
+                            name = sec.name.trim(),
+                            guide = sec.guide?.trim()?.takeIf { it.isNotBlank() },
+                        )
+                    }.filter { it.id.isNotBlank() },
+                )
+            }
+            if (key == NotePrimaryCategory.FREESTYLE) merged.copy(secondaries = emptyList()) else merged
+        }
+        return EssayCategoryConfig(primaries)
+    }
+
+    private fun encodeEssayCategoryConfig(config: EssayCategoryConfig): String {
+        val root = JSONObject()
+        val arr = JSONArray()
+        config.primaries.forEach { p ->
+            val sArr = JSONArray()
+            p.secondaries.forEach { s ->
+                sArr.put(
+                    JSONObject().apply {
+                        put("id", s.id)
+                        put("name", s.name)
+                        if (!s.guide.isNullOrBlank()) put("guide", s.guide)
+                    },
+                )
+            }
+            arr.put(
+                JSONObject().apply {
+                    put("key", p.key)
+                    put("displayName", p.displayName)
+                    put("emoji", p.emoji)
+                    put("summaryGuide", p.summaryGuide)
+                    put("bodyPlaceholder", p.bodyPlaceholder)
+                    put("secondaries", sArr)
+                },
+            )
+        }
+        root.put("primaries", arr)
+        return root.toString()
+    }
+
+    private fun parseEssayCategoryConfig(raw: String): EssayCategoryConfig {
+        val o = JSONObject(raw)
+        val arr = o.getJSONArray("primaries")
+        val list = buildList {
+            for (i in 0 until arr.length()) {
+                val p = arr.getJSONObject(i)
+                val secArr = p.optJSONArray("secondaries")
+                val secs = buildList {
+                    if (secArr != null) {
+                        for (j in 0 until secArr.length()) {
+                            val s = secArr.getJSONObject(j)
+                            val guideRaw = s.optString("guide", "").trim()
+                            add(
+                                EssaySecondaryCategoryConfig(
+                                    id = s.getString("id"),
+                                    name = s.optString("name", ""),
+                                    guide = guideRaw.takeIf { it.isNotEmpty() },
+                                ),
+                            )
+                        }
+                    }
+                }
+                add(
+                    EssayPrimaryCategoryConfig(
+                        key = p.getString("key"),
+                        displayName = p.optString("displayName", ""),
+                        emoji = p.optString("emoji", ""),
+                        summaryGuide = p.optString("summaryGuide", ""),
+                        bodyPlaceholder = p.optString("bodyPlaceholder", ""),
+                        secondaries = secs.take(8),
+                    ),
+                )
+            }
+        }
+        return EssayCategoryConfig(list)
     }
 }
 

@@ -1,12 +1,14 @@
 package com.example.kairosapplication.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,15 +25,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Badge
@@ -58,8 +62,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,17 +78,32 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.ThemeAccentColors
+import coil.compose.AsyncImage
+import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.ui.essay.computeWallpaperIsDark
 import com.example.kairosapplication.ui.components.EssayCircleIconButton
 import com.example.kairosapplication.ui.components.NoteCard
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.components.NoteCardVariant
+import com.example.kairosapplication.ui.components.NoteCommentBottomSheet
+import com.example.kairosapplication.ui.components.NoteTimelineIntegrated
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
+import com.example.kairosapplication.ui.components.TopicNotesYearMonthTimeline
+import com.example.kairosapplication.ui.topic.EssayCategoryUi
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryNavShortWithConfig
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabelWithConfig
+import com.example.kairosapplication.ui.components.appendReviewCommentToNote
 import com.example.kairosapplication.ui.project.ProjectTimelineScreen
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
+import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
+import com.example.taskmodel.model.EssayCategoryConfig
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Project
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -89,7 +111,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale as JavaLocale
+import java.time.format.TextStyle
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class EssayTab {
     TIMELINE,
@@ -107,11 +133,8 @@ private val topicTabCategoryOrder = listOf(
     NotePrimaryCategory.FREESTYLE
 )
 
-/** Secondary topic labels (English); must match stored [Note.secondaryCategory] for grouping. */
+/** Stable bucket for notes without a secondary; official preset spellings live in task-model `NoteSecondaryCategories` and are canonicalized on load/save. */
 private const val UncategorizedSecondary = "Uncategorized"
-
-/** Indent for secondary topic rows (~2 characters). */
-private val TopicSecondaryIndent = 20.dp
 
 /**
  * Preset secondaries first, then any [groupedBySecondary] keys not in presets (e.g. legacy/custom labels),
@@ -150,10 +173,42 @@ fun EssayMainScreen(
     var changeProjectNoteId by remember { mutableStateOf<Long?>(null) }
     var continueCreateNoteId by remember { mutableStateOf<Long?>(null) }
     var deleteConfirmNoteId by remember { mutableStateOf<Long?>(null) }
+    var commentNoteId by remember { mutableStateOf<Long?>(null) }
     var topicPrimaryFilter by remember { mutableStateOf<String?>(null) }
     var selectedEssayProjectId by remember { mutableStateOf<Long?>(null) }
 
     val uiState by taskViewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val dataStore = remember(context) { DataStoreManager(context.applicationContext) }
+    val timelineLayout by dataStore.getEssayTimelineLayout().collectAsState(initial = "card")
+    val integratedLayoutActive = timelineLayout == "integrated"
+    val essayWallpaperUri by dataStore.getEssayIntegratedWallpaperUri().collectAsState(initial = null)
+    var essayWallpaperIsDark by remember { mutableStateOf(false) }
+    val themeColorKey by dataStore.getThemeColor().collectAsState(initial = "blue")
+    val timelineAccent = remember(themeColorKey) { ThemeAccentColors.fromSettingsKey(themeColorKey) }
+    val scope = rememberCoroutineScope()
+    val pickEssayWallpaper = rememberLauncherForActivityResult(
+        contract = PickVisualMedia()
+    ) { uri ->
+        uri?.let { u -> scope.launch { dataStore.setEssayIntegratedWallpaperUri(u.toString()) } }
+    }
+    LaunchedEffect(essayWallpaperUri, integratedLayoutActive) {
+        essayWallpaperIsDark = if (!integratedLayoutActive || essayWallpaperUri.isNullOrBlank()) {
+            false
+        } else {
+            withContext(Dispatchers.IO) {
+                computeWallpaperIsDark(context, essayWallpaperUri!!)
+            }
+        }
+    }
+    val essayWallpaperActive = integratedLayoutActive && !essayWallpaperUri.isNullOrBlank()
+    val essayHeaderPrimary =
+        if (essayWallpaperActive && essayWallpaperIsDark) Color.White else PrimaryTextColor
+    val essayHeaderSecondary =
+        if (essayWallpaperActive && essayWallpaperIsDark) Color.White.copy(alpha = 0.82f)
+        else SecondaryTextColor
+    val essayTopicSurfaceColor =
+        if (essayWallpaperActive) Color.Transparent else AppColors.ScreenBackground
     val inboxCount = uiState.noteInbox.size
 
     val allTimelineNotes = remember(uiState.notePublished) {
@@ -163,14 +218,18 @@ fun EssayMainScreen(
         uiState.noteProjects.associate { it.id to it.name }
     }
     val zone = ZoneId.systemDefault()
-    val dateLabel = remember(selectedDate) {
-        DateTimeFormatter.ofPattern("MMMM d, yyyy", JavaLocale.ENGLISH).format(selectedDate)
+    val essayLang = LocalCurrentLanguage.current.value
+    val essayLocale = if (essayLang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val dateLabel = remember(selectedDate, essayLang, essayLocale) {
+        val pattern =
+            if (essayLang == LocalizationManager.Language.ZH) "yyyy年M月d日" else "MMMM d, yyyy"
+        DateTimeFormatter.ofPattern(pattern, essayLocale).format(selectedDate)
     }
 
     val tabs = listOf(
-        EssayTab.TIMELINE to "Timeline",
-        EssayTab.TOPIC to "Topic",
-        EssayTab.PROJECT to "Project"
+        EssayTab.TIMELINE to LocalizedStrings.get("essay_tab_timeline"),
+        EssayTab.TOPIC to LocalizedStrings.get("essay_tab_topic"),
+        EssayTab.PROJECT to LocalizedStrings.get("essay_tab_project")
     )
 
     LaunchedEffect(selectedTab) {
@@ -216,10 +275,25 @@ fun EssayMainScreen(
         }
     }
 
+    LaunchedEffect(commentNoteId, allTimelineNotes) {
+        val id = commentNoteId ?: return@LaunchedEffect
+        if (allTimelineNotes.none { it.id == id }) commentNoteId = null
+    }
+    val commentSheetNote = commentNoteId?.let { id -> allTimelineNotes.find { it.id == id } }
+    commentSheetNote?.let { noteForComment ->
+        NoteCommentBottomSheet(
+            note = noteForComment,
+            onDismiss = { commentNoteId = null },
+            onAppendComment = { n, text ->
+                taskViewModel.updateNote(appendReviewCommentToNote(n, text))
+            }
+        )
+    }
+
     PublishedNoteActionDialogsHost(
         resolveNote = { id -> allTimelineNotes.find { it.id == id } },
         noteProjects = uiState.noteProjects,
-        customSecondaryCategories = uiState.customSecondaryCategories,
+        essayCategoryConfig = uiState.essayCategoryConfig,
         taskViewModel = taskViewModel,
         onNavigateToNewNote = { onNavigateToEditor(null) },
         changeTopicNoteId = changeTopicNoteId,
@@ -233,9 +307,18 @@ fun EssayMainScreen(
         onNoteDeleted = { nid -> if (expandedNoteId == nid) expandedNoteId = null }
     )
 
-    Scaffold(
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (essayWallpaperActive) {
+            AsyncImage(
+                model = essayWallpaperUri,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+        Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundColor,
+        containerColor = if (essayWallpaperActive) Color.Transparent else BackgroundColor,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onNavigateToEditor(null) },
@@ -272,12 +355,12 @@ fun EssayMainScreen(
                         text = dateLabel,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = PrimaryTextColor
+                        color = essayHeaderPrimary
                     )
                     Text(
                         text = " ▼",
                         fontSize = 14.sp,
-                        color = SecondaryTextColor
+                        color = essayHeaderSecondary
                     )
                 }
                 Row(
@@ -324,6 +407,61 @@ fun EssayMainScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text("Essay: Card layout", color = essayHeaderPrimary) },
+                                leadingIcon = if (timelineLayout == "card") {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = essayHeaderPrimary
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                                onClick = {
+                                    menuOpen = false
+                                    scope.launch { dataStore.setEssayTimelineLayout("card") }
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Essay: Integrated layout", color = essayHeaderPrimary) },
+                                leadingIcon = if (timelineLayout == "integrated") {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = essayHeaderPrimary
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                                onClick = {
+                                    menuOpen = false
+                                    scope.launch { dataStore.setEssayTimelineLayout("integrated") }
+                                }
+                            )
+                            if (integratedLayoutActive) {
+                                DropdownMenuItem(
+                                    text = { Text("Essay wallpaper…", color = essayHeaderPrimary) },
+                                    onClick = {
+                                        menuOpen = false
+                                        pickEssayWallpaper.launch(
+                                            PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                                        )
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Clear essay wallpaper", color = essayHeaderPrimary) },
+                                    onClick = {
+                                        menuOpen = false
+                                        scope.launch { dataStore.setEssayIntegratedWallpaperUri(null) }
+                                    },
+                                    enabled = essayWallpaperUri != null
+                                )
+                            }
+                            DropdownMenuItem(
                                 text = { Text("View settings", color = PrimaryTextColor) },
                                 onClick = { menuOpen = false }
                             )
@@ -355,7 +493,7 @@ fun EssayMainScreen(
                             text = label,
                             fontSize = 15.sp,
                             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (selected) PrimaryTextColor else SecondaryTextColor
+                            color = if (selected) essayHeaderPrimary else essayHeaderSecondary
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Box(
@@ -363,7 +501,7 @@ fun EssayMainScreen(
                                 .fillMaxWidth()
                                 .height(2.dp)
                                 .background(
-                                    if (selected) PrimaryTextColor else Color.Transparent
+                                    if (selected) essayHeaderPrimary else Color.Transparent
                                 )
                         )
                     }
@@ -385,6 +523,11 @@ fun EssayMainScreen(
                     EssayTab.TIMELINE -> TimelineTabContent(
                         selectedDate = selectedDate,
                         allNotes = allTimelineNotes,
+                        integratedLayout = integratedLayoutActive,
+                        accentColor = timelineAccent,
+                        lightForeground = essayWallpaperActive && essayWallpaperIsDark,
+                        dayHeaderDayColor = essayHeaderPrimary,
+                        dayHeaderSubtitleColor = essayHeaderSecondary,
                         expandedNoteId = expandedNoteId,
                         onToggleExpand = { id ->
                             expandedNoteId = if (expandedNoteId == id) null else id
@@ -407,6 +550,10 @@ fun EssayMainScreen(
                                 },
                                 onDelete = {
                                     deleteConfirmNoteId = note.id
+                                    expandedNoteId = null
+                                },
+                                onComment = {
+                                    commentNoteId = note.id
                                     expandedNoteId = null
                                 }
                             )
@@ -414,9 +561,15 @@ fun EssayMainScreen(
                     )
                     EssayTab.TOPIC -> TopicTabContent(
                         allNotes = allTimelineNotes,
-                        customSecondaryCategories = uiState.customSecondaryCategories,
+                        essayCategoryConfig = uiState.essayCategoryConfig,
                         onCreateEssayForPrimary = onNavigateToNewNoteFromTopic,
                         projectsById = projectsByIdMap,
+                        integratedLayout = integratedLayoutActive,
+                        accentColor = timelineAccent,
+                        topicSurfaceColor = essayTopicSurfaceColor,
+                        headerPrimary = essayHeaderPrimary,
+                        headerSecondary = essayHeaderSecondary,
+                        lightForeground = essayWallpaperActive && essayWallpaperIsDark,
                         expandedNoteId = expandedNoteId,
                         onToggleExpand = { id ->
                             expandedNoteId = if (expandedNoteId == id) null else id
@@ -438,6 +591,10 @@ fun EssayMainScreen(
                                 },
                                 onDelete = {
                                     deleteConfirmNoteId = note.id
+                                    expandedNoteId = null
+                                },
+                                onComment = {
+                                    commentNoteId = note.id
                                     expandedNoteId = null
                                 }
                             )
@@ -454,10 +611,40 @@ fun EssayMainScreen(
                         taskViewModel = taskViewModel,
                         onOpenNoteEditor = { id -> onNavigateToEditor(id) },
                         onNavigateToNewNote = { onNavigateToEditor(null) },
+                        integratedNotes = integratedLayoutActive,
+                        accentColor = timelineAccent,
+                        contentPrimary = essayHeaderPrimary,
+                        contentSecondary = essayHeaderSecondary,
+                        lightForeground = essayWallpaperActive && essayWallpaperIsDark,
+                        publishedNoteActions = { note ->
+                            PublishedNoteCardActions(
+                                onChangeTopic = {
+                                    changeTopicNoteId = note.id
+                                    expandedNoteId = null
+                                },
+                                onChangeProject = {
+                                    changeProjectNoteId = note.id
+                                    expandedNoteId = null
+                                },
+                                onContinueCreate = {
+                                    continueCreateNoteId = note.id
+                                    expandedNoteId = null
+                                },
+                                onDelete = {
+                                    deleteConfirmNoteId = note.id
+                                    expandedNoteId = null
+                                },
+                                onComment = {
+                                    commentNoteId = note.id
+                                    expandedNoteId = null
+                                }
+                            )
+                        },
                     )
                 }
             }
         }
+    }
     }
 }
 
@@ -465,6 +652,11 @@ fun EssayMainScreen(
 private fun TimelineTabContent(
     selectedDate: LocalDate,
     allNotes: List<Note>,
+    integratedLayout: Boolean,
+    accentColor: Color,
+    lightForeground: Boolean,
+    dayHeaderDayColor: Color,
+    dayHeaderSubtitleColor: Color,
     expandedNoteId: Long?,
     onToggleExpand: (Long) -> Unit,
     onOpenNoteEditor: (Long) -> Unit,
@@ -479,21 +671,26 @@ private fun TimelineTabContent(
             .sortedByDescending { it.key }
     }
 
-    val listState = rememberLazyListState()
+    val listState = remember(integratedLayout) { LazyListState() }
 
-    LaunchedEffect(selectedDate, groupedNoteDays) {
+    LaunchedEffect(selectedDate, groupedNoteDays, integratedLayout) {
         val keys = groupedNoteDays.map { it.key }
         val targetPos = keys.indexOf(selectedDate)
         if (targetPos < 0) return@LaunchedEffect
-        var scrollToIndex = 0
-        for (i in 0 until targetPos) {
-            scrollToIndex += 1
-            scrollToIndex += groupedNoteDays[i].value.size
+        if (integratedLayout) {
+            if (groupedNoteDays.isEmpty()) return@LaunchedEffect
+            listState.animateScrollToItem(targetPos.coerceIn(0, groupedNoteDays.lastIndex))
+        } else {
+            var scrollToIndex = 0
+            for (i in 0 until targetPos) {
+                scrollToIndex += 1
+                scrollToIndex += groupedNoteDays[i].value.size
+            }
+            val totalItems = groupedNoteDays.sumOf { 1 + it.value.size }
+            if (totalItems == 0) return@LaunchedEffect
+            val maxIndex = totalItems - 1
+            listState.animateScrollToItem(scrollToIndex.coerceIn(0, maxIndex))
         }
-        val totalItems = groupedNoteDays.sumOf { 1 + it.value.size }
-        if (totalItems == 0) return@LaunchedEffect
-        val maxIndex = totalItems - 1
-        listState.animateScrollToItem(scrollToIndex.coerceIn(0, maxIndex))
     }
 
     if (groupedNoteDays.isEmpty()) {
@@ -501,35 +698,110 @@ private fun TimelineTabContent(
         return
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(AppSpacing.SectionLarge)
-    ) {
-        groupedNoteDays.forEach { (date, notes) ->
-            items(count = 1, key = { _ -> "header_$date" }) { _ ->
-                DateGroupHeader(date = date, showYear = true)
-            }
+    if (integratedLayout) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
             items(
-                items = notes,
-                key = { it.id }
-            ) { note ->
-                NoteCard(
-                    note = note,
-                    variant = NoteCardVariant.TIMELINE,
-                    onNoteClick = onOpenNoteEditor,
-                    expandable = true,
-                    expanded = note.id == expandedNoteId,
-                    onToggleExpand = { onToggleExpand(note.id) },
-                    modifier = Modifier.fillMaxWidth(),
-                    projectsById = projectsById,
-                    publishedActions = if (note.status == NoteStatus.PUBLISHED) {
-                        publishedNoteActions(note)
-                    } else {
-                        null
+                count = groupedNoteDays.size,
+                key = { index -> "integrated_day_${groupedNoteDays[index].key}" }
+            ) { index ->
+                val date = groupedNoteDays[index].key
+                val notes = groupedNoteDays[index].value
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    IntegratedDayHeader(
+                        date = date,
+                        dayNumberColor = dayHeaderDayColor,
+                        subtitleColor = dayHeaderSubtitleColor
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    notes.forEachIndexed { noteIndex, note ->
+                        NoteTimelineIntegrated(
+                            note = note,
+                            accentColor = accentColor,
+                            onNoteClick = onOpenNoteEditor,
+                            expandable = true,
+                            expanded = note.id == expandedNoteId,
+                            onToggleExpand = { onToggleExpand(note.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            projectsById = projectsById,
+                            publishedActions = publishedNoteActions(note),
+                            lightForeground = lightForeground
+                        )
+                        if (noteIndex < notes.lastIndex) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
                     }
-                )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.SectionLarge)
+        ) {
+            groupedNoteDays.forEach { (date, notes) ->
+                items(count = 1, key = { _ -> "header_$date" }) { _ ->
+                    DateGroupHeader(date = date, showYear = true)
+                }
+                items(
+                    items = notes,
+                    key = { it.id }
+                ) { note ->
+                    NoteCard(
+                        note = note,
+                        variant = NoteCardVariant.TIMELINE,
+                        onNoteClick = onOpenNoteEditor,
+                        expandable = true,
+                        expanded = note.id == expandedNoteId,
+                        onToggleExpand = { onToggleExpand(note.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        projectsById = projectsById,
+                        publishedActions = publishedNoteActions(note)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IntegratedDayHeader(
+    date: LocalDate,
+    dayNumberColor: Color = PrimaryTextColor,
+    subtitleColor: Color = SecondaryTextColor,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 2.dp, bottom = 1.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Text(
+            text = date.dayOfMonth.toString(),
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = dayNumberColor,
+            modifier = Modifier.width(32.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            val lang = LocalCurrentLanguage.current.value
+            val loc = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+            val month = remember(date, loc) { date.month.getDisplayName(TextStyle.FULL, loc) }
+            val dow = remember(date, loc, lang) {
+                val raw = date.dayOfWeek.getDisplayName(TextStyle.FULL, loc)
+                if (lang == LocalizationManager.Language.ZH) raw else raw.lowercase(loc)
+            }
+            Text(
+                text = "$month / $dow ${date.year}",
+                fontSize = 14.sp,
+                color = subtitleColor
+            )
         }
     }
 }
@@ -538,11 +810,19 @@ private fun TimelineTabContent(
 private fun DateGroupHeader(
     date: LocalDate,
     indent: Boolean = false,
-    showYear: Boolean = false
+    showYear: Boolean = false,
+    titleColor: Color = PrimaryTextColor,
 ) {
-    val dateStr = remember(date, showYear) {
-        val pattern = if (showYear) "MMMM d, yyyy" else "MMMM d"
-        DateTimeFormatter.ofPattern(pattern, JavaLocale.ENGLISH).format(date)
+    val lang = LocalCurrentLanguage.current.value
+    val loc = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val dateStr = remember(date, showYear, lang, loc) {
+        val pattern = when {
+            lang == LocalizationManager.Language.ZH && showYear -> "yyyy年M月d日"
+            lang == LocalizationManager.Language.ZH -> "M月d日"
+            showYear -> "MMMM d, yyyy"
+            else -> "MMMM d"
+        }
+        DateTimeFormatter.ofPattern(pattern, loc).format(date)
     }
     Row(
         modifier = Modifier
@@ -558,7 +838,7 @@ private fun DateGroupHeader(
             text = dateStr,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = PrimaryTextColor
+            color = titleColor
         )
     }
 }
@@ -573,13 +853,13 @@ private fun EmptyTimelineState(modifier: Modifier = Modifier) {
             Text(text = "📝", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No notes yet",
+                text = LocalizedStrings.get("essay_timeline_empty_title"),
                 fontSize = 16.sp,
                 color = SecondaryTextColor
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Start your first entry",
+                text = LocalizedStrings.get("essay_timeline_empty_subtitle"),
                 fontSize = 14.sp,
                 color = SecondaryTextColor.copy(alpha = 0.7f)
             )
@@ -587,13 +867,18 @@ private fun EmptyTimelineState(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TopicTabContent(
     allNotes: List<Note>,
-    customSecondaryCategories: Map<String, List<String>>,
+    essayCategoryConfig: EssayCategoryConfig,
     onCreateEssayForPrimary: (String) -> Unit,
     projectsById: Map<Long, String>,
+    integratedLayout: Boolean,
+    accentColor: Color,
+    topicSurfaceColor: Color,
+    headerPrimary: Color,
+    headerSecondary: Color,
+    lightForeground: Boolean,
     expandedNoteId: Long?,
     onToggleExpand: (Long) -> Unit,
     onOpenNoteEditor: (Long) -> Unit,
@@ -613,355 +898,276 @@ private fun TopicTabContent(
             .mapValues { (_, list) -> list.sortedByDescending { it.createdAt } }
     }
 
-    var expandedTopics by remember {
+    var selectedPrimary by remember {
+        mutableStateOf(
+            topicTabCategoryOrder.firstOrNull { key ->
+                groupedByTopic[key].orEmpty().isNotEmpty()
+            } ?: topicTabCategoryOrder.first()
+        )
+    }
+    var selectedSecondary by remember { mutableStateOf<String?>(null) }
+    var expandedTopicNavPrimaries by remember {
         mutableStateOf(topicTabCategoryOrder.toSet())
     }
-    /** Keys `primary:secondary` the user has explicitly collapsed; default is expanded (show notes). */
-    var collapsedSecondaries by remember {
-        mutableStateOf(emptySet<String>())
+
+    LaunchedEffect(primaryFilter) {
+        val p = primaryFilter
+        if (p != null && p in topicTabCategoryOrder) {
+            selectedPrimary = p
+            selectedSecondary = null
+            onPrimaryFilterChange(null)
+        }
     }
 
-    val visiblePrimaries = primaryFilter?.let { listOf(it) } ?: topicTabCategoryOrder
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Surface(color = AppColors.ScreenBackground) {
-            TopicPrimarySixRow(
-                selectedPrimaryFilter = primaryFilter,
-                onSelectPrimary = { key ->
-                    onPrimaryFilterChange(if (primaryFilter == key) null else key)
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            visiblePrimaries.forEachIndexed { index, primaryKey ->
-            val notesForPrimary = groupedByTopic[primaryKey].orEmpty()
-            val isPrimaryExpanded = primaryKey in expandedTopics
-            val secondaryList =
-                NoteCardConstants.mergedSecondaryLabels(primaryKey, customSecondaryCategories)
-            val hasSecondaryCategories =
-                secondaryList.isNotEmpty() && primaryKey != NotePrimaryCategory.FREESTYLE
-            stickyHeader(key = "primary_sticky_$primaryKey") {
-                Surface(
-                    color = AppColors.ScreenBackground,
-                    shadowElevation = 0.dp
-                ) {
-                    TopicGroupHeader(
-                        leadingEmoji = NoteCardConstants.categoryEmoji(primaryKey),
-                        label = NoteCardConstants.topicTabEnglishLabel(primaryKey),
-                        count = notesForPrimary.size,
-                        isExpanded = isPrimaryExpanded,
-                        onToggle = {
-                            expandedTopics = if (primaryKey in expandedTopics) {
-                                expandedTopics - primaryKey
-                            } else {
-                                expandedTopics + primaryKey
-                            }
-                        },
-                        onCreateEssay = if (primaryKey != NotePrimaryCategory.FREESTYLE) {
-                            { onCreateEssayForPrimary(primaryKey) }
-                        } else {
-                            null
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = if (index > 0) AppSpacing.SectionMedium else 0.dp)
-                    )
-                }
+    val filteredNotes = remember(selectedPrimary, selectedSecondary, groupedByTopic) {
+        val list = groupedByTopic[selectedPrimary].orEmpty()
+        if (selectedSecondary == null) list
+        else {
+            list.filter { note ->
+                val sec = note.secondaryCategory.takeIf { it.isNotBlank() } ?: UncategorizedSecondary
+                sec == selectedSecondary
             }
+        }
+    }
 
-            if (isPrimaryExpanded && (notesForPrimary.isNotEmpty() || hasSecondaryCategories)) {
-                if (hasSecondaryCategories) {
-                    val groupedBySecondary = notesForPrimary.groupBy { note ->
-                        note.secondaryCategory.takeIf { it.isNotBlank() } ?: UncategorizedSecondary
-                    }
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Surface(
+            color = topicSurfaceColor,
+            modifier = Modifier
+                .fillMaxHeight()
+                .weight(0.25f)
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(end = 4.dp, top = 4.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                topicTabCategoryOrder.forEach { primaryKey ->
+                    val notesForPrimary = groupedByTopic[primaryKey].orEmpty()
+                    val secondaryList =
+                        EssayCategoryUi.mergedSecondaryIds(primaryKey, essayCategoryConfig)
+                    val hasSecondaryCategories =
+                        secondaryList.isNotEmpty() && primaryKey != NotePrimaryCategory.FREESTYLE
+                    val groupedBySecondary =
+                        if (hasSecondaryCategories) {
+                            notesForPrimary.groupBy { note ->
+                                note.secondaryCategory.takeIf { it.isNotBlank() }
+                                    ?: UncategorizedSecondary
+                            }
+                        } else {
+                            emptyMap()
+                        }
                     val secondaryOrder =
-                        topicSecondaryDisplayOrder(secondaryList, groupedBySecondary)
-
-                    secondaryOrder.forEach { secondaryKey ->
-                        val notesForSecondary = groupedBySecondary[secondaryKey].orEmpty()
-                        val secondaryKeyFull = "$primaryKey:$secondaryKey"
-                        val isSecondaryExpanded = secondaryKeyFull !in collapsedSecondaries
-                        val isUngrouped = secondaryKey == UncategorizedSecondary
-
-                        stickyHeader(key = "secondary_sticky_$secondaryKeyFull") {
-                            Surface(
-                                color = AppColors.ScreenBackground,
-                                shadowElevation = 0.dp
-                            ) {
-                                SecondaryTopicGroupHeader(
-                                    label = secondaryKey,
-                                    count = notesForSecondary.size,
-                                    isExpanded = isSecondaryExpanded,
-                                    isUngrouped = isUngrouped,
-                                    onToggle = {
-                                        collapsedSecondaries = if (secondaryKeyFull in collapsedSecondaries) {
-                                            collapsedSecondaries - secondaryKeyFull
-                                        } else {
-                                            collapsedSecondaries + secondaryKeyFull
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
+                        if (hasSecondaryCategories) {
+                            topicSecondaryDisplayOrder(secondaryList, groupedBySecondary)
+                        } else {
+                            emptyList()
                         }
 
-                        if (isSecondaryExpanded && notesForSecondary.isNotEmpty()) {
-                            val groupedByDate = notesForSecondary
-                                .groupBy { it.recordedDate }
-                                .toList()
-                                .sortedByDescending { (date, _) -> date }
-
-                            groupedByDate.forEach { (date, dateNotes) ->
-                                items(
-                                    count = 1,
-                                    key = { _ -> "date_header_${secondaryKeyFull}_$date" }
-                                ) { _ ->
-                                    DateGroupHeader(date = date, indent = false)
-                                }
-                                items(
-                                    items = dateNotes,
-                                    key = { it.id }
-                                ) { note ->
-                                    NoteCard(
-                                        note = note,
-                                        variant = NoteCardVariant.TIMELINE,
-                                        onNoteClick = onOpenNoteEditor,
-                                        projectsById = projectsById,
-                                        expandable = true,
-                                        expanded = note.id == expandedNoteId,
-                                        onToggleExpand = { onToggleExpand(note.id) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(bottom = AppSpacing.BlockGap),
-                                        publishedActions = if (note.status == NoteStatus.PUBLISHED) {
-                                            publishedNoteActions(note)
-                                        } else {
-                                            null
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                    item(key = "nav_primary_$primaryKey") {
+                        val navExpanded = primaryKey in expandedTopicNavPrimaries
+                        TopicNavPrimaryRow(
+                            labelShort = rememberTopicPrimaryNavShortWithConfig(primaryKey, essayCategoryConfig),
+                            count = notesForPrimary.size,
+                            selected = selectedPrimary == primaryKey && selectedSecondary == null,
+                            expanded = navExpanded,
+                            showExpandToggle = hasSecondaryCategories,
+                            primaryText = headerPrimary,
+                            secondaryText = headerSecondary,
+                            onToggleExpand = {
+                                expandedTopicNavPrimaries =
+                                    if (primaryKey in expandedTopicNavPrimaries) {
+                                        expandedTopicNavPrimaries - primaryKey
+                                    } else {
+                                        expandedTopicNavPrimaries + primaryKey
+                                    }
+                            },
+                            onSelect = {
+                                selectedPrimary = primaryKey
+                                selectedSecondary = null
+                            },
+                        )
                     }
-                } else {
-                    val groupedByDate = notesForPrimary
-                        .groupBy { it.recordedDate }
-                        .toList()
-                        .sortedByDescending { (date, _) -> date }
 
-                    groupedByDate.forEach { (date, dateNotes) ->
+                    if (hasSecondaryCategories && primaryKey in expandedTopicNavPrimaries) {
                         items(
-                            count = 1,
-                            key = { _ -> "date_header_${primaryKey}_$date" }
-                        ) { _ ->
-                            DateGroupHeader(date = date, indent = false)
-                        }
-                        items(
-                            items = dateNotes,
-                            key = { it.id }
-                        ) { note ->
-                            NoteCard(
-                                note = note,
-                                variant = NoteCardVariant.TIMELINE,
-                                onNoteClick = onOpenNoteEditor,
-                                projectsById = projectsById,
-                                expandable = true,
-                                expanded = note.id == expandedNoteId,
-                                onToggleExpand = { onToggleExpand(note.id) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = AppSpacing.BlockGap),
-                                publishedActions = if (note.status == NoteStatus.PUBLISHED) {
-                                    publishedNoteActions(note)
-                                } else {
-                                    null
+                            items = secondaryOrder,
+                            key = { sec -> "nav_sec_${primaryKey}_$sec" }
+                        ) { secondaryKey ->
+                            val count = groupedBySecondary[secondaryKey].orEmpty().size
+                            TopicNavSecondaryRow(
+                                primaryKey = primaryKey,
+                                secondaryKey = secondaryKey,
+                                essayCategoryConfig = essayCategoryConfig,
+                                count = count,
+                                selected = selectedPrimary == primaryKey && selectedSecondary == secondaryKey,
+                                isUngrouped = secondaryKey == UncategorizedSecondary,
+                                primaryText = headerPrimary,
+                                secondaryText = headerSecondary,
+                                hintText = headerSecondary.copy(alpha = 0.75f),
+                                onSelect = {
+                                    selectedPrimary = primaryKey
+                                    selectedSecondary = secondaryKey
                                 }
                             )
                         }
                     }
-                }
-            }
-
-            if (index < visiblePrimaries.lastIndex) {
-                items(
-                    count = 1,
-                    key = { _ -> "spacer_$primaryKey" }
-                ) { _ ->
-                    Spacer(modifier = Modifier.height(AppSpacing.SectionMedium))
-                }
-            }
-        }
-        }
-    }
-}
-
-@Composable
-private fun TopicPrimarySixRow(
-    selectedPrimaryFilter: String?,
-    onSelectPrimary: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        topicTabCategoryOrder.forEach { key ->
-            val selected = selectedPrimaryFilter == key
-            val words = NoteCardConstants.primaryCategoryLabel(key).split(" ")
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable { onSelectPrimary(key) }
-                    .padding(vertical = 2.dp, horizontal = 1.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.heightIn(min = 30.dp)
-                ) {
-                    words.forEach { word ->
-                        Text(
-                            text = word,
-                            fontSize = 10.sp,
-                            lineHeight = 11.sp,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (selected) PrimaryTextColor else SecondaryTextColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    item(key = "nav_gap_$primaryKey") {
+                        Spacer(Modifier.height(4.dp))
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(
-                            if (selected) PrimaryTextColor else Color.Transparent,
-                            RoundedCornerShape(1.dp)
-                        )
-                )
             }
+        }
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .fillMaxHeight()
+                .background(Color(0xFFE8E8E8))
+        )
+        Box(
+            modifier = Modifier
+                .weight(0.75f)
+                .fillMaxHeight()
+        ) {
+            TopicNotesYearMonthTimeline(
+                notes = filteredNotes,
+                integratedLayout = integratedLayout,
+                accentColor = accentColor,
+                lightForeground = lightForeground,
+                headerPrimary = headerPrimary,
+                headerSecondary = headerSecondary,
+                projectsById = projectsById,
+                expandedNoteId = expandedNoteId,
+                onToggleExpand = onToggleExpand,
+                onOpenNoteEditor = onOpenNoteEditor,
+                publishedNoteActions = publishedNoteActions,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
 
 @Composable
-private fun TopicGroupHeader(
-    leadingEmoji: String,
-    label: String,
+private fun TopicNavPrimaryRow(
+    labelShort: String,
     count: Int,
-    isExpanded: Boolean,
-    onToggle: () -> Unit,
-    onCreateEssay: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    selected: Boolean,
+    expanded: Boolean,
+    showExpandToggle: Boolean,
+    primaryText: Color,
+    secondaryText: Color,
+    onToggleExpand: () -> Unit,
+    onSelect: () -> Unit,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 0.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) Color(0xFFEEF2FF) else Color.White
+        ),
+        border = if (selected) {
+            BorderStroke(1.dp, Color(0xFF8A7CF8).copy(alpha = 0.45f))
+        } else {
+            null
+        },
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier
-                .weight(1f)
-                .clickable(onClick = onToggle),
+            modifier = Modifier.padding(start = 2.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = leadingEmoji,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(
-                text = label,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = PrimaryTextColor
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "($count)",
-                fontSize = 14.sp,
-                color = SecondaryTextColor
-            )
-        }
-        if (onCreateEssay != null) {
-            IconButton(onClick = onCreateEssay) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Create essay",
-                    tint = SecondaryTextColor
+            if (showExpandToggle) {
+                IconButton(
+                    onClick = onToggleExpand,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = if (expanded) {
+                            Icons.Default.KeyboardArrowDown
+                        } else {
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight
+                        },
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        tint = secondaryText,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onSelect)
+            ) {
+                Text(
+                    text = labelShort,
+                    fontSize = 12.sp,
+                    lineHeight = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = primaryText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "($count)",
+                    fontSize = 8.sp,
+                    color = secondaryText
                 )
             }
-        }
-        IconButton(onClick = onToggle) {
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
-                contentDescription = if (isExpanded) "Collapse" else "Expand",
-                tint = SecondaryTextColor
-            )
         }
     }
 }
 
 @Composable
-private fun SecondaryTopicGroupHeader(
-    label: String,
+private fun TopicNavSecondaryRow(
+    primaryKey: String,
+    secondaryKey: String,
+    essayCategoryConfig: EssayCategoryConfig,
     count: Int,
-    isExpanded: Boolean,
+    selected: Boolean,
     isUngrouped: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    primaryText: Color,
+    secondaryText: Color,
+    hintText: Color,
+    onSelect: () -> Unit,
 ) {
-    val arrowIcon =
-        if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight
+    val label = rememberTopicSecondaryLabelWithConfig(primaryKey, secondaryKey, essayCategoryConfig)
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                start = TopicSecondaryIndent,
-                top = 2.dp,
-                bottom = 2.dp,
-                end = 0.dp
+            .clip(RoundedCornerShape(6.dp))
+            .background(
+                if (selected) Color(0xFFEEF2FF).copy(alpha = 0.65f) else Color.Transparent
             )
-            .clickable(onClick = onToggle),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .clickable(onClick = onSelect)
+            .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = arrowIcon,
-                contentDescription = null,
-                tint = AppColors.SecondaryText,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = label,
-                fontSize = 14.sp,
-                fontWeight = if (isUngrouped) FontWeight.Normal else FontWeight.Medium,
-                color = if (isUngrouped) AppColors.HintText else AppColors.PrimaryText
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "($count)",
-                fontSize = 13.sp,
-                color = AppColors.SecondaryText
-            )
-        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            lineHeight = 12.sp,
+            fontWeight = when {
+                selected -> FontWeight.SemiBold
+                isUngrouped -> FontWeight.Normal
+                else -> FontWeight.Medium
+            },
+            color = if (isUngrouped) hintText else primaryText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "($count)",
+            fontSize = 8.sp,
+            color = secondaryText,
+            maxLines = 1
+        )
     }
 }
 
@@ -975,13 +1181,13 @@ private fun EmptyTopicState(modifier: Modifier = Modifier) {
             Text(text = "📚", fontSize = 48.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No topic notes yet",
+                text = LocalizedStrings.get("essay_topic_empty_title"),
                 fontSize = 16.sp,
                 color = SecondaryTextColor
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Start your first topic entry",
+                text = LocalizedStrings.get("essay_topic_empty_subtitle"),
                 fontSize = 14.sp,
                 color = SecondaryTextColor.copy(alpha = 0.7f)
             )
@@ -1007,6 +1213,12 @@ private fun EssayProjectTabPane(
     taskViewModel: TaskViewModel,
     onOpenNoteEditor: (Long) -> Unit,
     onNavigateToNewNote: () -> Unit,
+    integratedNotes: Boolean,
+    accentColor: Color,
+    contentPrimary: Color,
+    contentSecondary: Color,
+    lightForeground: Boolean,
+    publishedNoteActions: (Note) -> PublishedNoteCardActions,
 ) {
     val projectNoteCounts = remember(notes) { projectNoteCountsByProject(notes) }
     if (projects.isEmpty()) {
@@ -1052,6 +1264,12 @@ private fun EssayProjectTabPane(
                     onNoteClick = onOpenNoteEditor,
                     onNavigateToNewNote = onNavigateToNewNote,
                     embedded = true,
+                    integratedNotes = integratedNotes,
+                    accentColor = accentColor,
+                    contentPrimary = contentPrimary,
+                    contentSecondary = contentSecondary,
+                    lightForeground = lightForeground,
+                    notePublishedActions = publishedNoteActions,
                 )
             }
         }

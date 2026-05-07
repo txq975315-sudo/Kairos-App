@@ -5,9 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.ui.mine.records.CheckInViewMode
+import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
+import com.example.kairosapplication.ui.mine.records.MineRecordsOverview
+import com.example.kairosapplication.ui.mine.records.MineRecordsScope
+import com.example.kairosapplication.ui.mine.records.MineRecordsStats
 import com.example.taskmodel.model.AllRecords
 import com.example.taskmodel.model.LocalProfile
 import com.example.taskmodel.model.MoodRecord
+import com.example.taskmodel.model.Task
 import com.example.taskmodel.model.WeeklyInsights
 import com.example.taskmodel.viewmodel.TaskUiState
 import java.time.LocalDate
@@ -15,6 +21,7 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -121,6 +128,60 @@ class MineViewModel(
             initialValue = true
         )
 
+    val tasks: StateFlow<List<Task>> = taskUiState
+        .map { it.tasks }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    val mineRecordsMetrics: StateFlow<List<MineRecordsMetric>> =
+        dataStoreManager.getMineRecordsMetricsEncoded()
+            .map { raw -> MineRecordsMetric.parseStored(raw) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = MineRecordsMetric.defaultSelection()
+            )
+
+    val mineRecordsScope: StateFlow<MineRecordsScope> =
+        dataStoreManager.getMineRecordsScopeEncoded()
+            .map { MineRecordsScope.fromStored(it) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = MineRecordsScope.ALL_TIME
+            )
+
+    val mineRecordsYear: StateFlow<Int> = dataStoreManager.getMineRecordsYearFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = LocalDate.now().year
+        )
+
+    val checkInViewMode: StateFlow<CheckInViewMode> =
+        dataStoreManager.getCheckInViewModeEncoded()
+            .map { CheckInViewMode.fromStored(it) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = CheckInViewMode.MONTH
+            )
+
+    val mineRecordsOverview: StateFlow<MineRecordsOverview> = combine(
+        taskUiState,
+        mineRecordsScope,
+        mineRecordsYear,
+    ) { ui, scope, year ->
+        MineRecordsStats.compute(ui, scope, year)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = MineRecordsOverview()
+    )
+
     fun loadProfile() {
         viewModelScope.launch {
             dataStoreManager.getProfile()
@@ -138,6 +199,31 @@ class MineViewModel(
     fun toggleWeeklyInsights(enabled: Boolean) {
         viewModelScope.launch {
             dataStoreManager.setWeeklyInsightsEnabled(enabled)
+        }
+    }
+
+    fun setMineRecordsMetrics(metrics: List<MineRecordsMetric>) {
+        viewModelScope.launch {
+            val next = metrics.distinct().ifEmpty { MineRecordsMetric.defaultSelection() }
+            dataStoreManager.setMineRecordsMetricsEncoded(MineRecordsMetric.encode(next))
+        }
+    }
+
+    fun setMineRecordsScope(scope: MineRecordsScope) {
+        viewModelScope.launch {
+            dataStoreManager.setMineRecordsScopeEncoded(MineRecordsScope.encode(scope))
+        }
+    }
+
+    fun setMineRecordsYear(year: Int) {
+        viewModelScope.launch {
+            dataStoreManager.setMineRecordsYear(year)
+        }
+    }
+
+    fun setCheckInViewMode(mode: CheckInViewMode) {
+        viewModelScope.launch {
+            dataStoreManager.setCheckInViewModeEncoded(CheckInViewMode.encode(mode))
         }
     }
 

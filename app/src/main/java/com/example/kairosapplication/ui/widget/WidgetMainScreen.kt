@@ -3,7 +3,6 @@ package com.example.kairosapplication.ui.widget
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,11 +14,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -60,7 +59,6 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.widget.WidgetTaskTitleClip
 import com.example.kairosapplication.widget.WidgetViewFactory
-import com.example.kairosapplication.widget.data.WidgetLayoutKind
 import com.example.kairosapplication.widget.data.WidgetSize
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
@@ -68,6 +66,7 @@ import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -98,9 +97,7 @@ fun WidgetMainScreen(
     val sortedToday = remember(todayTasks) { TaskUtils.sortTasks(todayTasks) }
     val completed = todayTasks.count { it.isCompleted }
     val total = todayTasks.size
-    val quote = taskViewModel.dailyQuoteDisplayText(
-        if (isZh) "纵有疾风起，人生不言弃" else "Even if the gale rises, life does not give up."
-    )
+    val quote = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default"))
     val dayName = remember(today, isZh) {
         if (isZh) {
             DateTimeFormatter.ofPattern("EEEE", Locale.CHINA).format(today)
@@ -168,7 +165,6 @@ fun WidgetMainScreen(
 
     var selectedSizeKey by rememberSaveable { mutableStateOf(WidgetSize._1X1.name) }
     val selectedSize = WidgetSize.valueOf(selectedSizeKey)
-    var selected3x1LayoutKindName by rememberSaveable { mutableStateOf(WidgetLayoutKind._3D.name) }
 
     Column(
         modifier = modifier
@@ -207,69 +203,27 @@ fun WidgetMainScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 WidgetSize._3X1 -> {
-                    val layoutKind = WidgetLayoutKind.valueOf(selected3x1LayoutKindName)
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = LocalizedStrings.stringFor(lang, "widget_layout_section"),
-                            fontSize = 12.sp,
-                            color = TextMuted,
-                            modifier = Modifier.padding(bottom = 6.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Split2x2WidgetPreviewCard(
+                            weekdayLabel = weekdayFullFor2x2,
+                            completed = completed,
+                            total = total,
+                            tasks = previewTasks,
+                            quote = quote,
+                            monthTitle = monthTitle2x2,
+                            monthGrid = monthGrid2x2Annotated,
+                            isZh = isZh
                         )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(bottom = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf(
-                                WidgetLayoutKind._3A,
-                                WidgetLayoutKind._3B,
-                                WidgetLayoutKind._3C,
-                                WidgetLayoutKind._3D,
-                            ).forEach { k ->
-                                val picked = k == layoutKind
-                                Text(
-                                    text = LocalizedStrings.stringFor(
-                                        lang,
-                                        widgetLayoutKindStringKey(k)
-                                    ),
-                                    fontSize = 12.sp,
-                                    fontWeight = if (picked) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (picked) TextPrimary else TextMuted,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .widthIn(min = 72.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(
-                                            if (picked) Color(0xFFE8E0FF) else Color(0xFFF5F5F5)
-                                        )
-                                        .clickable { selected3x1LayoutKindName = k.name }
-                                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                                )
-                            }
-                        }
-                        when (layoutKind) {
-                            WidgetLayoutKind._3D -> Widget3x1WeekQuotePreview(
-                                today = today,
-                                lang = lang,
-                                selectedDay = today,
-                                tasks = uiState.tasks,
-                                quote = quote,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            else -> Split2x2WidgetPreviewCard(
-                                weekdayLabel = weekdayFullFor2x2,
-                                completed = completed,
-                                total = total,
-                                tasks = previewTasks,
-                                quote = quote,
-                                monthTitle = monthTitle2x2,
-                                monthGrid = monthGrid2x2Annotated,
-                                isZh = isZh
-                            )
-                        }
+                        Widget3x1WeekQuotePreview(
+                            today = today,
+                            lang = lang,
+                            tasks = uiState.tasks,
+                            quote = quote,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
                 WidgetSize._3X3 -> SuperLargePreviewCard(
@@ -657,12 +611,21 @@ private fun Split2x2WidgetPreviewCard(
     }
 }
 
+private fun previewCalendarWeekCount(ym: YearMonth): Int {
+    val first = ym.atDay(1)
+    val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
+    val startGrid = ym.atDay(1).minusDays(offset.toLong())
+    val spanDays = ChronoUnit.DAYS.between(startGrid, ym.atEndOfMonth()).toInt() + 1
+    return kotlin.math.max(1, (spanDays + 6) / 7)
+}
+
 private fun monthGridPreviewAnnotated(ym: YearMonth, today: LocalDate): AnnotatedString {
     val first = ym.atDay(1)
     val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
     val startGrid = ym.atDay(1).minusDays(offset.toLong())
+    val numWeeks = previewCalendarWeekCount(ym)
     return buildAnnotatedString {
-        for (week in 0 until 6) {
+        for (week in 0 until numWeeks) {
             for (col in 0 until 7) {
                 val date = startGrid.plusDays((week * 7 + col).toLong())
                 val inMonth = YearMonth.from(date) == ym
@@ -685,7 +648,7 @@ private fun monthGridPreviewAnnotated(ym: YearMonth, today: LocalDate): Annotate
                 }
                 if (col < 6) append(' ')
             }
-            if (week < 5) append('\n')
+            if (week < numWeeks - 1) append('\n')
         }
     }
 }
@@ -712,16 +675,10 @@ private fun buildWidgetSideAnnotated(tasks: List<Task>, strikeCompleted: Boolean
     }
 }
 
-private fun widgetLayoutKindStringKey(kind: WidgetLayoutKind): String {
-    val suffix = kind.name.removePrefix("_").lowercase()
-    return "widget_layout_$suffix"
-}
-
 @Composable
 private fun Widget3x1WeekQuotePreview(
     today: LocalDate,
     lang: LocalizationManager.Language,
-    selectedDay: LocalDate,
     tasks: List<Task>,
     quote: String,
     modifier: Modifier = Modifier,
@@ -739,15 +696,17 @@ private fun Widget3x1WeekQuotePreview(
             .filter { it.isNotEmpty() }
             .take(7)
     }
-    val dayTasks = remember(tasks, selectedDay) {
-        TaskUtils.sortTasks(tasks.filter { it.taskDate == selectedDay })
+    val tasksByWeekday = remember(tasks, weekStart) {
+        (0..6).map { idx ->
+            val d = weekStart.plusDays(idx.toLong())
+            TaskUtils.sortTasks(tasks.filter { it.taskDate == d }).take(4)
+        }
     }
-    val todayActual = LocalDate.now()
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(218.dp)
+            .heightIn(min = 228.dp)
             .shadow(6.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(PreviewCardBg)
@@ -799,11 +758,7 @@ private fun Widget3x1WeekQuotePreview(
         ) {
             for (i in 0..6) {
                 val d = weekStart.plusDays(i.toLong())
-                val dayColor = when {
-                    d == selectedDay -> Color(0xFF1976D2)
-                    d == todayActual -> Color(0xFF4CAF50)
-                    else -> TextPrimary
-                }
+                val dayColor = if (d == today) Color(0xFF1976D2) else TextPrimary
                 Text(
                     text = d.dayOfMonth.toString(),
                     modifier = Modifier.weight(1f),
@@ -814,51 +769,47 @@ private fun Widget3x1WeekQuotePreview(
                 )
             }
         }
-        Column(
+        Row(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .padding(top = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            dayTasks.take(6).forEach { task ->
-                Row(
+            tasksByWeekday.forEach { colTasks ->
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 3.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    Text(
-                        text = if (task.isCompleted) "✓" else "○",
-                        fontSize = 12.sp,
-                        color = if (task.isCompleted) WidgetPurpleProgress else TextMuted
-                    )
-                    Text(
-                        text = task.title.ifBlank { "—" },
-                        fontSize = 12.sp,
-                        color = if (task.isCompleted) TextMuted else TextPrimary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(
-                                if (task.isCompleted) Color.Transparent
-                                else TaskUtils.getUrgencyColor(task.urgency).copy(alpha = 0.35f)
+                    if (colTasks.isEmpty()) {
+                        Text(
+                            text = "—",
+                            fontSize = 8.sp,
+                            color = TextMuted,
+                            maxLines = 1
+                        )
+                    } else {
+                        colTasks.forEach { task ->
+                            val snippet = WidgetTaskTitleClip.for3x3CalendarCell(task.title)
+                            Text(
+                                text = snippet,
+                                fontSize = 8.sp,
+                                color = if (task.isCompleted) TextMuted else TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(widget3x3PreviewTaskBackground(task.urgency, task.isCompleted))
+                                    .padding(horizontal = 2.dp, vertical = 1.dp)
                             )
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
-                }
-            }
-            if (dayTasks.isEmpty()) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("—", fontSize = 12.sp, color = TextMuted)
+                        }
+                    }
                 }
             }
         }
@@ -901,6 +852,7 @@ private fun SuperLargePreviewCard(
         val off = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
         ym.atDay(1).minusDays(off.toLong())
     }
+    val superLargeWeekCount = remember(ym) { previewCalendarWeekCount(ym) }
 
     Column(
         modifier = Modifier
@@ -959,7 +911,7 @@ private fun SuperLargePreviewCard(
             }
         }
         Spacer(Modifier.height(2.dp))
-        repeat(6) { w ->
+        repeat(superLargeWeekCount) { w ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -1012,7 +964,6 @@ private fun SuperLargePreviewCard(
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 1.dp)
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(widget3x3PreviewTaskBackground(t.urgency, t.isCompleted))
                                     .padding(horizontal = 2.dp, vertical = 1.dp)

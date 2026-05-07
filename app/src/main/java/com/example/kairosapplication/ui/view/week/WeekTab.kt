@@ -38,9 +38,12 @@ import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.components.NoteCardConstants
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.kairosapplication.ui.view.TimelineTaskCompactRow
 import com.example.kairosapplication.ui.view.ViewUiState
 import com.example.kairosapplication.ui.view.viewClickable
+import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
@@ -249,8 +252,13 @@ private fun WeekTimelineNoteBlock(
     onPublishedDelete: () -> Unit,
 ) {
     val barColor = NoteCardConstants.categoryColor(note.primaryCategory)
-    val topicLine = remember(note.primaryCategory) {
-        NoteCardConstants.primaryCategoryLabel(note.primaryCategory)
+    val freestyleLoc = rememberTopicPrimaryLabel(NotePrimaryCategory.FREESTYLE)
+    val primaryLoc = rememberTopicPrimaryLabel(note.primaryCategory)
+    val secondaryLoc = rememberTopicSecondaryLabel(note.primaryCategory, note.secondaryCategory)
+    val topicLine = when {
+        note.primaryCategory == NotePrimaryCategory.FREESTYLE -> freestyleLoc
+        secondaryLoc.isNotBlank() -> "$primaryLoc · $secondaryLoc"
+        else -> primaryLoc
     }
     val summaryLine = note.behaviorSummary.trim().ifBlank { "—" }
     val bodyPreview = remember(note.body) {

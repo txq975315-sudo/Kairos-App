@@ -176,17 +176,17 @@ fun MoodCard(
                         .height(clusterH)
                 ) {
                     EmojiConstants.CUSTOM_EMOJIS.forEachIndexed { i, emoji ->
-                        val (xo, yo) = moodEmojiClusterSlots().getOrNull(i) ?: return@forEachIndexed
+                        val (xo, yo) = moodEmojiClusterSlotsScaled().getOrNull(i) ?: return@forEachIndexed
                         Box(
                             modifier = Modifier
                                 .offset(xo, yo)
-                                .size(48.dp),
+                                .size(62.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             DraggableCustomEmojiItem(
                                 emojiItem = emoji,
-                                modifier = Modifier.size(44.dp),
-                                displaySize = 40.dp,
+                                modifier = Modifier.size(58.dp),
+                                displaySize = 56.dp,
                                 onDragStart = { root ->
                                     draggingIcon = emoji.id
                                     dragFingerRoot = root
@@ -332,7 +332,7 @@ fun MoodCard(
                     painter = painterResource(id = item.drawableResId),
                     contentDescription = LocalizedStrings.emojiLabel(item.id),
                     contentScale = ContentScale.Fit,
-                    modifier = dragMod.size(48.dp)
+                    modifier = dragMod.size(68.dp)
                 )
             } else {
                 Text(
@@ -350,19 +350,19 @@ private fun sundayStartOfWeekContaining(d: LocalDate): LocalDate {
     return d.minusDays((dow % 7).toLong())
 }
 
-/** Two loose rows: varied X gaps and ≥4 distinct top Y anchors (staggered). */
 /**
- * Non-overlapping 48×48 slots in a centered 256×102 region: five + four, second row staggered.
- * Distinct top Y values: 0 and 54 (row gap); slight vertical jitter on a few slots for ≥4 top anchors.
+ * Staggered slots in the fixed 256×102 cluster (~1.4× larger emoji than legacy 48×48 layout;
+ * second row overlaps slightly so everything stays inside the magic area height).
  */
-private fun moodEmojiClusterSlots(): List<Pair<Dp, Dp>> = listOf(
+/** Tighter positions; ~1.4× emoji with slight row overlap so both rows stay inside the fixed 256×102 cluster. */
+private fun moodEmojiClusterSlotsScaled(): List<Pair<Dp, Dp>> = listOf(
     0.dp to 0.dp,
-    52.dp to 2.dp,
-    104.dp to 0.dp,
-    156.dp to 3.dp,
-    208.dp to 1.dp,
-    26.dp to 54.dp,
-    78.dp to 56.dp,
-    130.dp to 54.dp,
-    182.dp to 55.dp
+    46.dp to 2.dp,
+    92.dp to 0.dp,
+    138.dp to 3.dp,
+    184.dp to 1.dp,
+    22.dp to 40.dp,
+    68.dp to 40.dp,
+    114.dp to 40.dp,
+    160.dp to 40.dp
 )

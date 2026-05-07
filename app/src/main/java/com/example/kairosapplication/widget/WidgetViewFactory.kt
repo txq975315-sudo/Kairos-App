@@ -33,8 +33,10 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1178,12 +1180,22 @@ object WidgetViewFactory {
         return views
     }
 
+    /** Weeks needed to cover [startGrid .. ym.end], full rows only — no extra trailing next-month row. */
+    private fun calendarGridWeekCount(ym: YearMonth): Int {
+        val first = ym.atDay(1)
+        val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
+        val startGrid = ym.atDay(1).minusDays(offset.toLong())
+        val spanDays = ChronoUnit.DAYS.between(startGrid, ym.atEndOfMonth()).toInt() + 1
+        return max(1, (spanDays + 6) / 7)
+    }
+
     private fun encode3x3CalendarWeeksJson(ym: YearMonth, today: LocalDate, tasks: List<Task>): String {
         val first = ym.atDay(1)
         val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
         val startGrid = ym.atDay(1).minusDays(offset.toLong())
         val weeks = JSONArray()
-        for (w in 0 until 6) {
+        val numWeeks = calendarGridWeekCount(ym)
+        for (w in 0 until numWeeks) {
             val days = JSONArray()
             for (c in 0 until 7) {
                 val date = startGrid.plusDays((w * 7 + c).toLong())

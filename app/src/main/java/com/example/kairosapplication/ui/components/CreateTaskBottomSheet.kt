@@ -1,7 +1,6 @@
 package com.example.kairosapplication.ui.components
 
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,13 +30,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.Label
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.text.rememberTaskTextProvider
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppTypography
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
@@ -86,8 +84,11 @@ internal data class CreateTaskMeta(
     val localImageUri: String?
 )
 
+private fun CreateTaskMeta.stripTaskImages(): CreateTaskMeta =
+    copy(emojiImage = null, localImageUri = null)
+
 private enum class IconSheetType {
-    TIME, URGENCY, LABEL, ATTACH, ATTACH_LOCAL
+    TIME, URGENCY, LABEL
 }
 
 /** Treat as repeating only when non-blank and not NONE. */
@@ -120,8 +121,8 @@ fun CreateTaskBottomSheet(
             CreateTaskMeta(
                 urgency = seed.urgency,
                 label = seed.label,
-                emojiImage = seed.emojiImage,
-                localImageUri = seed.localImageUri
+                emojiImage = null,
+                localImageUri = null
             )
         )
     }
@@ -155,8 +156,8 @@ fun CreateTaskBottomSheet(
                         timeBlock = timeBlock,
                         urgency = valueMeta.urgency,
                         label = valueMeta.label,
-                        emojiImage = valueMeta.emojiImage,
-                        localImageUri = valueMeta.localImageUri
+                        emojiImage = null,
+                        localImageUri = null
                     )
                 )
                 true
@@ -251,20 +252,6 @@ internal fun CreateTaskBottomSheet(
         }
     }
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) {
-            onMetaChange(meta.copy(emojiImage = null, localImageUri = uri.toString()))
-            iconSheetType = null
-            titleFocusRequester.requestFocus()
-            keyboardController?.show()
-        } else {
-            // User cancelled local picker: return to main input, not stuck in attachment mode
-            iconSheetType = null
-            titleFocusRequester.requestFocus()
-            keyboardController?.show()
-        }
-    }
-
     // Focus main field and show IME when sheet opens
     LaunchedEffect(Unit) {
         titleFocusRequester.requestFocus()
@@ -291,7 +278,7 @@ internal fun CreateTaskBottomSheet(
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Text(
-                text = config.timeBlock,
+                text = LocalizedStrings.timeBlockLabel(config.timeBlock),
                 modifier = Modifier.fillMaxWidth(),
                 color = config.titleColor,
                 fontSize = 22.sp,
@@ -325,7 +312,7 @@ internal fun CreateTaskBottomSheet(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        val success = onCreateTask(title, description, config.timeBlock, meta)
+                        val success = onCreateTask(title, description, config.timeBlock, meta.stripTaskImages())
                         if (success) {
                             keyboardController?.hide()
                             focusManager.clearFocus(force = true)
@@ -408,7 +395,7 @@ internal fun CreateTaskBottomSheet(
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Outlined.Label,
+                            imageVector = Icons.AutoMirrored.Outlined.Label,
                             contentDescription = taskText.contentDescLabelIcon,
                             tint = AppColors.IconNeutral,
                             modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
@@ -418,14 +405,6 @@ internal fun CreateTaskBottomSheet(
                             Text(text = "# ${meta.label}", fontSize = 12.sp, color = config.titleColor)
                         }
                     }
-                    Icon(
-                        imageVector = Icons.Default.AttachFile,
-                        contentDescription = taskText.contentDescAttachIcon,
-                        tint = AppColors.IconNeutral,
-                        modifier = Modifier.clickable {
-                            showIconSheet(IconSheetType.ATTACH)
-                        }
-                    )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             imageVector = Icons.Default.Mic,
@@ -499,7 +478,7 @@ internal fun CreateTaskBottomSheet(
                             ) {
                                 TaskConstants.TIME_BLOCKS.forEach { option ->
                                     OptionRow(
-                                        text = option,
+                                        text = LocalizedStrings.timeBlockLabel(option),
                                         leadingIcon = taskText.timeBlockIcons[option] ?: "•",
                                         selected = config.timeBlock == option,
                                         onClick = {
@@ -539,7 +518,7 @@ internal fun CreateTaskBottomSheet(
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            text = entry.value,
+                                            text = LocalizedStrings.get("task_urgency_${entry.key}"),
                                             fontSize = 15.sp,
                                             color = if (meta.urgency == entry.key) AppColors.PrimaryText else AppColors.SecondaryText
                                         )
@@ -601,73 +580,6 @@ internal fun CreateTaskBottomSheet(
                                         )
                                     }
                                 }
-                            }
-                        }
-                        IconSheetType.ATTACH -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight()
-                                    .verticalScroll(rememberScrollState())
-                            ) {
-                                OptionRow(text = taskText.attachEmojiOption, selected = meta.emojiImage != null, onClick = {})
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    taskText.attachEmojis.forEach { emoji ->
-                                        Text(
-                                            text = emoji,
-                                            fontSize = 24.sp,
-                                            modifier = Modifier.clickable {
-                                                onMetaChange(meta.copy(emojiImage = emoji, localImageUri = null))
-                                                closeIconSheetAndRestoreKeyboard()
-                                            }
-                                        )
-                                    }
-                                }
-                                OptionRow(
-                                    text = taskText.attachLocalOption,
-                                    selected = meta.localImageUri != null,
-                                    onClick = { iconSheetType = IconSheetType.ATTACH_LOCAL }
-                                )
-                            }
-                        }
-                        IconSheetType.ATTACH_LOCAL -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight()
-                                    .verticalScroll(rememberScrollState())
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = taskText.contentDescBack,
-                                        tint = AppColors.IconNeutral,
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .clickable { closeIconSheetAndRestoreKeyboard() }
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = taskText.localImageTitle,
-                                        fontSize = 15.sp,
-                                        color = AppColors.IconNeutral,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                OptionRow(
-                                    text = taskText.openLocalImagePicker,
-                                    selected = false,
-                                    leadingIcon = taskText.localPickerIcon,
-                                    onClick = { imagePickerLauncher.launch(taskText.imagePickerMime) }
-                                )
                             }
                         }
                     }

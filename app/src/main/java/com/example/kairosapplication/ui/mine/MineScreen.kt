@@ -55,11 +55,15 @@ fun MineScreen(
     onNavigateToMoodCalendar: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenTheme: () -> Unit,
+    onCustomizeAllRecords: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val profile by mineViewModel.profileState.collectAsState()
     val recordDays by mineViewModel.recordDays.collectAsState()
-    val allRecords by mineViewModel.allRecords.collectAsState()
+    val mineRecordsOverview by mineViewModel.mineRecordsOverview.collectAsState()
+    val mineRecordsMetrics by mineViewModel.mineRecordsMetrics.collectAsState()
+    val checkInViewMode by mineViewModel.checkInViewMode.collectAsState()
+    val tasks by mineViewModel.tasks.collectAsState()
     val weeklyInsights by mineViewModel.weeklyInsights.collectAsState()
     val weeklyInsightsEnabled by mineViewModel.weeklyInsightsEnabled.collectAsState()
     val todayMood by mineViewModel.todayMood.collectAsState()
@@ -148,9 +152,12 @@ fun MineScreen(
                 )
                 Spacer(Modifier.height(20.dp))
                 AllRecordsSection(
-                    distinctCompletionDays = allRecords.distinctCompletionDays,
-                    completedTasks = allRecords.completedTasks,
-                    todayIncompleteCount = allRecords.todayIncompleteCount
+                    overview = mineRecordsOverview,
+                    metrics = mineRecordsMetrics,
+                    tasks = tasks,
+                    checkInViewMode = checkInViewMode,
+                    onCheckInViewModeChange = { mineViewModel.setCheckInViewMode(it) },
+                    onCustomizeClick = onCustomizeAllRecords
                 )
                 Spacer(Modifier.height(20.dp))
                 ProfileCard(

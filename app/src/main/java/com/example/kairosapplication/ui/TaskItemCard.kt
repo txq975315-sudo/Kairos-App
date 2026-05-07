@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,11 +41,9 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import android.net.Uri
-import android.widget.ImageView
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
@@ -63,11 +61,9 @@ fun TaskItemCard(
 ) {
     val urgencyColor = TaskUtils.getUrgencyColor(task.urgency)
     val hasDescription = task.description.isNotBlank()
-    val hasImage = !task.emojiImage.isNullOrBlank() || !task.localImageUri.isNullOrBlank()
-    val isRepeating = task.repeatRule != TaskConstants.REPEAT_RULE_NONE
-    val baseCardHeight = 48.dp
-    val maxCardHeight = if (hasImage && hasDescription) 96.dp else baseCardHeight
-    val imageSize = if (hasImage) maxCardHeight else 0.dp
+    val titleFontSize = 15.sp
+    val descriptionFontSize = 10.sp
+    val minCardHeight = if (hasDescription) 58.dp else 48.dp
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -123,10 +119,44 @@ fun TaskItemCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = baseCardHeight, max = maxCardHeight)
+                    .heightIn(min = minCardHeight)
                     .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                TaskTagLeading(
+                    label = task.label,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .then(dragModifier)
+                        .clickable { onOpenDetail() },
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = task.title,
+                        fontSize = titleFontSize,
+                        fontWeight = FontWeight.Medium,
+                        color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
+                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    )
+                    if (hasDescription) {
+                        Text(
+                            text = task.description,
+                            fontSize = descriptionFontSize,
+                            color = Color(0xFF757575),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(12.dp))
+
                 Box(
                     modifier = Modifier
                         .size(22.dp)
@@ -147,82 +177,6 @@ fun TaskItemCard(
                             tint = Color(0xFF9E9E9E),
                             modifier = Modifier.size(14.dp)
                         )
-                    }
-                }
-                Spacer(Modifier.width(12.dp))
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(dragModifier)
-                ) {
-                    Row(Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onOpenDetail() },
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = task.title,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
-                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                            )
-                            if (hasDescription) {
-                                Text(
-                                    text = task.description,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF757575),
-                                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                                )
-                            }
-                            if (isRepeating) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Autorenew,
-                                        contentDescription = "Repeat task",
-                                        tint = Color(0xFF5C6BC0),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = formatRepeatRuleTag(task.repeatRule),
-                                        color = Color(0xFF5C6BC0),
-                                        fontSize = 12.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        if (hasImage) {
-                            Spacer(Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(imageSize)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFE0E0E0))
-                                    .clickable { onOpenDetail() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val emojiImage = task.emojiImage
-                                val localImageUri = task.localImageUri
-                                if (!emojiImage.isNullOrBlank()) {
-                                    Text(text = emojiImage, fontSize = 34.sp)
-                                } else if (!localImageUri.isNullOrBlank()) {
-                                    AndroidView(
-                                        factory = { ctx ->
-                                            ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-                                        },
-                                        update = { view ->
-                                            view.setImageURI(Uri.parse(localImageUri))
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -256,13 +210,30 @@ fun TaskItemCard(
     } else {
         TaskCardInner()
     }
-
 }
 
-private fun formatRepeatRuleTag(repeatRule: String): String {
-    return when {
-        repeatRule.startsWith("WEEKLY_") -> "Weekly · ${repeatRule.removePrefix("WEEKLY_")}"
-        repeatRule == TaskConstants.REPEAT_RULE_NONE -> "Does not repeat"
-        else -> repeatRule
+@Composable
+private fun TaskTagLeading(
+    label: String?,
+    modifier: Modifier = Modifier,
+) {
+    val emoji = when {
+        label.isNullOrBlank() -> TaskConstants.LABEL_ICONS[TaskConstants.LABEL_NONE]
+        else -> TaskConstants.LABEL_ICONS[label]
+    }
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        if (emoji != null) {
+            Text(text = emoji, fontSize = 15.sp)
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.Label,
+                contentDescription = null,
+                tint = Color(0xFF757575),
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }

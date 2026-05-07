@@ -30,10 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.ui.components.NoteCardConstants
+import com.example.kairosapplication.ui.topic.EssayCategoryUi
+import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabelWithConfig
+import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabelWithConfig
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.constants.NotePrimaryCategory
+import com.example.taskmodel.model.EssayCategoryConfig
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Project
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -41,7 +44,7 @@ import com.example.taskmodel.viewmodel.TaskViewModel
 @Composable
 internal fun EssayChangeTopicDialog(
     note: Note,
-    customSecondaryCategories: Map<String, List<String>>,
+    essayCategoryConfig: EssayCategoryConfig,
     onDismiss: () -> Unit,
     onConfirm: (primary: String, secondary: String) -> Unit
 ) {
@@ -55,8 +58,8 @@ internal fun EssayChangeTopicDialog(
     )
     var selPrimary by remember(note.id) { mutableStateOf(note.primaryCategory) }
     var selSecondary by remember(note.id) { mutableStateOf(note.secondaryCategory) }
-    val secondaries = remember(selPrimary, customSecondaryCategories) {
-        NoteCardConstants.mergedSecondaryLabels(selPrimary, customSecondaryCategories)
+    val secondaries = remember(selPrimary, essayCategoryConfig) {
+        EssayCategoryUi.mergedSecondaryIds(selPrimary, essayCategoryConfig)
     }
     LaunchedEffect(selPrimary) {
         if (NotePrimaryCategory.isTopic(selPrimary)) {
@@ -82,7 +85,7 @@ internal fun EssayChangeTopicDialog(
             ) {
                 Text("Primary topic", fontSize = 12.sp, color = SecondaryTextColor)
                 primaryKeys.forEach { key ->
-                    val label = NoteCardConstants.primaryCategoryLabel(key)
+                    val label = rememberTopicPrimaryLabelWithConfig(key, essayCategoryConfig)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -105,6 +108,7 @@ internal fun EssayChangeTopicDialog(
                     Spacer(Modifier.height(8.dp))
                     Text("Secondary topic", fontSize = 12.sp, color = SecondaryTextColor)
                     secondaries.forEach { sec ->
+                        val secLabel = rememberTopicSecondaryLabelWithConfig(selPrimary, sec, essayCategoryConfig)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -120,7 +124,7 @@ internal fun EssayChangeTopicDialog(
                                 selected = selSecondary == sec,
                                 onClick = { selSecondary = sec }
                             )
-                            Text(sec, fontSize = 13.sp, color = PrimaryTextColor, maxLines = 2)
+                            Text(secLabel, fontSize = 13.sp, color = PrimaryTextColor, maxLines = 2)
                         }
                     }
                 }
@@ -270,7 +274,7 @@ internal fun EssayDeletePublishedNoteDialog(
 fun PublishedNoteActionDialogsHost(
     resolveNote: (Long) -> Note?,
     noteProjects: List<Project>,
-    customSecondaryCategories: Map<String, List<String>>,
+    essayCategoryConfig: EssayCategoryConfig,
     taskViewModel: TaskViewModel,
     onNavigateToNewNote: () -> Unit,
     changeTopicNoteId: Long?,
@@ -287,7 +291,7 @@ fun PublishedNoteActionDialogsHost(
         resolveNote(nid)?.let { n ->
             EssayChangeTopicDialog(
                 note = n,
-                customSecondaryCategories = customSecondaryCategories,
+                essayCategoryConfig = essayCategoryConfig,
                 onDismiss = { onChangeTopicNoteId(null) },
                 onConfirm = { pri, sec ->
                     val topic = NotePrimaryCategory.isTopic(pri)

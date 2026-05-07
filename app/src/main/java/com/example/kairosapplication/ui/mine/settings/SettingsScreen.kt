@@ -68,7 +68,7 @@ fun SettingsScreen(
     onNavigateToLanguage: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     onNavigateToMisc: () -> Unit,
-    onOpenEssayTopics: () -> Unit,
+    onOpenTopicManage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -210,7 +210,7 @@ fun SettingsScreen(
                     icon = Icons.Outlined.AutoStories,
                     title = LocalizedStrings.get("topic_manage"),
                     subtitle = null,
-                    onClick = onOpenEssayTopics
+                    onClick = onOpenTopicManage
                 )
                 Spacer(Modifier.height(40.dp))
             }
