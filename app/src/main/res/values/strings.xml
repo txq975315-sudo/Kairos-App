@@ -160,6 +160,7 @@
     <string name="i18n_view_week_add_task">+ 添加任务</string>
     <string name="i18n_view_week_more_tasks">还有 %1$d 条任务</string>
     <string name="i18n_view_week_this_week"> · 本周</string>
+    <string name="i18n_view_day_today"> · 今天</string>
     <string name="i18n_view_month_summary">本月概览</string>
     <string name="i18n_view_metric_notes">笔记</string>
     <string name="i18n_view_metric_tasks">任务</string>

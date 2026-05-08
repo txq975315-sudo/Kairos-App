@@ -39,6 +39,7 @@ import com.example.kairosapplication.ui.components.CreateSheetConfig
 import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.kairosapplication.ui.components.CreateTaskMeta
 import com.example.kairosapplication.ui.view.month.MonthTab
+import com.example.kairosapplication.ui.view.today.DaySwitcher
 import com.example.kairosapplication.ui.view.today.TodayTab
 import com.example.kairosapplication.ui.view.week.WeekSwitcher
 import com.example.kairosapplication.ui.view.week.WeekTab
@@ -114,18 +115,30 @@ fun ViewScreen(
                     }
                 },
             )
-            if (selectedTabIndex == 1) {
-                Spacer(modifier = Modifier.height(8.dp))
-                WeekSwitcher(
-                    currentWeekRange = uiState.currentWeekRange,
-                    viewingCurrentWeek = uiState.viewingCurrentWeek,
-                    onPreviousWeek = { viewModel.switchToPreviousWeek() },
-                    onNextWeek = { viewModel.switchToNextWeek() },
-                    onResetToCurrentWeek = { viewModel.resetToCurrentWeek() },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            } else {
-                Spacer(modifier = Modifier.height(12.dp))
+            when (selectedTabIndex) {
+                0 -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    DaySwitcher(
+                        focusedDate = uiState.focusedDate,
+                        viewingCalendarToday = uiState.focusedDate == LocalDate.now(),
+                        onPreviousDay = { viewModel.shiftFocusedDateBy(-1) },
+                        onNextDay = { viewModel.shiftFocusedDateBy(1) },
+                        onJumpToToday = { viewModel.setFocusedDate(LocalDate.now()) },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                1 -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    WeekSwitcher(
+                        currentWeekRange = uiState.currentWeekRange,
+                        viewingCurrentWeek = uiState.viewingCurrentWeek,
+                        onPreviousWeek = { viewModel.switchToPreviousWeek() },
+                        onNextWeek = { viewModel.switchToNextWeek() },
+                        onResetToCurrentWeek = { viewModel.resetToCurrentWeek() },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                else -> Spacer(modifier = Modifier.height(12.dp))
             }
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
@@ -144,8 +157,6 @@ fun ViewScreen(
                         focusedDate = uiState.focusedDate,
                         uiState = uiState,
                         onToggleTaskComplete = { task -> taskViewModel.toggleTaskComplete(task) },
-                        onPreviousDay = { viewModel.shiftFocusedDateBy(-1) },
-                        onNextDay = { viewModel.shiftFocusedDateBy(1) },
                         onRequestOpenToday = onRequestOpenToday,
                         onRequestOpenEssay = onRequestOpenEssay,
                         expandedNoteId = expandedNoteId,

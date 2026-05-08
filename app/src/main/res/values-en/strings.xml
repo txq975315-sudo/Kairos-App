@@ -158,6 +158,7 @@
     <string name="i18n_view_week_add_task">+ Add task</string>
     <string name="i18n_view_week_more_tasks">+%1$d more tasks</string>
     <string name="i18n_view_week_this_week"> · This week</string>
+    <string name="i18n_view_day_today"> · Today</string>
     <string name="i18n_view_month_summary">This month</string>
     <string name="i18n_view_metric_notes">Notes</string>
     <string name="i18n_view_metric_tasks">Tasks</string>
