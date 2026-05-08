@@ -36,6 +36,10 @@ class TaskRepository(private val context: Context) {
         val essaysJson = stringPreferencesKey("essays_json")
         /** Essay id used as home daily quote; -1 if none */
         val dailyQuoteEssayId = longPreferencesKey("daily_quote_essay_id")
+        /** Custom text for daily quote (takes priority over essay/note source); blank if none */
+        val dailyQuoteCustomText = stringPreferencesKey("daily_quote_custom_text")
+        /** Note id used as home daily quote; -1 if none */
+        val dailyQuoteNoteId = longPreferencesKey("daily_quote_note_id")
         val noteCustomSecondariesJson = stringPreferencesKey("note_custom_secondary_categories_v1")
         val essayCategoryConfigJson = stringPreferencesKey("essay_category_config_v1")
     }
@@ -74,6 +78,21 @@ class TaskRepository(private val context: Context) {
         }
         .map { prefs ->
             val v = prefs[Keys.dailyQuoteEssayId] ?: -1L
+            if (v < 0) null else v
+        }
+
+    val dailyQuoteCustomTextFlow: Flow<String> = context.taskDataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { prefs -> prefs[Keys.dailyQuoteCustomText].orEmpty() }
+
+    val dailyQuoteNoteIdFlow: Flow<Long?> = context.taskDataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { prefs ->
+            val v = prefs[Keys.dailyQuoteNoteId] ?: -1L
             if (v < 0) null else v
         }
 
@@ -142,6 +161,26 @@ class TaskRepository(private val context: Context) {
     suspend fun setDailyQuoteEssayId(essayId: Long?) {
         context.taskDataStore.edit { prefs ->
             prefs[Keys.dailyQuoteEssayId] = essayId ?: -1L
+        }
+    }
+
+    suspend fun setDailyQuoteCustomText(text: String) {
+        context.taskDataStore.edit { prefs ->
+            prefs[Keys.dailyQuoteCustomText] = text
+        }
+    }
+
+    suspend fun setDailyQuoteNoteId(noteId: Long?) {
+        context.taskDataStore.edit { prefs ->
+            prefs[Keys.dailyQuoteNoteId] = noteId ?: -1L
+        }
+    }
+
+    suspend fun clearAllDailyQuoteSources() {
+        context.taskDataStore.edit { prefs ->
+            prefs[Keys.dailyQuoteEssayId] = -1L
+            prefs[Keys.dailyQuoteCustomText] = ""
+            prefs[Keys.dailyQuoteNoteId] = -1L
         }
     }
 

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Brightness6
 import androidx.compose.material.icons.outlined.Cached
 import androidx.compose.material.icons.outlined.Feedback
+import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Shield
@@ -68,6 +69,7 @@ fun SettingsScreen(
     onNavigateToLanguage: () -> Unit,
     onNavigateToPrivacy: () -> Unit,
     onNavigateToMisc: () -> Unit,
+    onNavigateToQuoteSettings: () -> Unit,
     onOpenTopicManage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -147,6 +149,12 @@ fun SettingsScreen(
                     title = LocalizedStrings.get("widget_settings"),
                     subtitle = null,
                     onClick = onNavigateToWidget
+                )
+                SettingsProtoRow(
+                    icon = Icons.Outlined.FormatQuote,
+                    title = LocalizedStrings.get("main_daily_sentence"),
+                    subtitle = null,
+                    onClick = onNavigateToQuoteSettings
                 )
                 SettingsProtoRow(
                     icon = Icons.Outlined.UploadFile,

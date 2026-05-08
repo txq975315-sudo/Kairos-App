@@ -76,13 +76,13 @@ import com.example.kairosapplication.ui.mine.settings.SettingsScreen
 import com.example.kairosapplication.ui.mine.settings.SettingsViewModel
 import com.example.kairosapplication.ui.mine.settings.ThemeSettingsScreen
 import com.example.kairosapplication.ui.mine.settings.WidgetSettingsScreen
+import com.example.kairosapplication.ui.quote.QuoteSettingScreen
 import com.example.kairosapplication.ui.topic.manage.TopicManageHubScreen
 import com.example.kairosapplication.ui.topic.manage.TopicPrimaryEditScreen
 import com.example.kairosapplication.ui.view.ViewScreen
 import com.example.kairosapplication.ui.widget.WidgetMainScreen
 import com.example.kairosapplication.widget.WidgetClickHandler
 import com.example.kairosapplication.widget.WidgetManager
-import com.example.kairosapplication.ui.common.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -187,6 +187,7 @@ fun MainScreen(
     var showLanguageSettings by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showMiscSettings by remember { mutableStateOf(false) }
+    var showQuoteSettings by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
     val essayNavController = rememberNavController()
@@ -200,7 +201,7 @@ fun MainScreen(
             (selectedTab == AppTab.Mine &&
                 (showTopicManageHub || showMineAllRecords || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
                     showImportScreen || showNotificationSettings || showThemeSettings || showMoodSettings ||
-                    showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings))
+                    showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings || showQuoteSettings))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
     var essayOpenTopicPrimary by remember { mutableStateOf<String?>(null) }
@@ -222,6 +223,7 @@ fun MainScreen(
             showLanguageSettings = false
             showPrivacySettings = false
             showMiscSettings = false
+            showQuoteSettings = false
         }
     }
 
@@ -333,7 +335,10 @@ fun MainScreen(
                         )
                     }
                     composable("quote_settings") {
-                        QuoteSettingScreen(onBack = { navController.popBackStack() })
+                        QuoteSettingScreen(
+                            taskViewModel = taskViewModel,
+                            onBack = { navController.popBackStack() }
+                        )
                     }
                 }
             } else if (selectedTab == AppTab.Essay) {
@@ -455,6 +460,10 @@ fun MainScreen(
                             showSettingsScreen = true
                         }
                     )
+                    showQuoteSettings -> QuoteSettingScreen(
+                        taskViewModel = taskViewModel,
+                        onBack = { showQuoteSettings = false }
+                    )
                     showSettingsScreen -> SettingsScreen(
                         onBack = { showSettingsScreen = false },
                         localizationManager = localizationManager,
@@ -494,6 +503,10 @@ fun MainScreen(
                         onNavigateToMisc = {
                             showSettingsScreen = false
                             showMiscSettings = true
+                        },
+                        onNavigateToQuoteSettings = {
+                            showSettingsScreen = false
+                            showQuoteSettings = true
                         },
                         onOpenTopicManage = {
                             showSettingsScreen = false
@@ -573,28 +586,6 @@ fun MainScreen(
                         context.findActivity()?.recreate()
                     }
                 },
-            )
-        }
-    }
-}
-
-@Composable
-private fun QuoteSettingScreen(onBack: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundColor)
-            .statusBarsPadding()
-    ) {
-        CommonBackButton(onClick = onBack)
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = LocalizedStrings.get("main_daily_sentence"),
-                fontSize = 22.sp,
-                color = SecondaryTextColor
             )
         }
     }

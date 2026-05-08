@@ -39,6 +39,10 @@ data class TaskUiState(
     val onboardingHandled: Boolean = true,
     val essays: List<Essay> = emptyList(),
     val dailyQuoteEssayId: Long? = null,
+    /** User-typed custom text for daily quote; empty means not set */
+    val dailyQuoteCustomText: String = "",
+    /** Note id used as daily quote source; null means not set */
+    val dailyQuoteNoteId: Long? = null,
     /** Essay module (Room) — published notes for timeline / topic views */
     val notePublished: List<Note> = emptyList(),
     /** Essay module (Room) — inbox notes */
@@ -84,25 +88,37 @@ class TaskViewModel(
             repository.onboardingHandledFlow,
             refreshingFromBus
         ) { tasks, onboardingHandled, _ ->
-            Pair(tasks, onboardingHandled)
+            Triple(tasks, onboardingHandled, refreshingFromBus.value)
         },
         repository.essaysFlow,
         repository.dailyQuoteEssayIdFlow,
-        noteRepository.observeNoteRoomState(),
-        repository.essayCategoryConfigFlow
-    ) { taskPair, essays, dailyQuoteEssayId, noteRoom: NoteRoomState, categoryConfig ->
-        val (tasks, onboardingHandled) = taskPair
-        TaskUiState(
-            tasks = tasks,
-            onboardingHandled = onboardingHandled,
-            essays = essays,
-            dailyQuoteEssayId = dailyQuoteEssayId,
+        repository.dailyQuoteCustomTextFlow,
+        repository.dailyQuoteNoteIdFlow
+    ) { taskTriple, essays, dailyQuoteEssayId, dailyQuoteCustomText, dailyQuoteNoteId ->
+        Pair(
+            TaskUiState(
+                tasks = taskTriple.first,
+                onboardingHandled = taskTriple.second,
+                essays = essays,
+                dailyQuoteEssayId = dailyQuoteEssayId,
+                dailyQuoteCustomText = dailyQuoteCustomText,
+                dailyQuoteNoteId = dailyQuoteNoteId,
+            ),
+            taskTriple.third // pass refreshingFromBus for outer combine
+        )
+    }.combine(
+        noteRepository.observeNoteRoomState()
+    ) { pair, noteRoom ->
+        pair.first.copy(
             notePublished = noteRoom.published,
             noteInbox = noteRoom.inbox,
             noteProjects = noteRoom.projects,
             noteTrash = noteRoom.trash,
-            essayCategoryConfig = categoryConfig,
         )
+    }.combine(
+        repository.essayCategoryConfigFlow
+    ) { partial, categoryConfig ->
+        partial.copy(essayCategoryConfig = categoryConfig)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -233,6 +249,30 @@ class TaskViewModel(
             val updated = current.map { it.copy(isDailyQuote = it.id == essayId) }
             repository.saveEssays(updated)
             repository.setDailyQuoteEssayId(essayId)
+            repository.setDailyQuoteCustomText("")
+            repository.setDailyQuoteNoteId(null)
+        }
+    }
+
+    fun setDailyQuoteCustomText(text: String) {
+        viewModelScope.launch {
+            repository.setDailyQuoteCustomText(text)
+            // Clear other sources when setting custom text
+            repository.setDailyQuoteEssayId(null)
+            repository.setDailyQuoteNoteId(null)
+            val current = repository.essaysFlow.first()
+            repository.saveEssays(current.map { it.copy(isDailyQuote = false) })
+        }
+    }
+
+    fun setDailyQuoteFromNote(noteId: Long) {
+        viewModelScope.launch {
+            repository.setDailyQuoteNoteId(noteId)
+            // Clear other sources
+            repository.setDailyQuoteEssayId(null)
+            repository.setDailyQuoteCustomText("")
+            val current = repository.essaysFlow.first()
+            repository.saveEssays(current.map { it.copy(isDailyQuote = false) })
         }
     }
 
@@ -244,13 +284,45 @@ class TaskViewModel(
         }
     }
 
-    /** Home daily quote: first line of selected Essay, or [defaultText] if none. */
+    /** Reset all daily quote sources to default */
+    fun resetDailyQuote() {
+        viewModelScope.launch {
+            val current = repository.essaysFlow.first()
+            repository.saveEssays(current.map { it.copy(isDailyQuote = false) })
+            repository.clearAllDailyQuoteSources()
+        }
+    }
+
+    /** Home daily quote: custom text > essay > note > [defaultText]. */
     fun dailyQuoteDisplayText(defaultText: String): String {
-        val id = uiState.value.dailyQuoteEssayId ?: return defaultText
-        val essay = uiState.value.essays.find { it.id == id } ?: return defaultText
-        val line = essay.body.trim().lineSequence().firstOrNull()?.trim().orEmpty()
-        if (line.isEmpty()) return defaultText
-        return if (line.length > 200) line.take(200) + "…" else line
+        val state = uiState.value
+        // Priority 1: custom text
+        val custom = state.dailyQuoteCustomText.trim()
+        if (custom.isNotEmpty()) return custom
+        // Priority 2: essay
+        val id = state.dailyQuoteEssayId
+        if (id != null) {
+            val essay = state.essays.find { it.id == id }
+            val line = essay?.body?.trim()?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+            if (line.isNotEmpty()) return if (line.length > 200) line.take(200) + "…" else line
+        }
+        // Priority 3: note
+        val noteId = state.dailyQuoteNoteId
+        if (noteId != null) {
+            val note = state.notePublished.find { it.id == noteId }
+            val line = note?.body?.trim()?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+            if (line.isNotEmpty()) return if (line.length > 200) line.take(200) + "…" else line
+        }
+        return defaultText
+    }
+
+    /** Returns the current quote source type: "custom", "essay", "note", or "default" */
+    fun dailyQuoteSourceType(): String {
+        val state = uiState.value
+        if (state.dailyQuoteCustomText.trim().isNotEmpty()) return "custom"
+        if (state.dailyQuoteEssayId != null) return "essay"
+        if (state.dailyQuoteNoteId != null) return "note"
+        return "default"
     }
 
     fun pendingTaskCountForDate(date: LocalDate): Int =
