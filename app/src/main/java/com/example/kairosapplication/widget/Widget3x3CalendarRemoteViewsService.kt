@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.view.Gravity
 import android.util.TypedValue
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -161,6 +162,7 @@ private class Widget3x3CalendarRemoteViewsFactory(
                 }
                 views.setInt(lid, "setBackgroundColor", WidgetTaskStyle.widget3x3TaskLineBackgroundArgb(urg, done))
                 views.setBoolean(lid, "setIncludeFontPadding", false)
+                views.setInt(lid, "setGravity", Gravity.CENTER)
                 val pad = TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_DIP,
                     1f,

@@ -60,7 +60,8 @@ object AppShapes {
     val SheetTopRadius = 25.dp
     val CardRadius = 12.dp
     val TimeBlockRadius = 16.dp
-    val BottomBarSelectedRadius = 20.dp // Figma ~18–21dp; use 20dp
+    /** Less pill-shaped than full roundrect; tighter than legacy 20dp. */
+    val BottomBarSelectedRadius = 11.dp
     val CircularButton = 999.dp
 }
 

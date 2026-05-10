@@ -63,8 +63,6 @@ import com.example.kairosapplication.widget.WidgetViewFactory
 import com.example.kairosapplication.widget.data.WidgetSize
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
-import com.example.taskmodel.util.ColorUtils.parseHexToArgb
-import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -316,6 +314,7 @@ private fun SmallPreviewsRow(
         }
         Box(modifier = Modifier.weight(1f)) {
             Preview1BCard(
+                headerDateLabel = dayNum,
                 completed = completed,
                 total = total,
                 quote = quote,
@@ -360,8 +359,8 @@ private fun Preview1ACard(
         ) {
             val frac = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
             Box(contentAlignment = Alignment.Center) {
-                Canvas(modifier = Modifier.size(88.dp)) {
-                    val stroke = 6.dp.toPx()
+                Canvas(modifier = Modifier.size(72.dp)) {
+                    val stroke = 5.dp.toPx()
                     val diameter = size.minDimension
                     drawArc(
                         color = WidgetPurpleTrack,
@@ -383,20 +382,21 @@ private fun Preview1ACard(
                     )
                 }
                 Text(
-                    text = if (total > 0) "$completed / $total" else "0 / 0",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    text = if (total > 0) "$completed/$total" else "0/0",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
             }
         }
         Text(
             text = quote,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             color = TextQuote,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            lineHeight = 12.sp,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -404,13 +404,13 @@ private fun Preview1ACard(
 
 @Composable
 private fun Preview1BCard(
+    headerDateLabel: String,
     completed: Int,
     total: Int,
     quote: String,
     tasks: List<Task>,
     modifier: Modifier = Modifier
 ) {
-    val urgencyColorConfig = LocalUrgencyConfig.current
     Column(
         modifier = modifier
             .shadow(6.dp, RoundedCornerShape(20.dp))
@@ -425,11 +425,48 @@ private fun Preview1BCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (total > 0) "$completed/$total" else "0/0",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
+                headerDateLabel,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
+            Box(
+                modifier = Modifier.padding(end = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val frac = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                Canvas(modifier = Modifier.size(38.dp)) {
+                    val stroke = 3.dp.toPx()
+                    val diameter = size.minDimension
+                    drawArc(
+                        color = WidgetPurpleTrack,
+                        startAngle = -90f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        topLeft = androidx.compose.ui.geometry.Offset.Zero,
+                        size = Size(diameter, diameter),
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    )
+                    drawArc(
+                        color = WidgetPurpleProgress,
+                        startAngle = -90f,
+                        sweepAngle = 360f * frac,
+                        useCenter = false,
+                        topLeft = androidx.compose.ui.geometry.Offset.Zero,
+                        size = Size(diameter, diameter),
+                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                    )
+                }
+                Text(
+                    text = if (total > 0) "$completed/$total" else "0/0",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            }
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = null,
@@ -437,12 +474,12 @@ private fun Preview1BCard(
                 modifier = Modifier.size(22.dp)
             )
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(6.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             val rows = if (tasks.isEmpty()) {
                 List(3) { null as Task? }
@@ -451,41 +488,45 @@ private fun Preview1BCard(
             }
             rows.forEach { task ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 22.dp),
+                    horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (task != null) {
+                        val markChar = if (task.isCompleted) "✓" else "○"
+                        Text(
+                            text = markChar,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (task.isCompleted) WidgetPurpleProgress else TextMuted,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                    } else {
+                        Spacer(Modifier.width(19.dp))
+                    }
+                    val done = task?.isCompleted == true
                     Text(
                         text = task?.title?.takeIf { it.isNotBlank() } ?: "—",
-                        fontSize = 12.sp,
-                        color = TextPrimary,
+                        fontSize = 11.sp,
+                        color = if (done) TextMuted else TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (done) TextDecoration.LineThrough else null,
                         modifier = Modifier.weight(1f)
-                    )
-                    val ringColor = if (task == null) {
-                        TextMuted
-                    } else if (task.isCompleted) {
-                        WidgetPurpleProgress
-                    } else {
-                        Color(parseHexToArgb(urgencyColorConfig.colorForLevel(task.urgency)))
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, ringColor, CircleShape)
                     )
                 }
             }
         }
         Text(
             text = quote,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             color = TextQuote,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            lineHeight = 12.sp,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -660,7 +701,7 @@ private fun monthGridPreviewAnnotated(ym: YearMonth, today: LocalDate): Annotate
 
 private fun widget3x3PreviewTaskBackground(urgency: Int, done: Boolean): Color =
     if (done) TextMuted.copy(alpha = 0.38f)
-    else TaskUtils.getUrgencyColor(urgency).copy(alpha = 0.45f)
+    else TaskUtils.getUrgencyColor(urgency).copy(alpha = 0.28f)
 
 private fun buildWidgetSideAnnotated(tasks: List<Task>, strikeCompleted: Boolean) = buildAnnotatedString {
     if (tasks.isEmpty()) {
@@ -749,7 +790,7 @@ private fun Widget3x1WeekQuotePreview(
                 Text(
                     text = label,
                     modifier = Modifier.weight(1f),
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                     color = TextMuted,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -768,8 +809,8 @@ private fun Widget3x1WeekQuotePreview(
                 Text(
                     text = d.dayOfMonth.toString(),
                     modifier = Modifier.weight(1f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal,
                     color = dayColor,
                     textAlign = TextAlign.Center,
                 )
@@ -788,32 +829,48 @@ private fun Widget3x1WeekQuotePreview(
                         .weight(1f)
                         .fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     if (colTasks.isEmpty()) {
-                        Text(
-                            text = "—",
-                            fontSize = 8.sp,
-                            color = TextMuted,
-                            maxLines = 1
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(18.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color(0xFFF0F0F0)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "—",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextMuted,
+                                maxLines = 1,
+                            )
+                        }
                     } else {
                         colTasks.forEach { task ->
                             val snippet = WidgetTaskTitleClip.for3x3CalendarCell(task.title)
-                            Text(
-                                text = snippet,
-                                fontSize = 8.sp,
-                                color = if (task.isCompleted) TextMuted else TextPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                                textAlign = TextAlign.Center,
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(widget3x3PreviewTaskBackground(task.urgency, task.isCompleted))
-                                    .padding(horizontal = 2.dp, vertical = 1.dp)
-                            )
+                                    .height(18.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(widget3x3PreviewTaskBackground(task.urgency, task.isCompleted)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = snippet,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (task.isCompleted) TextMuted else TextPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 2.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -909,7 +966,7 @@ private fun SuperLargePreviewCard(
                 Text(
                     text = label,
                     modifier = Modifier.weight(1f),
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = TextMuted,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -943,7 +1000,7 @@ private fun SuperLargePreviewCard(
                             ) {
                                 Text(
                                     text = date.dayOfMonth.toString(),
-                                    fontSize = 10.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
                                     maxLines = 1
@@ -952,29 +1009,39 @@ private fun SuperLargePreviewCard(
                         } else {
                             Text(
                                 text = date.dayOfMonth.toString(),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Normal,
                                 color = if (inMonth) TextPrimary else Color(0xFFBDBDBD),
                                 textAlign = TextAlign.Center,
                                 maxLines = 1
                             )
                         }
-                        dayTasks.forEach { t ->
+                        Spacer(Modifier.height(3.dp))
+                        dayTasks.forEachIndexed { idx, t ->
                             val snippet = WidgetTaskTitleClip.for3x3CalendarCell(t.title)
-                            Text(
-                                text = snippet,
-                                fontSize = 8.sp,
-                                color = if (t.isCompleted) TextMuted else TextPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                textDecoration = if (t.isCompleted) TextDecoration.LineThrough else null,
-                                textAlign = TextAlign.Center,
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(widget3x3PreviewTaskBackground(t.urgency, t.isCompleted))
-                                    .padding(horizontal = 2.dp, vertical = 1.dp)
-                            )
+                                    .height(18.dp)
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(widget3x3PreviewTaskBackground(t.urgency, t.isCompleted)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = snippet,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (t.isCompleted) TextMuted else TextPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textDecoration = if (t.isCompleted) TextDecoration.LineThrough else null,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 2.dp),
+                                )
+                            }
+                            if (idx < dayTasks.lastIndex) {
+                                Spacer(Modifier.height(3.dp))
+                            }
                         }
                     }
                 }

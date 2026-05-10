@@ -129,11 +129,9 @@ object WidgetContrast {
     private fun apply1x1b(config: WidgetConfig, views: RemoteViews, primary: Int, muted: Int) {
         if (config.layoutKind != WidgetLayoutKind._1B) return
         runCatching {
-            views.setTextColor(R.id.widget_todo_stats_1b, muted)
+            views.setTextColor(R.id.widget_1b_header_progress_text, primary)
             views.setTextColor(R.id.widget_date, primary)
-            views.setTextColor(R.id.widget_todo_0_mark, muted)
-            views.setTextColor(R.id.widget_todo_1_mark, muted)
-            views.setTextColor(R.id.widget_todo_2_mark, muted)
+            // Todo row mark colors come from WidgetViewFactory.bind1x1TodoRows (completed vs incomplete).
         }
     }
 }

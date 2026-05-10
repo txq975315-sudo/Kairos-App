@@ -22,28 +22,54 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:paddingStart="8dp"
-            android:paddingTop="8dp"
+            android:paddingTop="6dp"
             android:paddingEnd="28dp"
-            android:paddingBottom="8dp">
+            android:paddingBottom="6dp">
 
-            <TextView
-                android:id="@+id/widget_date"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:text="05-06"
-                android:textColor="#1A1A1A"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/widget_todo_stats_1b"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="2/5"
-                android:textColor="#9E9E9E"
-                android:textSize="10sp" />
+                <TextView
+                    android:id="@+id/widget_date"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:text="05-06"
+                    android:textColor="#1A1A1A"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="2dp">
+
+                    <ProgressBar
+                        android:id="@+id/widget_1b_header_progress"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/widget_progress_drawable"
+                        android:rotation="-90" />
+
+                    <TextView
+                        android:id="@+id/widget_1b_header_progress_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="0/0"
+                        android:textColor="#1A1A1A"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/widget_todo_row_0"
@@ -51,7 +77,10 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:gravity="center_vertical"
+                android:minHeight="22dp"
                 android:orientation="horizontal"
+                android:paddingTop="1dp"
+                android:paddingBottom="1dp"
                 android:visibility="gone">
 
                 <TextView
@@ -59,9 +88,10 @@
                     android:layout_width="16dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
+                    android:includeFontPadding="false"
                     android:text="○"
                     android:textColor="#9E9E9E"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/widget_todo_0_title"
@@ -69,9 +99,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ellipsize="end"
+                    android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#1A1A1A"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -80,7 +111,10 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:gravity="center_vertical"
+                android:minHeight="22dp"
                 android:orientation="horizontal"
+                android:paddingTop="1dp"
+                android:paddingBottom="1dp"
                 android:visibility="gone">
 
                 <TextView
@@ -88,9 +122,10 @@
                     android:layout_width="16dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
+                    android:includeFontPadding="false"
                     android:text="○"
                     android:textColor="#9E9E9E"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/widget_todo_1_title"
@@ -98,9 +133,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ellipsize="end"
+                    android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#1A1A1A"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -109,7 +145,10 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:gravity="center_vertical"
+                android:minHeight="22dp"
                 android:orientation="horizontal"
+                android:paddingTop="1dp"
+                android:paddingBottom="1dp"
                 android:visibility="gone">
 
                 <TextView
@@ -117,9 +156,10 @@
                     android:layout_width="16dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
+                    android:includeFontPadding="false"
                     android:text="○"
                     android:textColor="#9E9E9E"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/widget_todo_2_title"
@@ -127,9 +167,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ellipsize="end"
+                    android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#1A1A1A"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <TextView
@@ -137,11 +178,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
-                android:gravity="center_vertical"
+                android:gravity="center_horizontal|top"
+                android:lineSpacingExtra="-1dp"
+                android:lineSpacingMultiplier="0.92"
                 android:maxLines="2"
                 android:text=""
                 android:textColor="#9E9E9E"
-                android:textSize="9sp" />
+                android:textSize="10sp" />
         </LinearLayout>
 
         <ImageButton

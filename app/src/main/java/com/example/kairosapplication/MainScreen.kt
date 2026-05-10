@@ -1,12 +1,18 @@
 ﻿package com.example.kairosapplication
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Edit
@@ -15,10 +21,8 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +52,7 @@ import com.example.kairosapplication.i18n.findActivity
 import com.example.kairosapplication.notification.NotificationHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -85,6 +90,8 @@ import com.example.kairosapplication.ui.view.ViewScreen
 import com.example.kairosapplication.ui.widget.WidgetMainScreen
 import com.example.kairosapplication.widget.WidgetClickHandler
 import com.example.kairosapplication.widget.WidgetManager
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -279,36 +286,10 @@ fun MainScreen(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                NavigationBar(
-                    containerColor = Color.White,
-                    tonalElevation = 0.dp
-                ) {
-                    AppTab.entries.forEach { tab ->
-                        val selected = selectedTab == tab
-                        val labelText = mainNavLabel(tab)
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = { selectedTab = tab },
-                            icon = {
-                                Icon(imageVector = tab.icon, contentDescription = labelText)
-                            },
-                            label = {
-                                Text(
-                                    text = labelText,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = PrimaryTextColor,
-                                selectedTextColor = PrimaryTextColor,
-                                unselectedIconColor = SecondaryTextColor,
-                                unselectedTextColor = SecondaryTextColor,
-                                indicatorColor = BackgroundColor
-                            )
-                        )
-                    }
-                }
+                MainAppBottomBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it },
+                )
             }
         }
     ) { innerPadding ->
@@ -609,6 +590,75 @@ fun MainScreen(
                     }
                 },
             )
+        }
+    }
+}
+
+/**
+ * Compact bottom nav aligned with Today chrome: [BackgroundColor] bar, tight vertical insets;
+ * selected pill wraps icon + label together.
+ */
+@Composable
+private fun MainAppBottomBar(
+    selectedTab: AppTab,
+    onTabSelected: (AppTab) -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        color = BackgroundColor,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp, bottom = 2.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            AppTab.entries.forEach { tab ->
+                val selected = selectedTab == tab
+                val labelText = mainNavLabel(tab)
+                val interaction = remember(tab) { MutableInteractionSource() }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(
+                            interactionSource = interaction,
+                            indication = null,
+                        ) { onTabSelected(tab) }
+                        .padding(top = 0.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
+                            .background(
+                                if (selected) AppColors.BottomBarSelectedContainer
+                                else Color.Transparent,
+                            )
+                            .padding(horizontal = 16.dp, vertical = 5.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = labelText,
+                                modifier = Modifier.size(22.dp),
+                                tint = if (selected) PrimaryTextColor else SecondaryTextColor,
+                            )
+                            Text(
+                                text = labelText,
+                                fontSize = 11.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (selected) PrimaryTextColor else SecondaryTextColor,
+                                modifier = Modifier.padding(top = 3.dp),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

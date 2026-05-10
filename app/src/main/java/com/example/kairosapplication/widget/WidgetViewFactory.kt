@@ -406,9 +406,14 @@ object WidgetViewFactory {
         val views = RemoteViews(context.packageName, R.layout.widget_1x1_1b)
         views.setTextViewText(R.id.widget_date, state.dateText)
         val showTasks = config.displayConfig.showTasks
+        val progressPercent1b = when {
+            !showTasks || state.total <= 0 -> 0
+            else -> ((state.completed * 100) / state.total).coerceIn(0, 100)
+        }
+        views.setProgressBar(R.id.widget_1b_header_progress, 100, progressPercent1b, false)
         views.setTextViewText(
-            R.id.widget_todo_stats_1b,
-            if (showTasks) "${state.completed}/${state.total}" else "—"
+            R.id.widget_1b_header_progress_text,
+            if (showTasks) "${state.completed}/${state.total}" else "0/0"
         )
         bind1x1TodoRows(context, views, appWidgetId, state.lines, showTasks)
         val quotePrefix = LocalizedStrings.stringFor(state.language, "widget_quote_prefix", context)
@@ -581,9 +586,14 @@ object WidgetViewFactory {
         val taskData = dataRepository.getTodayTaskData()
         val completed = if (showTasks) taskData.completedCount else 0
         val total = if (showTasks) taskData.totalCount else 0
+        val progressPercent1b = when {
+            !showTasks || total <= 0 -> 0
+            else -> ((completed * 100) / total).coerceIn(0, 100)
+        }
+        views.setProgressBar(R.id.widget_1b_header_progress, 100, progressPercent1b, false)
         views.setTextViewText(
-            R.id.widget_todo_stats_1b,
-            if (showTasks) "$completed/$total" else "—"
+            R.id.widget_1b_header_progress_text,
+            if (showTasks) "$completed/$total" else "0/0"
         )
         val lines = if (showTasks) {
             TaskUtils.sortTasks(
