@@ -312,15 +312,15 @@ fun MoodCard(
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(5.dp))
             Text(
                 text = LocalizedStrings.get("view_history"),
                 color = LinkBlue,
-                fontSize = 13.sp,
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .clickable { onViewHistory() }
-                    .padding(vertical = 6.dp)
+                    .padding(vertical = 3.dp)
             )
         }
         if (draggingIcon != null) {

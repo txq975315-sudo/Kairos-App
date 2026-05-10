@@ -5,9 +5,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,11 +35,14 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
 import com.example.kairosapplication.ui.mine.records.MineRecordsOverview
+import kotlin.math.max
 
 private val GradientStart = Color(0xFF9F8CF7)
 private val GradientEnd = Color(0xFFC8BCFA)
 private val OnGradient = Color.White
 private val OnGradientMuted = Color.White.copy(alpha = 0.82f)
+
+private val MinMetricCellWidth = 52.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -90,35 +92,75 @@ fun MineRecordsMetricsCard(
             )
             .padding(vertical = 22.dp, horizontal = 8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            list.forEachIndexed { index, metric ->
-                if (index > 0) {
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(52.dp)
-                            .background(OnGradient.copy(alpha = 0.45f))
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val maxPerRow = max(1, (maxWidth / MinMetricCellWidth).toInt())
+            val useTwoRows = list.size > maxPerRow
+            val chunks: List<List<MineRecordsMetric>> = if (!useTwoRows) {
+                listOf(list)
+            } else {
+                val mid = (list.size + 1) / 2
+                listOf(list.take(mid), list.drop(mid))
+            }
+            var indexOffset = 0
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                chunks.forEach { row ->
+                    MetricsMetricRow(
+                        rowMetrics = row,
+                        overview = overview,
+                        lang = lang,
+                        ctx = ctx,
+                        globalIndexOffset = indexOffset,
+                        onMetricIndexClick = onMetricIndexClick,
+                        onMetricsLongPress = onMetricsLongPress,
                     )
+                    indexOffset += row.size
                 }
-                val cellModifier = if (onMetricIndexClick != null) {
-                    Modifier.combinedClickable(
-                        onClick = { onMetricIndexClick(index) },
-                        onLongClick = { onMetricsLongPress?.invoke() },
-                    )
-                } else {
-                    Modifier
-                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun MetricsMetricRow(
+    rowMetrics: List<MineRecordsMetric>,
+    overview: MineRecordsOverview,
+    lang: LocalizationManager.Language,
+    ctx: Context,
+    globalIndexOffset: Int,
+    onMetricIndexClick: ((Int) -> Unit)?,
+    onMetricsLongPress: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        rowMetrics.forEachIndexed { index, metric ->
+            if (index > 0) {
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(52.dp)
+                        .background(OnGradient.copy(alpha = 0.45f))
+                )
+            }
+            val globalIndex = globalIndexOffset + index
+            val cellModifier = if (onMetricIndexClick != null) {
+                Modifier.combinedClickable(
+                    onClick = { onMetricIndexClick(globalIndex) },
+                    onLongClick = { onMetricsLongPress?.invoke() },
+                )
+            } else {
+                Modifier
+            }
+            Box(modifier = Modifier.weight(1f)) {
                 GradientMetricCell(
                     valueText = formatMineMetricValue(overview, metric, lang, ctx),
                     label = LocalizedStrings.stringFor(lang, metric.labelKey(), ctx),
                     modifier = Modifier
-                        .padding(horizontal = 10.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp)
                         .then(cellModifier),
                 )
             }
@@ -141,7 +183,8 @@ private fun GradientMetricCell(
             color = OnGradient,
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.SansSerif
+            fontFamily = FontFamily.SansSerif,
+            maxLines = 1,
         )
         Spacer(Modifier.height(6.dp))
         Text(
@@ -151,7 +194,8 @@ private fun GradientMetricCell(
             fontWeight = FontWeight.Medium,
             fontFamily = FontFamily.SansSerif,
             textAlign = TextAlign.Center,
-            lineHeight = 14.sp
+            lineHeight = 14.sp,
+            maxLines = 2,
         )
     }
 }

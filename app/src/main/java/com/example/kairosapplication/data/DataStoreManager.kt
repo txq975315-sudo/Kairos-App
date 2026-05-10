@@ -1,4 +1,4 @@
-package com.example.kairosapplication.data
+﻿package com.example.kairosapplication.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -15,6 +15,7 @@ import com.example.kairosapplication.widget.data.decodeWidgetConfig
 import com.example.kairosapplication.widget.data.toJsonString
 import com.example.taskmodel.model.LocalProfile
 import com.example.taskmodel.model.MoodRecord
+import com.example.taskmodel.model.UrgencyConfig
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +45,7 @@ private val KEY_MINE_RECORDS_METRICS = stringPreferencesKey("mine_records_metric
 private val KEY_MINE_RECORDS_SCOPE = stringPreferencesKey("mine_records_scope")
 private val KEY_MINE_RECORDS_YEAR = intPreferencesKey("mine_records_year")
 private val KEY_CHECKIN_VIEW_MODE = stringPreferencesKey("mine_checkin_view_mode")
+private val KEY_URGENCY_CONFIG = stringPreferencesKey("urgency_config")
 
 class DataStoreManager(context: Context) {
 
@@ -359,6 +361,28 @@ class DataStoreManager(context: Context) {
         }
     }
 
+
+    // Urgency Config
+    val urgencyConfigFlow: Flow<UrgencyConfig> = dataStore.data.map { prefs ->
+        UrgencyConfig.fromJson(prefs[KEY_URGENCY_CONFIG])
+    }
+
+    suspend fun saveUrgencyConfig(config: UrgencyConfig) {
+        dataStore.edit { prefs ->
+            prefs[KEY_URGENCY_CONFIG] = config.toJson()
+        }
+    }
+
+    suspend fun resetUrgencyConfig() {
+        dataStore.edit { prefs ->
+            prefs.remove(KEY_URGENCY_CONFIG)
+        }
+    }
+
+    fun getUrgencyConfigSync(): UrgencyConfig = runBlocking(Dispatchers.IO) {
+        val prefs = dataStore.data.first()
+        UrgencyConfig.fromJson(prefs[KEY_URGENCY_CONFIG])
+    }
     companion object {
         const val KEY_SETTINGS_DARK_MODE = "settings_dark_mode"
         const val KEY_SETTINGS_THEME_COLOR = "settings_theme_color"

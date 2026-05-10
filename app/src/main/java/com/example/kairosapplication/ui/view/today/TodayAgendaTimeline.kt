@@ -1,4 +1,4 @@
-package com.example.kairosapplication.ui.view.today
+﻿package com.example.kairosapplication.ui.view.today
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.text.TaskUiLocalLabels
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -77,11 +79,10 @@ private fun inferNoteTimeBlock(note: Note): String {
 }
 
 @Composable
-private fun urgencyDotColor(urgency: Int): Color = when (urgency.coerceIn(0, 3)) {
-    0 -> AppColors.Urgent
-    1 -> AppColors.High
-    2 -> AppColors.Normal
-    else -> AppColors.Low
+private fun urgencyDotColor(urgency: Int): Color {
+    val config = LocalUrgencyConfig.current
+    val hex = config.colorForLevel(urgency)
+    return Color(parseHexToArgb(hex))
 }
 
 /** Primary vertical section title (Todo / Notes) with trailing rule, agenda reference style. */

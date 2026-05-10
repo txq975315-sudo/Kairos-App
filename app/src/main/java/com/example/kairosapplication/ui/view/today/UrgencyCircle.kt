@@ -1,4 +1,4 @@
-package com.example.kairosapplication.ui.view.today
+﻿package com.example.kairosapplication.ui.view.today
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,7 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 
 @Composable
 fun UrgencyCircle(
@@ -21,12 +22,9 @@ fun UrgencyCircle(
     isCompleted: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val borderColor = when (urgency.coerceIn(0, 3)) {
-        0 -> AppColors.Urgent
-        1 -> AppColors.High
-        2 -> AppColors.Normal
-        else -> AppColors.Low
-    }
+    val urgencyConfig = LocalUrgencyConfig.current
+    val hexColor = urgencyConfig.colorForLevel(urgency)
+    val borderColor = Color(parseHexToArgb(hexColor))
     if (isCompleted) {
         Box(
             modifier = modifier

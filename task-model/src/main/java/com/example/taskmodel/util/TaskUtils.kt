@@ -1,11 +1,25 @@
-package com.example.taskmodel.util
+﻿package com.example.taskmodel.util
 
 import androidx.compose.ui.graphics.Color
 import com.example.taskmodel.constants.TaskConstants
+import com.example.taskmodel.model.UrgencyConfig
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.taskmodel.model.Task
 import java.time.LocalDate
 
 object TaskUtils {
+
+    // Dynamic urgency config (set from UI layer)
+    @Volatile
+    private var urgencyConfig: UrgencyConfig = UrgencyConfig()
+
+    fun setUrgencyConfig(config: UrgencyConfig) {
+        urgencyConfig = config
+    }
+
+    fun getUrgencyLabel(urgency: Int): String {
+        return urgencyConfig.labelForLevel(urgency)
+    }
     private val urgencyColorMap = mapOf(
         TaskConstants.URGENCY_URGENT to Color(0xFFFF4444),
         TaskConstants.URGENCY_HIGH to Color(0xFFFF9800),
@@ -28,7 +42,8 @@ object TaskUtils {
     )
 
     fun getUrgencyColor(urgency: Int): Color {
-        return urgencyColorMap[urgency] ?: urgencyColorMap.getValue(TaskConstants.URGENCY_LOW)
+        val hex = urgencyConfig.colorForLevel(urgency)
+        return Color(parseHexToArgb(hex))
     }
 
     fun getTimeBlockColor(timeBlock: String): Color {

@@ -9,8 +9,8 @@ class ColorUtilsTest {
     fun parseHexToArgb_validHex_returnsCorrectInt() {
         // #FF0000 = 0xFFFF0000 = -65536
         assertEquals(-65536, ColorUtils.parseHexToArgb("#FF0000"))
-        // #007BFF = 0xFF007BFF = -16744449
-        assertEquals(-16744449, ColorUtils.parseHexToArgb("#007BFF"))
+        // #007BFF = 0xFF007BFF = -16745473
+        assertEquals(-16745473, ColorUtils.parseHexToArgb("#007BFF"))
         // #000000 = 0xFF000000 = -16777216
         assertEquals(-16777216, ColorUtils.parseHexToArgb("#000000"))
         // #FFFFFF = 0xFFFFFFFF = -1

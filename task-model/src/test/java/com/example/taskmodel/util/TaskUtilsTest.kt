@@ -1,4 +1,4 @@
-package com.example.taskmodel.util
+﻿package com.example.taskmodel.util
 
 import androidx.compose.ui.graphics.Color
 import com.example.taskmodel.constants.TaskConstants
@@ -13,10 +13,12 @@ class TaskUtilsTest {
 
     @Test
     fun getUrgencyColor_returnsExpectedColor() {
-        assertEquals(Color(0xFFFF4444), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_URGENT))
-        assertEquals(Color(0xFFFF9800), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_HIGH))
-        assertEquals(Color(0xFFFFFC3A), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_NORMAL))
-        assertEquals(Color(0xFF9E9E9E), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_LOW))
+        // Uses default UrgencyConfig colors: #FF0000, #FF7A00, #FFD700, #007BFF
+        assertEquals(Color(0xFFFF0000), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_URGENT))
+        assertEquals(Color(0xFFFF7A00), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_HIGH))
+        assertEquals(Color(0xFFFFD700), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_NORMAL))
+        assertEquals(Color(0xFF007BFF), TaskUtils.getUrgencyColor(TaskConstants.URGENCY_LOW))
+        // Unknown urgency returns fallback color
         assertEquals(Color(0xFF9E9E9E), TaskUtils.getUrgencyColor(999))
     }
 

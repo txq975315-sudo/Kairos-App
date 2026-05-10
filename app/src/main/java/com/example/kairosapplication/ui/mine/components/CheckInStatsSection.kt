@@ -69,6 +69,7 @@ fun CheckInStatsSection(
     showHeadingRow: Boolean = true,
     onDayClick: ((LocalDate) -> Unit)? = null,
     showMonthSummaryFooter: Boolean = false,
+    onViewAllRecordsClick: (() -> Unit)? = null,
 ) {
     val lang = LocalCurrentLanguage.current.value
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
@@ -222,6 +223,18 @@ fun CheckInStatsSection(
             fontSize = 11.sp,
             lineHeight = 15.sp
         )
+        if (onViewAllRecordsClick != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = LocalizedStrings.get("mine_all_records_open_full"),
+                fontSize = 13.sp,
+                color = Color(0xFF5C6BC0),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onViewAllRecordsClick)
+                    .padding(vertical = 2.dp),
+            )
+        }
     }
 }
 

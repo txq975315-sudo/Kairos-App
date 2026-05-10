@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Legacy / non-extract strings -->
 <string name="app_name">Kairos Application</string>
@@ -733,4 +733,10 @@
     <string name="xml_ui_han_4eca65e54e0053e5_179">今日一句：心有光芒，步履铿锵</string>
     <string name="xml_ui_1_29">今日任务1</string>
     <string name="taskmodel_han_75286237663579f0_401">用户昵称</string>
+    <!-- Urgency Settings -->
+    <string name="urgency_settings_title">紧急程度设置</string>
+    <string name="urgency_levels">紧急程度级别</string>
+    <string name="edit_urgency_level">编辑紧急程度</string>
+    <string name="color_hex">颜色 (HEX)</string>
+    <string name="reset_to_default">恢复默认</string>
 </resources>

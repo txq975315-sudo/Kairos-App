@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Same keys as values/strings.xml — English -->
 <string name="app_name">Kairos Application</string>
@@ -731,4 +731,10 @@
     <string name="xml_ui_han_4eca65e54e0053e5_179">Today’s line: A bright heart, a steady stride</string>
     <string name="xml_ui_1_29">Today’s task 1</string>
     <string name="taskmodel_han_75286237663579f0_401">Nickname</string>
+    <!-- Urgency Settings -->
+    <string name="urgency_settings_title">Urgency Settings</string>
+    <string name="urgency_levels">Urgency Levels</string>
+    <string name="edit_urgency_level">Edit Urgency Level</string>
+    <string name="color_hex">Color (HEX)</string>
+    <string name="reset_to_default">Reset to Default</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.example.kairosapplication.ui
+﻿package com.example.kairosapplication.ui
 
 import android.content.Context
 import android.content.Intent
@@ -75,6 +75,7 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -1030,13 +1031,16 @@ private fun CreateToolPanel(
                 }
 
                 CreateTool.URGENCY -> {
+                    val urgencyConfig = LocalUrgencyConfig.current
                     TaskConstants.URGENCY_LEVELS.entries.forEach { entry ->
                         OptionPill(
-                            text = LocalizedStrings.stringFor(
-                                panelLang,
-                                "task_urgency_${entry.key}",
-                                panelCtx,
-                            ),
+                            text = urgencyConfig.labelForLevel(entry.key).ifBlank {
+                                LocalizedStrings.stringFor(
+                                    panelLang,
+                                    "task_urgency_${entry.key}",
+                                    panelCtx,
+                                )
+                            },
                             selected = selectedUrgency == entry.key,
                             colorDot = TaskUtils.getUrgencyColor(entry.key),
                             onClick = { onUrgencySelected(entry.key) }

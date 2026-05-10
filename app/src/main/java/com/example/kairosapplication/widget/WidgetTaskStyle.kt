@@ -1,9 +1,24 @@
-package com.example.kairosapplication.widget
+﻿package com.example.kairosapplication.widget
 
 import android.graphics.Color
 import com.example.taskmodel.constants.TaskConstants
+import com.example.taskmodel.model.UrgencyConfig
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 
 object WidgetTaskStyle {
+
+    /** Dynamic urgency config for widget rendering */
+    @Volatile
+    private var dynamicUrgencyConfig: UrgencyConfig = UrgencyConfig()
+
+    fun updateFromConfig(config: UrgencyConfig) {
+        dynamicUrgencyConfig = config
+    }
+
+    fun resolveUrgencyArgb(urgency: Int): Int {
+        val hex = dynamicUrgencyConfig.colorForLevel(urgency)
+        return parseHexToArgb(hex)
+    }
 
     /** 月历「今日」填充圆与 Spannable 背景统一色 */
     const val CAL_TODAY_FILL_ARGB: Int = 0xFF9F8CF7.toInt()

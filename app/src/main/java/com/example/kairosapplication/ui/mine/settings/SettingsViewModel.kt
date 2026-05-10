@@ -1,4 +1,4 @@
-package com.example.kairosapplication.ui.mine.settings
+﻿package com.example.kairosapplication.ui.mine.settings
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -11,6 +11,7 @@ import com.example.kairosapplication.model.ExportData
 import com.example.taskmodel.repository.NoteRepository
 import com.example.taskmodel.repository.TaskRepository
 import com.example.taskmodel.viewmodel.TaskUiState
+import com.example.taskmodel.model.UrgencyConfig
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,6 +101,19 @@ class SettingsViewModel(
     val themeColorKey: StateFlow<String> = themeColor
 
     val languageKey: StateFlow<String> = language
+
+    // Urgency Config
+    val urgencyConfig: StateFlow<UrgencyConfig> = dataStoreManager.urgencyConfigFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UrgencyConfig())
+
+    fun setUrgencyConfig(config: UrgencyConfig) {
+        viewModelScope.launch { dataStoreManager.saveUrgencyConfig(config) }
+    }
+
+    fun resetUrgencyConfig() {
+        viewModelScope.launch { dataStoreManager.resetUrgencyConfig() }
+    }
+
 
     fun getCacheSize(): Long = _cacheSizeBytes.value
 

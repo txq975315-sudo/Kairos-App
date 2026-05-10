@@ -1,4 +1,4 @@
-package com.example.kairosapplication
+﻿package com.example.kairosapplication
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
@@ -75,8 +75,10 @@ import com.example.kairosapplication.ui.mine.settings.PrivacySettingsScreen
 import com.example.kairosapplication.ui.mine.settings.SettingsScreen
 import com.example.kairosapplication.ui.mine.settings.SettingsViewModel
 import com.example.kairosapplication.ui.mine.settings.ThemeSettingsScreen
+import com.example.kairosapplication.ui.mine.settings.UrgencySettingsScreen
 import com.example.kairosapplication.ui.mine.settings.WidgetSettingsScreen
 import com.example.kairosapplication.ui.quote.QuoteSettingScreen
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.ui.topic.manage.TopicManageHubScreen
 import com.example.kairosapplication.ui.topic.manage.TopicPrimaryEditScreen
 import com.example.kairosapplication.ui.view.ViewScreen
@@ -137,6 +139,7 @@ fun MainScreen(
         factory = SettingsViewModel.factory(context.applicationContext, taskViewModel.uiState)
     )
     val taskUiState by taskViewModel.uiState.collectAsState()
+    val urgencyConfig by settingsViewModel.urgencyConfig.collectAsState()
 
     LaunchedEffect(taskUiState.tasks, taskUiState.dailyQuoteEssayId) {
         WidgetManager.refreshWidgetsAsync(context.applicationContext, taskViewModel)
@@ -188,6 +191,7 @@ fun MainScreen(
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showMiscSettings by remember { mutableStateOf(false) }
     var showQuoteSettings by remember { mutableStateOf(false) }
+    var showUrgencySettings by remember { mutableStateOf(false) }
     val navController = rememberNavController()
 
     val essayNavController = rememberNavController()
@@ -201,7 +205,7 @@ fun MainScreen(
             (selectedTab == AppTab.Mine &&
                 (showTopicManageHub || showMineAllRecords || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
                     showImportScreen || showNotificationSettings || showThemeSettings || showMoodSettings ||
-                    showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings || showQuoteSettings))
+                    showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings || showQuoteSettings || showUrgencySettings))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
     var essayOpenTopicPrimary by remember { mutableStateOf<String?>(null) }
@@ -224,6 +228,7 @@ fun MainScreen(
             showPrivacySettings = false
             showMiscSettings = false
             showQuoteSettings = false
+            showUrgencySettings = false
         }
     }
 
@@ -233,7 +238,10 @@ fun MainScreen(
             .background(BackgroundColor),
     ) {
         if (bootReady && !needsLanguageOnboarding) {
-            CompositionLocalProvider(LocalCurrentLanguage provides languageState) {
+            CompositionLocalProvider(
+                LocalCurrentLanguage provides languageState,
+                LocalUrgencyConfig provides urgencyConfig
+            ) {
     if (overlay != null) {
         AnimatedContent(
             targetState = overlay,
@@ -464,6 +472,10 @@ fun MainScreen(
                         taskViewModel = taskViewModel,
                         onBack = { showQuoteSettings = false }
                     )
+                    showUrgencySettings -> UrgencySettingsScreen(
+                        viewModel = settingsViewModel,
+                        onBack = { showUrgencySettings = false }
+                    )
                     showSettingsScreen -> SettingsScreen(
                         onBack = { showSettingsScreen = false },
                         localizationManager = localizationManager,
@@ -507,6 +519,10 @@ fun MainScreen(
                         onNavigateToQuoteSettings = {
                             showSettingsScreen = false
                             showQuoteSettings = true
+                        },
+                        onNavigateToUrgencySettings = {
+                            showSettingsScreen = false
+                            showUrgencySettings = true
                         },
                         onOpenTopicManage = {
                             showSettingsScreen = false

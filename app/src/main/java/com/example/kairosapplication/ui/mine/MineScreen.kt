@@ -43,7 +43,6 @@ import java.time.LocalDate
 import com.example.kairosapplication.ui.mine.components.AllRecordsSection
 import com.example.kairosapplication.ui.mine.components.MoodCard
 import com.example.kairosapplication.ui.mine.components.PlanningStatsSection
-import com.example.kairosapplication.ui.mine.components.ProfileCard
 import com.example.kairosapplication.ui.mine.components.ProfileEditSheet
 import com.example.kairosapplication.i18n.LocalizedStrings
 
@@ -62,7 +61,6 @@ fun MineScreen(
     modifier: Modifier = Modifier
 ) {
     val profile by mineViewModel.profileState.collectAsState()
-    val recordDays by mineViewModel.recordDays.collectAsState()
     val mineRecordsOverview by mineViewModel.mineRecordsOverview.collectAsState()
     val mineRecordsMetrics by mineViewModel.mineRecordsMetrics.collectAsState()
     val checkInViewMode by mineViewModel.checkInViewMode.collectAsState()
@@ -179,12 +177,6 @@ fun MineScreen(
                     onCheckInViewModeChange = { mineViewModel.setCheckInViewMode(it) },
                     onOpenAllRecords = onOpenAllRecords,
                     onCustomizeClick = onCustomizeAllRecords,
-                )
-                Spacer(Modifier.height(16.dp))
-                ProfileCard(
-                    profile = profile,
-                    recordDays = recordDays,
-                    onClick = openEdit
                 )
                 Spacer(Modifier.height(24.dp))
                 PlanningStatsSection(

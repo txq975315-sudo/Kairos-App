@@ -1,9 +1,11 @@
-package com.example.kairosapplication.core.ui
+﻿package com.example.kairosapplication.core.ui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.compositionLocalOf
+import com.example.taskmodel.model.UrgencyConfig
 
 /**
  * Global style tokens for Kairos.
@@ -127,3 +129,7 @@ object AppInteraction {
     val ShadowAlpha = 0.05f
 }
 
+
+
+/** CompositionLocal for dynamic urgency config */
+val LocalUrgencyConfig = compositionLocalOf { UrgencyConfig() }

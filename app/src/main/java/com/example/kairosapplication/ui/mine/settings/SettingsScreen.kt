@@ -1,4 +1,4 @@
-package com.example.kairosapplication.ui.mine.settings
+﻿package com.example.kairosapplication.ui.mine.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material.icons.outlined.Widgets
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -70,6 +71,7 @@ fun SettingsScreen(
     onNavigateToPrivacy: () -> Unit,
     onNavigateToMisc: () -> Unit,
     onNavigateToQuoteSettings: () -> Unit,
+    onNavigateToUrgencySettings: () -> Unit,
     onOpenTopicManage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -155,6 +157,12 @@ fun SettingsScreen(
                     title = LocalizedStrings.get("main_daily_sentence"),
                     subtitle = null,
                     onClick = onNavigateToQuoteSettings
+                )
+                SettingsProtoRow(
+                    icon = Icons.Outlined.Flag,
+                    title = LocalizedStrings.get("urgency_settings_title"),
+                    subtitle = null,
+                    onClick = onNavigateToUrgencySettings
                 )
                 SettingsProtoRow(
                     icon = Icons.Outlined.UploadFile,

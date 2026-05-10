@@ -1,4 +1,4 @@
-package com.example.kairosapplication.widget
+﻿package com.example.kairosapplication.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -337,6 +337,10 @@ object WidgetManager {
     }
 
     suspend fun refreshWidgets(context: Context, taskViewModel: TaskViewModel? = null) {
+        // Inject urgency config into WidgetTaskStyle
+        val urgencyConfig = DataStoreManager(context).getUrgencyConfigSync()
+        WidgetTaskStyle.updateFromConfig(urgencyConfig)
+        TaskUtils.setUrgencyConfig(urgencyConfig)
         val appContext = context.applicationContext
         val appWidgetManager = AppWidgetManager.getInstance(appContext)
         val allIds = allProviderClasses.flatMap { cls ->

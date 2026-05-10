@@ -1,14 +1,17 @@
 package com.example.kairosapplication.ui.mine.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -20,6 +23,9 @@ import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
 import com.example.kairosapplication.ui.mine.records.MineRecordsOverview
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
+
+private val CheckInCardSurface = Color(0xFFFFFFFF)
+private val CheckInCardStroke = Color(0xFFE8E8EC)
 
 @Composable
 fun AllRecordsSection(
@@ -40,43 +46,38 @@ fun AllRecordsSection(
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.Serif,
-            modifier = Modifier
-                .padding(bottom = 6.dp)
-                .clickable(onClick = onOpenAllRecords),
+            modifier = Modifier.padding(bottom = 6.dp),
         )
         MineRecordsMetricsCard(
             overview = overview,
             metrics = metrics.ifEmpty { MineRecordsMetric.defaultSelection() },
             modifier = Modifier.fillMaxWidth(),
-            onClick = onOpenAllRecords,
-            onMetricsLongPress = onCustomizeClick,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = LocalizedStrings.get("mine_all_records_open_full"),
-            fontSize = 13.sp,
-            color = Color(0xFF5C6BC0),
-            modifier = Modifier
-                .clickable(onClick = onOpenAllRecords)
-                .padding(vertical = 2.dp),
-        )
-        Text(
-            text = LocalizedStrings.get("mine_all_records_customize_link"),
-            fontSize = 12.sp,
-            color = Color(0xFF757575),
-            modifier = Modifier
-                .clickable(onClick = onCustomizeClick)
-                .padding(vertical = 2.dp),
+            onClick = onCustomizeClick,
         )
         Spacer(Modifier.height(14.dp))
-        CheckInStatsSection(
-            tasks = tasks,
-            publishedNotes = publishedNotes,
-            viewMode = checkInViewMode,
-            onViewModeChange = onCheckInViewModeChange,
-            showHeadingRow = true,
-            onDayClick = null,
-            showMonthSummaryFooter = false,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 5.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                    spotColor = Color.Black.copy(alpha = 0.08f),
+                )
+                .background(CheckInCardSurface, RoundedCornerShape(20.dp))
+                .border(1.dp, CheckInCardStroke, RoundedCornerShape(20.dp))
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+        ) {
+            CheckInStatsSection(
+                tasks = tasks,
+                publishedNotes = publishedNotes,
+                viewMode = checkInViewMode,
+                onViewModeChange = onCheckInViewModeChange,
+                showHeadingRow = true,
+                onDayClick = null,
+                showMonthSummaryFooter = false,
+                onViewAllRecordsClick = onOpenAllRecords,
+            )
+        }
     }
 }

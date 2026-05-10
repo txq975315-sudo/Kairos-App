@@ -1,4 +1,4 @@
-package com.example.kairosapplication.ui.components
+﻿package com.example.kairosapplication.ui.components
 
 import com.example.kairosapplication.BuildConfig
 import android.content.Intent
@@ -74,6 +74,7 @@ import com.example.kairosapplication.core.ui.AppTypography
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 
 internal data class CreateSheetConfig(
     val timeBlock: String,
@@ -517,6 +518,7 @@ internal fun CreateTaskBottomSheet(
                             }
                         }
                         IconSheetType.URGENCY -> {
+                            val urgencyConfig = LocalUrgencyConfig.current
                             val options = TaskConstants.URGENCY_LEVELS
                             Column(
                                 modifier = Modifier
@@ -544,7 +546,7 @@ internal fun CreateTaskBottomSheet(
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            text = LocalizedStrings.get("task_urgency_${entry.key}"),
+                                            text = urgencyConfig.labelForLevel(entry.key).ifBlank { LocalizedStrings.get("task_urgency_${entry.key}") },
                                             fontSize = 15.sp,
                                             color = if (meta.urgency == entry.key) AppColors.PrimaryText else AppColors.SecondaryText
                                         )
