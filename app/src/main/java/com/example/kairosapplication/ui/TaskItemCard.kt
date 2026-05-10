@@ -44,10 +44,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
-import com.example.taskmodel.util.TaskUtils
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -60,7 +61,8 @@ fun TaskItemCard(
     onDragAnchorYRoot: ((Float) -> Unit)? = null,
     onDragVerticalEnd: ((totalDy: Float) -> Unit)? = null
 ) {
-    val urgencyColor = TaskUtils.getUrgencyColor(task.urgency)
+    val urgencyConfig = LocalUrgencyConfig.current
+    val urgencyColor = Color(parseHexToArgb(urgencyConfig.colorForLevel(task.urgency)))
     val hasDescription = task.description.isNotBlank()
     val titleFontSize = 15.sp
     val descriptionFontSize = 10.sp

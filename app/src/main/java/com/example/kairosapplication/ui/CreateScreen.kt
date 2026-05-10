@@ -75,6 +75,7 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
 import com.example.taskmodel.util.TaskUtils
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
@@ -759,6 +760,7 @@ private fun ActionIconsRow(
     onVoiceClick: () -> Unit,
     onSubmit: () -> Unit
 ) {
+    val urgencyColorConfig = LocalUrgencyConfig.current
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -778,7 +780,7 @@ private fun ActionIconsRow(
             Icon(
                 imageVector = Icons.Default.Flag,
                 contentDescription = taskTexts.contentDescFlagIcon,
-                tint = TaskUtils.getUrgencyColor(selectedUrgency),
+                tint = Color(parseHexToArgb(urgencyColorConfig.colorForLevel(selectedUrgency))),
                 modifier = Modifier.clickable { onUrgencyClick() }
             )
             Icon(
@@ -1042,7 +1044,7 @@ private fun CreateToolPanel(
                                 )
                             },
                             selected = selectedUrgency == entry.key,
-                            colorDot = TaskUtils.getUrgencyColor(entry.key),
+                            colorDot = Color(parseHexToArgb(urgencyConfig.colorForLevel(entry.key))),
                             onClick = { onUrgencySelected(entry.key) }
                         )
                     }

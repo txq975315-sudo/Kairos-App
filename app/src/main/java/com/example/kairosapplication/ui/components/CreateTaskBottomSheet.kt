@@ -74,6 +74,7 @@ import com.example.kairosapplication.core.ui.AppTypography
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 
 internal data class CreateSheetConfig(
@@ -223,6 +224,7 @@ internal fun CreateTaskBottomSheet(
     var isRecording by remember { mutableStateOf(false) }
     var hasSelectedTime by remember { mutableStateOf(false) }
     var hasSelectedUrgency by remember { mutableStateOf(false) }
+    val urgencyColorConfig = LocalUrgencyConfig.current
     var keyboardHeightDp by remember { mutableStateOf(280.dp) }
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val isKeyboardVisible = imeBottomPx > 0
@@ -392,7 +394,7 @@ internal fun CreateTaskBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.Flag,
                             contentDescription = taskText.contentDescFlagIcon,
-                            tint = if (hasSelectedUrgency) TaskUtils.getUrgencyColor(meta.urgency) else AppColors.IconNeutral,
+                            tint = if (hasSelectedUrgency) Color(parseHexToArgb(urgencyColorConfig.colorForLevel(meta.urgency))) else AppColors.IconNeutral,
                             modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
                         )
                         Spacer(Modifier.width(4.dp))
@@ -400,7 +402,7 @@ internal fun CreateTaskBottomSheet(
                             modifier = Modifier
                                 .size(10.dp)
                                 .clip(CircleShape)
-                                .background(TaskUtils.getUrgencyColor(meta.urgency))
+                                .background(Color(parseHexToArgb(urgencyColorConfig.colorForLevel(meta.urgency))))
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -542,7 +544,7 @@ internal fun CreateTaskBottomSheet(
                                             modifier = Modifier
                                                 .size(12.dp)
                                                 .clip(CircleShape)
-                                                .background(TaskUtils.getUrgencyColor(entry.key))
+                                                .background(Color(parseHexToArgb(urgencyConfig.colorForLevel(entry.key))))
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(

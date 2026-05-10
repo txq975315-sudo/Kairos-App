@@ -33,6 +33,8 @@ import com.example.kairosapplication.ui.view.DayCalendarData
 import com.example.kairosapplication.ui.view.viewClickable
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.util.TaskUtils
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -161,6 +163,7 @@ private fun CalendarDayCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val urgencyColorConfig = LocalUrgencyConfig.current
     val taskText = if (data.taskCount > 0) {
         "${data.taskCompletedCount}/${data.taskCount}"
     } else {
@@ -168,7 +171,7 @@ private fun CalendarDayCell(
     }
     val noteCat = data.dominantNoteCategory
     val taskTint = if (data.taskCount > 0) {
-        TaskUtils.getUrgencyColor(data.dominantTaskUrgency ?: TaskConstants.URGENCY_LOW)
+        Color(parseHexToArgb(urgencyColorConfig.colorForLevel(data.dominantTaskUrgency ?: TaskConstants.URGENCY_LOW)))
     } else {
         Color(0xFFBDBDBD)
     }

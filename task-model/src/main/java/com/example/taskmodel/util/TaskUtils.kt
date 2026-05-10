@@ -20,12 +20,6 @@ object TaskUtils {
     fun getUrgencyLabel(urgency: Int): String {
         return urgencyConfig.labelForLevel(urgency)
     }
-    private val urgencyColorMap = mapOf(
-        TaskConstants.URGENCY_URGENT to Color(0xFFFF4444),
-        TaskConstants.URGENCY_HIGH to Color(0xFFFF9800),
-        TaskConstants.URGENCY_NORMAL to Color(0xFFFFFC3A),
-        TaskConstants.URGENCY_LOW to Color(0xFF9E9E9E)
-    )
 
     private val timeBlockColorMap = mapOf(
         TaskConstants.TIME_BLOCK_ANYTIME to Color(0xFFF2EEE6),

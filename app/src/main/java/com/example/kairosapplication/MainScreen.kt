@@ -89,6 +89,7 @@ import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.viewmodel.TaskViewModel
+import com.example.taskmodel.util.TaskUtils
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -140,6 +141,11 @@ fun MainScreen(
     )
     val taskUiState by taskViewModel.uiState.collectAsState()
     val urgencyConfig by settingsViewModel.urgencyConfig.collectAsState()
+
+    // Keep TaskUtils static cache in sync with user-customised urgency config
+    LaunchedEffect(urgencyConfig) {
+        TaskUtils.setUrgencyConfig(urgencyConfig)
+    }
 
     LaunchedEffect(taskUiState.tasks, taskUiState.dailyQuoteEssayId) {
         WidgetManager.refreshWidgetsAsync(context.applicationContext, taskViewModel)

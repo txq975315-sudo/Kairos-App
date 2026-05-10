@@ -63,6 +63,8 @@ import com.example.kairosapplication.widget.WidgetViewFactory
 import com.example.kairosapplication.widget.data.WidgetSize
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
+import com.example.taskmodel.util.ColorUtils.parseHexToArgb
+import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -408,6 +410,7 @@ private fun Preview1BCard(
     tasks: List<Task>,
     modifier: Modifier = Modifier
 ) {
+    val urgencyColorConfig = LocalUrgencyConfig.current
     Column(
         modifier = modifier
             .shadow(6.dp, RoundedCornerShape(20.dp))
@@ -465,7 +468,7 @@ private fun Preview1BCard(
                     } else if (task.isCompleted) {
                         WidgetPurpleProgress
                     } else {
-                        TaskUtils.getUrgencyColor(task.urgency)
+                        Color(parseHexToArgb(urgencyColorConfig.colorForLevel(task.urgency)))
                     }
                     Box(
                         modifier = Modifier
