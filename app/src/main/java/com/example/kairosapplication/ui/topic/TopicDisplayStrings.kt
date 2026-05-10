@@ -68,6 +68,19 @@ object TopicDisplayStrings {
         }
         return full.trim().split(Regex("\\s+")).firstOrNull().orEmpty().ifBlank { full }
     }
+
+    fun primarySubtitle(categoryKey: String, lang: LocalizationManager.Language, context: Context): String {
+        val key = when (categoryKey) {
+            NotePrimaryCategory.FREESTYLE -> "essay_primary_subtitle_freestyle"
+            NotePrimaryCategory.SELF_AWARENESS -> "essay_primary_subtitle_self_awareness"
+            NotePrimaryCategory.INTERPERSONAL -> "essay_primary_subtitle_interpersonal"
+            NotePrimaryCategory.INTIMACY_FAMILY -> "essay_primary_subtitle_intimacy_family"
+            NotePrimaryCategory.SOMATIC_ENERGY -> "essay_primary_subtitle_somatic_energy"
+            NotePrimaryCategory.MEANING -> "essay_primary_subtitle_meaning"
+            else -> return ""
+        }
+        return LocalizedStrings.stringFor(lang, key, context)
+    }
 }
 
 @Composable
@@ -91,4 +104,11 @@ fun rememberTopicPrimaryNavShort(categoryKey: String): String {
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     return remember(categoryKey, lang, ctx) { TopicDisplayStrings.primaryNavShort(categoryKey, lang, ctx) }
+}
+
+@Composable
+fun rememberTopicPrimarySubtitle(categoryKey: String): String {
+    val ctx = LocalContext.current
+    val lang = LocalCurrentLanguage.current.value
+    return remember(categoryKey, lang, ctx) { TopicDisplayStrings.primarySubtitle(categoryKey, lang, ctx) }
 }

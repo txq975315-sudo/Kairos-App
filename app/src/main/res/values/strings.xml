@@ -482,11 +482,18 @@
     <string name="i18n_essay_topic_empty_title">还没有主题笔记</string>
     <string name="i18n_essay_topic_empty_subtitle">写第一条主题记录</string>
     <string name="i18n_essay_primary_freestyle">自由随想</string>
-    <string name="i18n_essay_primary_self_awareness">自我认知</string>
-    <string name="i18n_essay_primary_interpersonal">社会人际</string>
+    <string name="i18n_essay_primary_self_awareness">觉察自我</string>
+    <string name="i18n_essay_primary_interpersonal">社交观察</string>
     <string name="i18n_essay_primary_intimacy_family">亲密关系</string>
-    <string name="i18n_essay_primary_somatic_energy">身心能量</string>
-    <string name="i18n_essay_primary_meaning">存在探索</string>
+    <string name="i18n_essay_primary_somatic_energy">身心状态</string>
+    <string name="i18n_essay_primary_meaning">意义探索</string>
+    <!-- Primary subtitles -->
+    <string name="i18n_essay_primary_subtitle_freestyle">任何碎片灵感</string>
+    <string name="i18n_essay_primary_subtitle_self_awareness">重新认识自己</string>
+    <string name="i18n_essay_primary_subtitle_interpersonal">与他人的互动</string>
+    <string name="i18n_essay_primary_subtitle_intimacy_family">伴侣或家人的事</string>
+    <string name="i18n_essay_primary_subtitle_somatic_energy">身体或情绪信号</string>
+    <string name="i18n_essay_primary_subtitle_meaning">追问为什么/人生意义</string>
     <string name="i18n_essay_sec_emotional_awareness">情感觉察</string>
     <string name="i18n_essay_sec_behavioral_habits">行为习惯</string>
     <string name="i18n_essay_sec_thinking_blind_spots">思维盲区</string>
@@ -734,9 +741,11 @@
     <string name="xml_ui_1_29">今日任务1</string>
     <string name="taskmodel_han_75286237663579f0_401">用户昵称</string>
     <!-- Urgency Settings -->
-    <string name="urgency_settings_title">紧急程度设置</string>
-    <string name="urgency_levels">紧急程度级别</string>
-    <string name="edit_urgency_level">编辑紧急程度</string>
-    <string name="color_hex">颜色 (HEX)</string>
-    <string name="reset_to_default">恢复默认</string>
+    <string name="i18n_urgency_settings_title">紧急程度设置</string>
+    <string name="i18n_urgency_levels">紧急程度级别</string>
+    <string name="i18n_edit_urgency_level">编辑紧急程度</string>
+    <string name="i18n_label">标签</string>
+    <string name="i18n_description">描述</string>
+    <string name="i18n_color_hex">颜色 (HEX)</string>
+    <string name="i18n_reset_to_default">恢复默认</string>
 </resources>

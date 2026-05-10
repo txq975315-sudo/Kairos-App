@@ -101,7 +101,7 @@ private val categoryFilterOrder = listOf(
 
 private val moodOptions = listOf("😊", "😃", "😄", "😆", "😐", "😢", "😡", "🤔", "😌", "❤️")
 
-private val SearchFieldPurple = Color(0xFFD4C8E8)
+private val SearchFieldPurple = NoteCardConstants.categorySecondaryColor(NotePrimaryCategory.SELF_AWARENESS)
 
 /** Filter / list dividers (aligned with app theme) */
 private val SearchRowDividerColor = AppColors.Divider

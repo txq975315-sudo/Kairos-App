@@ -479,12 +479,19 @@
     <string name="i18n_essay_timeline_empty_subtitle">Start your first entry</string>
     <string name="i18n_essay_topic_empty_title">No topic notes yet</string>
     <string name="i18n_essay_topic_empty_subtitle">Start your first topic entry</string>
-    <string name="i18n_essay_primary_freestyle">Free Recall</string>
-    <string name="i18n_essay_primary_self_awareness">Self Schema</string>
-    <string name="i18n_essay_primary_interpersonal">Social Bond</string>
-    <string name="i18n_essay_primary_intimacy_family">Intimate Tie</string>
-    <string name="i18n_essay_primary_somatic_energy">Somatic Energy</string>
-    <string name="i18n_essay_primary_meaning">Existential Quest</string>
+    <string name="i18n_essay_primary_freestyle">Free Notes / Misc</string>
+    <string name="i18n_essay_primary_self_awareness">Self Awareness</string>
+    <string name="i18n_essay_primary_interpersonal">Social Observation</string>
+    <string name="i18n_essay_primary_intimacy_family">Intimate Connections</string>
+    <string name="i18n_essay_primary_somatic_energy">Mind-Body State</string>
+    <string name="i18n_essay_primary_meaning">Meaning Exploration</string>
+    <!-- Primary subtitles -->
+    <string name="i18n_essay_primary_subtitle_freestyle">Any Fragmented Thoughts</string>
+    <string name="i18n_essay_primary_subtitle_self_awareness">Rediscover Yourself</string>
+    <string name="i18n_essay_primary_subtitle_interpersonal">Interactions with Others</string>
+    <string name="i18n_essay_primary_subtitle_intimacy_family">About Partners or Family</string>
+    <string name="i18n_essay_primary_subtitle_somatic_energy">Body or Mood Signals</string>
+    <string name="i18n_essay_primary_subtitle_meaning">Questioning Why</string>
     <string name="i18n_essay_sec_emotional_awareness">Emotional awareness</string>
     <string name="i18n_essay_sec_behavioral_habits">Behavioral habits</string>
     <string name="i18n_essay_sec_thinking_blind_spots">Thinking blind spots</string>
@@ -732,9 +739,11 @@
     <string name="xml_ui_1_29">Today’s task 1</string>
     <string name="taskmodel_han_75286237663579f0_401">Nickname</string>
     <!-- Urgency Settings -->
-    <string name="urgency_settings_title">Urgency Settings</string>
-    <string name="urgency_levels">Urgency Levels</string>
-    <string name="edit_urgency_level">Edit Urgency Level</string>
-    <string name="color_hex">Color (HEX)</string>
-    <string name="reset_to_default">Reset to Default</string>
+    <string name="i18n_urgency_settings_title">Urgency Settings</string>
+    <string name="i18n_urgency_levels">Urgency Levels</string>
+    <string name="i18n_edit_urgency_level">Edit Urgency Level</string>
+    <string name="i18n_label">Label</string>
+    <string name="i18n_description">Description</string>
+    <string name="i18n_color_hex">Color (HEX)</string>
+    <string name="i18n_reset_to_default">Reset to Default</string>
 </resources>

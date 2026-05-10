@@ -521,7 +521,7 @@ fun NoteEditorScreen(
                         newSecondaryDialogText = ""
                     }
                 ) {
-                    Text(LocalizedStrings.get("essay_editor_dialog_add"), color = Color(0xFF8A7CF8))
+                    Text(LocalizedStrings.get("essay_editor_dialog_add"), color = NoteCardConstants.categoryColor(primaryCategory))
                 }
             },
             dismissButton = {

@@ -324,7 +324,7 @@ fun EssayMainScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onNavigateToEditor(null) },
-                containerColor = Color(0xFF8A7CF8),
+                containerColor = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS),
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
@@ -976,6 +976,7 @@ private fun TopicTabContent(
                             selected = selectedPrimary == primaryKey && selectedSecondary == null,
                             expanded = navExpanded,
                             showExpandToggle = hasSecondaryCategories,
+                            categoryColor = NoteCardConstants.categoryColor(primaryKey),
                             primaryText = headerPrimary,
                             secondaryText = headerSecondary,
                             onToggleExpand = {
@@ -1006,6 +1007,7 @@ private fun TopicTabContent(
                                 count = count,
                                 selected = selectedPrimary == primaryKey && selectedSecondary == secondaryKey,
                                 isUngrouped = secondaryKey == UncategorizedSecondary,
+                                categoryColor = NoteCardConstants.categoryColor(primaryKey),
                                 primaryText = headerPrimary,
                                 secondaryText = headerSecondary,
                                 hintText = headerSecondary.copy(alpha = 0.75f),
@@ -1058,6 +1060,7 @@ private fun TopicNavPrimaryRow(
     selected: Boolean,
     expanded: Boolean,
     showExpandToggle: Boolean,
+    categoryColor: Color,
     primaryText: Color,
     secondaryText: Color,
     onToggleExpand: () -> Unit,
@@ -1067,10 +1070,10 @@ private fun TopicNavPrimaryRow(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (selected) Color(0xFFEEF2FF) else Color.White
+            containerColor = if (selected) categoryColor.copy(alpha = 0.12f) else Color.White
         ),
         border = if (selected) {
-            BorderStroke(1.dp, Color(0xFF8A7CF8).copy(alpha = 0.45f))
+            BorderStroke(1.dp, categoryColor.copy(alpha = 0.45f))
         } else {
             null
         },
@@ -1131,6 +1134,7 @@ private fun TopicNavSecondaryRow(
     count: Int,
     selected: Boolean,
     isUngrouped: Boolean,
+    categoryColor: Color,
     primaryText: Color,
     secondaryText: Color,
     hintText: Color,
@@ -1142,7 +1146,7 @@ private fun TopicNavSecondaryRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
             .background(
-                if (selected) Color(0xFFEEF2FF).copy(alpha = 0.65f) else Color.Transparent
+                if (selected) categoryColor.copy(alpha = 0.12f) else Color.Transparent
             )
             .clickable(onClick = onSelect)
             .padding(start = 8.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
@@ -1301,10 +1305,10 @@ private fun ProjectSidebarRail(
                     .clickable { onSelectProject(project.id) },
                 shape = RoundedCornerShape(10.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (selected) Color(0xFFEEF2FF) else Color.White
+                    containerColor = if (selected) NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS).copy(alpha = 0.12f) else Color.White
                 ),
                 border = if (selected) {
-                    BorderStroke(1.dp, Color(0xFF8A7CF8).copy(alpha = 0.45f))
+                    BorderStroke(1.dp, NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS).copy(alpha = 0.45f))
                 } else {
                     null
                 },
