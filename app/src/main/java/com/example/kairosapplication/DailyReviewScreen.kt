@@ -230,7 +230,7 @@ fun DailyReviewScreen(
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color(0xFF1A1A1A)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
+                    containerColor = AppColors.GlassFill,
                     contentColor = Color(0xFF1A1A1A),
                     disabledContainerColor = Color(0xFFEDEDED),
                     disabledContentColor = Color(0xFF9E9E9E)
@@ -402,8 +402,8 @@ private fun DailyTaskCard(
             .fillMaxWidth()
             .clickable(onClick = onEdit),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Row(
             modifier = Modifier

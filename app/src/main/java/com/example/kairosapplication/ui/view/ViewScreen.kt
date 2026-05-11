@@ -32,7 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.EssayChangeTopicDialog
-import com.example.kairosapplication.ui.theme.BackgroundColor
+import androidx.compose.ui.graphics.Color
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.kairosapplication.ui.components.CreateSheetConfig
@@ -103,7 +103,7 @@ fun ViewScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(Color.Transparent)
             .statusBarsPadding()
             .padding(top = 8.dp),
     ) {

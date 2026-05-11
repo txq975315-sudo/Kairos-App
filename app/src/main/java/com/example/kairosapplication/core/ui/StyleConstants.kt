@@ -16,52 +16,77 @@ import com.example.taskmodel.model.UrgencyConfig
  * 3) Reuse across Essay / View / Widget / Mine.
  */
 object AppColors {
-    // ---------- Screen backgrounds ----------
-    val ScreenBackground = Color(0xFFF9F9F9)
-    val SurfaceWhite = Color(0xFFFFFFFF)
-    val Divider = Color(0xFFE0E0E0)
-    /** White cards (Essay NoteCard, etc.) */
-    val CardBackground = Color(0xFFFFFFFF)
+    // ---------- Screen backgrounds (quiet sage-warm mist) ----------
+    val ScreenBackground = Color(0xFFEDF0EC)
+    val SurfaceWhite = Color(0xFFFAFBFA)
+    val Divider = Color(0xFFE1E6E1)
+    /** Cards: green-gray white (avoid pure #FFF per “calm” spec) */
+    val CardBackground = Color(0xFFF5F7F5)
+    /**
+     * Unified translucent face over global atmosphere (tasks, notes, mine cards, widget previews, …).
+     * Single knob: lower = more see-through.
+     */
+    const val AtmospherePanelAlpha = 0.56f
+    val GlassFill = CardBackground.copy(alpha = AtmospherePanelAlpha)
+    /** @see GlassFill */
+    val NoteCardFace = GlassFill
+    /** Rim light (edge brighter than center — glass read) */
+    val CardRimLight = Color.White.copy(alpha = 0.38f)
+    /** Subtle cool depth (optional second pass / dividers) */
+    val CardRimDepth = Color(0xFF2A3328).copy(alpha = 0.06f)
     /** Timeline vertical rail */
-    val TimelineLine = Color(0xFFE0E0E0)
+    val TimelineLine = Color(0xFFDDE2DD)
 
-    // ---------- Text / icons ----------
-    val PrimaryText = Color(0xFF333333)
-    val SecondaryText = Color(0xFF666666)
-    val HintText = Color(0xFF9A9A9A)
-    val IconNeutral = Color(0xFF9E9E9E)
-    val BackIcon = Color(0xFF000000) // Spec: back icon solid black
+    // ---------- Text / icons (soft charcoal, not pure black) ----------
+    val PrimaryText = Color(0xFF2E312E)
+    val SecondaryText = Color(0xFF6A706A)
+    val HintText = Color(0xFF949994)
+    val IconNeutral = Color(0xFF8B918B)
+    val BackIcon = Color(0xFF3A3D3A)
 
-    // ---------- Time-block backgrounds (match Today) ----------
-    val AnytimeBackground = Color(0xFFF2EEE6)
-    val MorningBackground = Color(0xFFFFF8E6)
-    val AfternoonBackground = Color(0xFFFBE1D6)
-    val EveningBackground = Color(0xFFECE7FF)
+    // ---------- Time-block backgrounds (same families, lower chroma) ----------
+    val AnytimeBackground = Color(0xFFEFEBE3)
+    val MorningBackground = Color(0xFFF7F2E6)
+    val AfternoonBackground = Color(0xFFF3E4DC)
+    val EveningBackground = Color(0xFFE9E5F2)
 
     // ---------- Time-block title (dark) ----------
-    val AnytimeTitle = Color(0xFF6C5C4A)
-    val MorningTitle = Color(0xFF8A6E2F)
-    val AfternoonTitle = Color(0xFF9B5A40)
-    val EveningTitle = Color(0xFF5C4F96)
+    val AnytimeTitle = Color(0xFF5E564A)
+    val MorningTitle = Color(0xFF7A6430)
+    val AfternoonTitle = Color(0xFF8B5845)
+    val EveningTitle = Color(0xFF564A7E)
 
-    // ---------- Urgency ----------
+    // ---------- Urgency (keep prior hues for recognition) ----------
     val Urgent = Color(0xFFFF4444)
     val High = Color(0xFFFF9800)
     val Normal = Color(0xFFFFFC3A)
     val Low = Color(0xFF9E9E9E)
 
-    // ---------- BottomBar ----------
-    val BottomBarItem = Color(0xFF666666)
-    val BottomBarSelectedContainer = Color(0xFFDEDEDE).copy(alpha = 0.5f)
+    // ---------- BottomBar (floating strip) ----------
+    val BottomBarSurface = Color(0xFFF2F4F1)
+    val BottomBarItem = Color(0xFF5C625C)
+    val BottomBarSelectedContainer = Color(0xFFE4EAE4).copy(alpha = 0.52f)
+
+    // ---------- Small controls (e.g. time-block +) ----------
+    val SoftCircleFill = Color(0xFF2A3328).copy(alpha = 0.06f)
+    val SoftCircleIcon = Color(0xFF2A3328).copy(alpha = 0.22f)
+}
+
+/**
+ * Layered “glass-lite” veils over the global atmosphere (no logic coupling).
+ * Use on strips / sheets; keep dense list rows on [CardBackground] for readability.
+ */
+object AppMaterials {
+    /** Topic / chrome strip over atmosphere when no essay wallpaper */
+    val StripOverAtmosphere = Color(0xFFEDF1ED).copy(alpha = 0.62f)
 }
 
 object AppShapes {
-    // From Figma and current implementation
-    val SheetTopRadius = 25.dp
-    val CardRadius = 12.dp
-    val TimeBlockRadius = 16.dp
-    /** Less pill-shaped than full roundrect; tighter than legacy 20dp. */
-    val BottomBarSelectedRadius = 11.dp
+    val SheetTopRadius = 28.dp
+    val CardRadius = 16.dp
+    val TimeBlockRadius = 18.dp
+    /** Pill behind selected tab icon + label */
+    val BottomBarSelectedRadius = 14.dp
     val CircularButton = 999.dp
 }
 
@@ -115,8 +140,8 @@ object AppTypography {
 /** Full-screen headers (Daily Review, Create, …) */
 object AppScreenHeader {
     val titleSp = 24.sp
-    val titleWeight = FontWeight.Bold
-    val titleColor = Color(0xFF1A1A1A)
+    val titleWeight = FontWeight.SemiBold
+    val titleColor = AppColors.PrimaryText
 }
 
 object AppReviewLayout {

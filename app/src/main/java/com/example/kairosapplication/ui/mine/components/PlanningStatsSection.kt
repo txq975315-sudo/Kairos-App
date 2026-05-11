@@ -30,13 +30,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.model.WeeklyInsights
 
-private val CardWhite = Color(0xFFFFFFFF)
 private val TitleSans = Color(0xFF1A1A1A)
 private val BlockStreakTint = Color(0xFFEDE7F6)
-private val BlockTotalSurface = Color(0xFFFFFFFF)
 private val BlockTotalBorder = Color(0xFFE6E6EA)
 private val LabelCaps = Color(0xFF424242)
 private val SwitchBlue = Color(0xFF2196F3)
@@ -61,7 +60,7 @@ fun PlanningStatsSection(
                 ambientColor = Color.Black.copy(alpha = 0.06f),
                 spotColor = Color.Black.copy(alpha = 0.08f)
             )
-            .background(CardWhite, RoundedCornerShape(20.dp))
+            .background(AppColors.GlassFill, RoundedCornerShape(20.dp))
             .border(1.dp, Color(0xFFE8E8EC), RoundedCornerShape(20.dp))
             .padding(horizontal = 18.dp, vertical = 18.dp)
     ) {
@@ -115,7 +114,7 @@ fun PlanningStatsSection(
                 StatBlock(
                     value = insights.daysWithRecord,
                     caption = LocalizedStrings.get("mine_stat_total_days"),
-                    background = BlockTotalSurface,
+                    background = AppColors.GlassFill,
                     outlined = true,
                     modifier = Modifier.weight(1f)
                 )

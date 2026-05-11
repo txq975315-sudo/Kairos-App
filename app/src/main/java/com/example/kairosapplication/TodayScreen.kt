@@ -265,7 +265,7 @@ fun TodayScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.ScreenBackground)
+            .background(Color.Transparent)
             .statusBarsPadding()
             .padding(horizontal = AppSpacing.PageHorizontal)
     ) {
@@ -551,7 +551,7 @@ private fun FirstUseOnboarding(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
@@ -585,7 +585,7 @@ private fun FirstUseOnboarding(
                         .weight(1f)
                         .clickable { onStartEmpty() },
                     shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0))
+                    colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill)
                 ) {
                     Text(
                         text = LocalizedStrings.get("today_welcome_start_empty"),
@@ -624,7 +624,7 @@ private fun TopBar(
                 spotColor = shadowColor
             ),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Row(
@@ -660,14 +660,14 @@ private fun TopBar(
                     spotColor = shadowColor
                 )
                 .clip(CircleShape)
-                .background(Color.White)
+                .background(AppColors.GlassFill)
                 .clickable { onCreateClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = taskText.contentDescAddTask,
-                tint = Color.Black,
+                tint = AppColors.PrimaryText,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -685,7 +685,7 @@ private fun TopBar(
                     spotColor = shadowColor
                 )
                 .clip(CircleShape)
-                .background(Color.White)
+                .background(AppColors.GlassFill)
                 .clickable { onDailyReviewClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -871,7 +871,7 @@ private fun TimeBlock(
             ) {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.8f)),
+                    colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.48f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Row(

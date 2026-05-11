@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
@@ -103,21 +105,23 @@ fun TaskItemCard(
 
     @Composable
     fun TaskCardInner() {
+        val cardShape = RoundedCornerShape(AppShapes.CardRadius)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .border(1.dp, AppColors.CardRimLight, cardShape)
                 .shadow(
-                    elevation = 4.dp,
-                    shape = RoundedCornerShape(12.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.2f),
-                    spotColor = Color.Black.copy(alpha = 0.2f)
+                    elevation = 0.5.dp,
+                    shape = cardShape,
+                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                    spotColor = Color.Black.copy(alpha = 0.06f),
                 )
                 .onGloballyPositioned { lc ->
                     onDragAnchorYRoot?.invoke(lc.boundsInRoot().center.y)
                 },
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            shape = cardShape,
+            colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -195,7 +199,7 @@ fun TaskItemCard(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color(0xFFE53935), RoundedCornerShape(12.dp))
+                        .background(Color(0xFFE53935), RoundedCornerShape(AppShapes.CardRadius))
                         .padding(horizontal = 20.dp),
                     contentAlignment = Alignment.CenterEnd
                 ) {

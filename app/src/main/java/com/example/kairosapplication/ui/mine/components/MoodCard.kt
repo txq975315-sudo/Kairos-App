@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
@@ -63,14 +64,13 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-private val CardSurface = Color(0xFFFFFFFF)
 private val CardStroke = Color(0xFFE8E8EC)
 private val TitleColor = Color(0xFF1A1A1A)
 private val SubGray = Color(0xFF9E9E9E)
 private val Green = Color(0xFF4CAF50)
 private val LinkBlue = Color(0xFF2196F3)
 private val RingGray = Color(0xFFE0E0E0)
-private val EmptyDayFill = Color(0xFFF0F0F0)
+private val EmptyDayFill = AppColors.CardBackground.copy(alpha = 0.42f)
 
 @Composable
 fun MoodCard(
@@ -146,7 +146,7 @@ fun MoodCard(
                     ambientColor = Color.Black.copy(alpha = 0.06f),
                     spotColor = Color.Black.copy(alpha = 0.08f)
                 )
-                .background(CardSurface, RoundedCornerShape(20.dp))
+                .background(AppColors.GlassFill, RoundedCornerShape(20.dp))
                 .border(1.dp, CardStroke, RoundedCornerShape(20.dp))
                 .padding(horizontal = 18.dp, vertical = 18.dp)
         ) {

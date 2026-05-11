@@ -279,7 +279,7 @@ fun CreateScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(AppColors.SurfaceWhite)
+                .background(AppColors.GlassFill)
                 .padding(horizontal = 20.dp)
                 .padding(top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -404,7 +404,7 @@ fun CreateScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(if (dockedTool != null) Color.White else AppColors.ScreenBackground)
+                .background(if (dockedTool != null) AppColors.GlassFill else AppColors.ScreenBackground)
         ) {
             if (dockedTool != null) {
                 HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
@@ -594,7 +594,7 @@ private fun CalendarSection(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(AppColors.GlassFill)
             .padding(14.dp)
     ) {
         Row(
@@ -729,7 +729,7 @@ private fun InputField(
         modifier = fieldModifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
+            .background(AppColors.GlassFill)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,

@@ -47,8 +47,8 @@ import com.example.kairosapplication.ui.mine.components.AllRecordsSection
 import com.example.kairosapplication.ui.mine.components.MoodCard
 import com.example.kairosapplication.ui.mine.components.PlanningStatsSection
 import com.example.kairosapplication.ui.mine.components.ProfileEditSheet
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
-import com.example.kairosapplication.ui.theme.BackgroundColor
 
 private val MoonTint = Color(0xFFFFC107)
 private val SettingsIconTint = Color(0xFF616161)
@@ -81,7 +81,7 @@ fun MineScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundColor)
+            .background(Color.Transparent)
             .statusBarsPadding()
     ) {
         Column(
@@ -102,7 +102,7 @@ fun MineScreen(
                         .heightIn(min = 44.dp)
                         .shadow(1.dp, RoundedCornerShape(22.dp), clip = false)
                         .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White)
+                        .background(AppColors.GlassFill)
                         .clickable(onClick = openEdit)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     contentAlignment = Alignment.CenterStart
@@ -125,7 +125,7 @@ fun MineScreen(
                             .size(40.dp)
                             .shadow(1.dp, CircleShape, clip = false)
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .background(AppColors.GlassFill)
                             .clickable(onClick = onOpenTheme),
                         contentAlignment = Alignment.Center
                     ) {
@@ -141,7 +141,7 @@ fun MineScreen(
                             .size(40.dp)
                             .shadow(1.dp, CircleShape, clip = false)
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .background(AppColors.GlassFill)
                             .clickable(onClick = onOpenSettings),
                         contentAlignment = Alignment.Center
                     ) {

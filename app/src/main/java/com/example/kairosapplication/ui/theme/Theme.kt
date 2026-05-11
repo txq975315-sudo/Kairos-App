@@ -1,42 +1,91 @@
 package com.example.kairosapplication.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.core.ui.AppColors
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val KairosShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val KairosLightColorScheme = lightColorScheme(
+    primary = Color(0xFF4E6B5C),
+    onPrimary = Color(0xFFFAFBFA),
+    primaryContainer = Color(0xFFC9D9CE),
+    onPrimaryContainer = Color(0xFF102018),
+    secondary = Color(0xFF5E6661),
+    onSecondary = Color(0xFFFAFBFA),
+    secondaryContainer = Color(0xFFDFE6DF),
+    onSecondaryContainer = Color(0xFF1B211D),
+    tertiary = Color(0xFF6E6479),
+    onTertiary = Color(0xFFFAFBFA),
+    tertiaryContainer = Color(0xFFE5DFF0),
+    onTertiaryContainer = Color(0xFF25152F),
+    background = AppColors.ScreenBackground,
+    onBackground = AppColors.PrimaryText,
+    surface = AppColors.CardBackground,
+    onSurface = AppColors.PrimaryText,
+    surfaceVariant = AppColors.SurfaceWhite,
+    onSurfaceVariant = AppColors.SecondaryText,
+    outline = AppColors.Divider,
+    outlineVariant = AppColors.TimelineLine,
+    error = Color(0xFFBA1A1A),
+    onError = Color.White,
+    surfaceContainerLowest = AppColors.ScreenBackground,
+    surfaceContainerLow = AppColors.BottomBarSurface,
+    surfaceContainer = AppColors.SurfaceWhite,
+    surfaceContainerHigh = Color(0xFFFFFFFF),
+    surfaceContainerHighest = Color(0xFFFFFFFF),
+)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val KairosDarkColorScheme = darkColorScheme(
+    primary = Color(0xFF9CB8A8),
+    onPrimary = Color(0xFF0D1612),
+    primaryContainer = Color(0xFF355045),
+    onPrimaryContainer = Color(0xFFD4E8DD),
+    secondary = Color(0xFFB4BCB6),
+    onSecondary = Color(0xFF0D100E),
+    secondaryContainer = Color(0xFF3D4540),
+    onSecondaryContainer = Color(0xFFE3EAE4),
+    tertiary = Color(0xFFC8BFD4),
+    onTertiary = Color(0xFF0D0A10),
+    tertiaryContainer = Color(0xFF4A4258),
+    onTertiaryContainer = Color(0xFFEAE4F2),
+    background = Color(0xFF121512),
+    onBackground = Color(0xFFE6E9E6),
+    surface = Color(0xFF1A1D1A),
+    onSurface = Color(0xFFE6E9E6),
+    surfaceVariant = Color(0xFF242924),
+    onSurfaceVariant = Color(0xFFB4BAB4),
+    outline = Color(0xFF3D4540),
+    outlineVariant = Color(0xFF2A302C),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    surfaceContainerLowest = Color(0xFF0C0F0C),
+    surfaceContainerLow = Color(0xFF161916),
+    surfaceContainer = Color(0xFF1A1D1A),
+    surfaceContainerHigh = Color(0xFF222522),
+    surfaceContainerHighest = Color(0xFF2A2E2A),
 )
 
 @Composable
 fun KairosApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -46,13 +95,14 @@ fun KairosApplicationTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> KairosDarkColorScheme
+        else -> KairosLightColorScheme
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = KairosShapes,
         content = content
     )
 }

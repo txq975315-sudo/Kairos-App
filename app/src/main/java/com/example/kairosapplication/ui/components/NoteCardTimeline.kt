@@ -1,6 +1,7 @@
 package com.example.kairosapplication.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
@@ -117,13 +119,22 @@ fun NoteCardTimeline(
             )
         }
         Spacer(Modifier.width(12.dp))
+        val cardShape = RoundedCornerShape(AppShapes.CardRadius)
         Card(
             modifier = Modifier
                 .weight(1f)
-                .shadow(4.dp, RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = cardBackgroundOverride ?: AppColors.CardBackground),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                .border(1.dp, AppColors.CardRimLight, cardShape)
+                .shadow(
+                    elevation = 0.5.dp,
+                    shape = cardShape,
+                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                    spotColor = Color.Black.copy(alpha = 0.06f),
+                ),
+            shape = cardShape,
+            colors = CardDefaults.cardColors(
+                containerColor = cardBackgroundOverride ?: AppColors.NoteCardFace,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Box(
                 modifier = Modifier

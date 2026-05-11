@@ -1,5 +1,6 @@
 ﻿package com.example.kairosapplication
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,7 +23,9 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -53,8 +57,11 @@ import com.example.kairosapplication.notification.NotificationHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,7 +99,6 @@ import com.example.kairosapplication.widget.WidgetClickHandler
 import com.example.kairosapplication.widget.WidgetManager
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
-import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -245,11 +251,8 @@ fun MainScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundColor),
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        KairosAtmosphereBackground(Modifier.fillMaxSize())
         if (bootReady && !needsLanguageOnboarding) {
             CompositionLocalProvider(
                 LocalCurrentLanguage provides languageState,
@@ -279,7 +282,7 @@ fun MainScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundColor,
+        containerColor = Color.Transparent,
         bottomBar = {
             AnimatedVisibility(
                 visible = !hideBottomBar,
@@ -572,12 +575,10 @@ fun MainScreen(
         }
         if (!bootReady) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(BackgroundColor),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
         if (bootReady && needsLanguageOnboarding) {
@@ -595,8 +596,43 @@ fun MainScreen(
 }
 
 /**
- * Compact bottom nav aligned with Today chrome: [BackgroundColor] bar, tight vertical insets;
- * selected pill wraps icon + label together.
+ * Full-bleed atmosphere art + **layered translucency only** (no RenderEffect blur):
+ * white scatter + sage mist gradient so the painting stays soft and “unreadable” at a glance.
+ */
+@Composable
+private fun KairosAtmosphereBackground(modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        Image(
+            painter = painterResource(R.drawable.kairos_atmosphere_bg),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = 0.14f)),
+        )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0f to Color.White.copy(alpha = 0.10f),
+                            0.36f to Color(0xFFE6EBE6).copy(alpha = 0.34f),
+                            0.68f to Color(0xFFDFE6DF).copy(alpha = 0.42f),
+                            1f to Color(0xFFD8E0D8).copy(alpha = 0.48f),
+                        ),
+                    ),
+                ),
+        )
+    }
+}
+
+/**
+ * Compact bottom nav: no downward shadow (avoids “strip above painting”);
+ * soft darkening along the **top** edge only, reads like a top inset shadow.
  */
 @Composable
 private fun MainAppBottomBar(
@@ -607,16 +643,34 @@ private fun MainAppBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding(),
-        color = BackgroundColor,
+        color = AppColors.BottomBarSurface.copy(alpha = 0.68f),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, bottom = 2.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            HorizontalDivider(
+                thickness = 0.5.dp,
+                color = AppColors.Divider.copy(alpha = 0.35f),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0f to Color.Black.copy(alpha = 0.085f),
+                                1f to Color.Transparent,
+                            ),
+                        ),
+                    ),
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp, bottom = 2.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
             AppTab.entries.forEach { tab ->
                 val selected = selectedTab == tab
                 val labelText = mainNavLabel(tab)
@@ -658,6 +712,7 @@ private fun MainAppBottomBar(
                         }
                     }
                 }
+            }
             }
         }
     }

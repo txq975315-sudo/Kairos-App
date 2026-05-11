@@ -52,10 +52,11 @@ import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 
-private val CardBg = Color.White
+private val CardBg = AppColors.GlassFill
 private val DividerC = Color(0xFFE8E5E0)
 private val TitleC = Color(0xFF1A1A1A)
 private val SubC = Color(0xFF9E9E9E)

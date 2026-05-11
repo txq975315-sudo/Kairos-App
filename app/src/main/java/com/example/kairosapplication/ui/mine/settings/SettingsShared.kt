@@ -33,11 +33,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 
-val SettingsCardBg = Color.White
+val SettingsCardBg = AppColors.GlassFill
 val SettingsDividerC = Color(0xFFE8E5E0)
 val SettingsTitleC = Color(0xFF1A1A1A)
 val SettingsSubC = Color(0xFF9E9E9E)

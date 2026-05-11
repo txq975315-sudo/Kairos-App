@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -105,7 +106,7 @@ fun SettingsScreen(
                     .size(40.dp)
                     .shadow(1.dp, CircleShape)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(AppColors.GlassFill)
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
             ) {

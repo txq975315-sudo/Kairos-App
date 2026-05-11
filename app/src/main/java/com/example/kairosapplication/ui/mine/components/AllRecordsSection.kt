@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.mine.records.CheckInViewMode
 import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
@@ -24,7 +25,6 @@ import com.example.kairosapplication.ui.mine.records.MineRecordsOverview
 import com.example.taskmodel.model.Note
 import com.example.taskmodel.model.Task
 
-private val CheckInCardSurface = Color(0xFFFFFFFF)
 private val CheckInCardStroke = Color(0xFFE8E8EC)
 
 @Composable
@@ -64,7 +64,7 @@ fun AllRecordsSection(
                     ambientColor = Color.Black.copy(alpha = 0.06f),
                     spotColor = Color.Black.copy(alpha = 0.08f),
                 )
-                .background(CheckInCardSurface, RoundedCornerShape(20.dp))
+                .background(AppColors.GlassFill, RoundedCornerShape(20.dp))
                 .border(1.dp, CheckInCardStroke, RoundedCornerShape(20.dp))
                 .padding(horizontal = 18.dp, vertical = 18.dp),
         ) {

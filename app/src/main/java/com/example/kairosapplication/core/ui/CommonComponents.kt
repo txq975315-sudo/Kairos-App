@@ -2,6 +2,7 @@ package com.example.kairosapplication.core.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -55,14 +56,14 @@ fun CommonBackButton(
 @Composable
 fun CommonCard(
     modifier: Modifier = Modifier,
-    containerColor: Color = AppColors.SurfaceWhite,
+    containerColor: Color = AppColors.GlassFill,
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.border(1.dp, AppColors.CardRimLight, RoundedCornerShape(AppShapes.CardRadius)),
         shape = RoundedCornerShape(AppShapes.CardRadius),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
     ) {
         content()
     }
@@ -110,7 +111,7 @@ fun CommonTimeBlock(
         ) {
             Card(
                 shape = RoundedCornerShape(AppShapes.TimeBlockRadius),
-                colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.8f)),
+                colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.48f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
@@ -146,13 +147,13 @@ fun CommonTimeBlock(
                     Box(
                         modifier = Modifier
                             .size(24.dp)
-                            .background(Color.Black.copy(alpha = 0.05f), CircleShape),
+                            .background(AppColors.SoftCircleFill, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = LocalizedStrings.get("cd_add_task"),
-                            tint = Color.Black.copy(alpha = 0.18f),
+                            tint = AppColors.SoftCircleIcon,
                             modifier = Modifier.size(20.dp)
                         )
                     }

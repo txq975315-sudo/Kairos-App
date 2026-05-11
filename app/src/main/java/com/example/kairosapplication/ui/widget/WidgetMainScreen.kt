@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.widget.WidgetTaskTitleClip
 import com.example.kairosapplication.widget.WidgetViewFactory
@@ -73,8 +74,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val WidgetScreenBg = Color(0xFFF2F2F2)
-private val PreviewCardBg = Color.White
+private val PreviewCardBg = AppColors.GlassFill
 private val WidgetPurpleTrack = Color(0xFFE8DEF8)
 private val WidgetPurpleProgress = Color(0xFF7B61FF)
 private val WidgetPurpleAccent = Color(0xFF7B61FF)
@@ -171,7 +171,7 @@ fun WidgetMainScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(WidgetScreenBg)
+            .background(Color.Transparent)
             .statusBarsPadding()
     ) {
         WidgetSizeTabRow(

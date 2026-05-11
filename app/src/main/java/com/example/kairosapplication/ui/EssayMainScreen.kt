@@ -83,6 +83,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppMaterials
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.ThemeAccentColors
 import coil.compose.AsyncImage
@@ -101,7 +102,6 @@ import com.example.kairosapplication.ui.topic.rememberTopicPrimaryNavShortWithCo
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabelWithConfig
 import com.example.kairosapplication.ui.components.appendReviewCommentToNote
 import com.example.kairosapplication.ui.project.ProjectTimelineScreen
-import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -234,7 +234,7 @@ fun EssayMainScreen(
         if (essayWallpaperActive && essayWallpaperIsDark) Color.White.copy(alpha = 0.82f)
         else SecondaryTextColor
     val essayTopicSurfaceColor =
-        if (essayWallpaperActive) Color.Transparent else AppColors.ScreenBackground
+        if (essayWallpaperActive) Color.Transparent else AppMaterials.StripOverAtmosphere
 
     // Compute card background override
     val cardBackgroundOverride = remember(cardBgType, cardBgColor, cardBgImageUri, cardBgOpacity) {
@@ -380,7 +380,7 @@ fun EssayMainScreen(
         }
         Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = if (essayWallpaperActive) Color.Transparent else BackgroundColor,
+        containerColor = Color.Transparent,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onNavigateToEditor(null) },
