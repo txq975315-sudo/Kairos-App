@@ -5,8 +5,8 @@ export default function EssayAndProductIterationHandoff() {
     <Stack gap={20}>
       <H1>Kairos：Essay 闪退与产品体验迭代（开发过程与对接说明）</H1>
       <Text tone="secondary" size="small">
-        本地提交：be7a1f8（fix(ui): Essay 稳定性、任务快捷创建、小组件尺寸与随笔迭代）。若尚未推送，请在可访问 GitHub 的环境执行：git push -u origin
-        main。本文档便于后续联调、Code Review 与需求对齐；实现细节以仓库为准。
+        本地提交：be7a1f8（主代码）+ 1148ea8（本 Canvas 文档）。若尚未推送，请在可访问 GitHub 的环境执行：git push -u origin main。本文档便于后续联调、Code
+        Review 与需求对齐；实现细节以仓库为准。
       </Text>
 
       <Callout tone="info">
@@ -79,7 +79,7 @@ export default function EssayAndProductIterationHandoff() {
       <H2>四、同批提交中的其它改动（便于对接时扫范围）</H2>
       <Text tone="secondary" size="small">
         与上述问题同期存在于工作区的还有：随笔 EssayMainScreen 大幅迭代、Note 卡片与复盘区（NoteReviewSection）、搜索顶栏、导入导出、月视图（MonthSwitcher
-        新增、DateSelector 删除）、小组件 XML/字符串、NoteRepository 等。统计约 58 个文件，以 git show be7a1f8 --stat 为准。
+        新增、DateSelector 删除）、小组件 XML/字符串、NoteRepository 等。主提交约 58 个文件，以 git show be7a1f8 --stat 为准。
       </Text>
 
       <Divider />
