@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.i18n.LocalizedStrings
 
 /**
@@ -96,12 +97,9 @@ fun EssaySearchTopBar(
             modifier = Modifier.size(40.dp),
             contentAlignment = Alignment.Center
         ) {
-            ArrowButton(
+            CommonBackButton(
                 onClick = onBackClick,
-                direction = ArrowDirection.LEFT,
-                size = 40.dp,
-                tint = backIconTint,
-                contentDescription = LocalizedStrings.get("back")
+                contentDescription = LocalizedStrings.get("back"),
             )
         }
         Spacer(modifier = Modifier.width(4.dp))

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Same keys as values/strings.xml — English -->
 <string name="app_name">Kairos Application</string>
@@ -158,6 +158,7 @@
     <string name="i18n_view_week_add_task">+ Add task</string>
     <string name="i18n_view_week_more_tasks">+%1$d more tasks</string>
     <string name="i18n_view_week_this_week"> · This week</string>
+    <string name="i18n_view_month_this_month"> · This month</string>
     <string name="i18n_view_day_today"> · Today</string>
     <string name="i18n_view_month_summary">This month</string>
     <string name="i18n_view_metric_notes">Notes</string>
@@ -227,11 +228,11 @@
     <string name="i18n_recorded_days">Recorded </string>
     <string name="i18n_recorded_days_suffix"> days</string>
     <string name="i18n_weekly_insights">My Weekly Insights</string>
-    <string name="i18n_mine_mood_card_title">Mood and Daily Reflections</string>
+    <string name="i18n_mine_mood_card_title">Weekly Mood Insights</string>
     <string name="i18n_mine_planning_heading">I have been planning every day for</string>
     <string name="i18n_mine_stat_days_in_a_row">DAYS IN A ROW</string>
     <string name="i18n_mine_stat_total_days">TOTAL DAYS</string>
-    <string name="i18n_mine_all_records_title">All of My Records</string>
+    <string name="i18n_mine_all_records_title">My Data Records</string>
     <string name="i18n_mine_records_completion_days">Completion days</string>
     <string name="i18n_mine_records_completed_items">Completed items</string>
     <string name="i18n_mine_records_unfinished_today">Unfinished today</string>
@@ -298,6 +299,13 @@
     <string name="i18n_export_json_desc">JSON (recommended, re-importable)</string>
     <string name="i18n_export_txt_desc">TXT (plain text, notes only)</string>
     <string name="i18n_export_to_file">Export to file</string>
+    <string name="i18n_export_settings">Export Settings</string>
+    <string name="i18n_export_filename">Filename</string>
+    <string name="i18n_export_location">Save location</string>
+    <string name="i18n_export_location_downloads">Downloads/Kairos</string>
+    <string name="i18n_export_location_documents">Documents/Kairos</string>
+    <string name="i18n_export_custom_name_hint">Custom filename (optional)</string>
+    <string name="i18n_export_default_name">Use default name</string>
     <string name="i18n_include_profile">Profile</string>
     <string name="i18n_parse_failed">Parse failed</string>
     <string name="i18n_cannot_read_file">Cannot read file</string>
@@ -356,7 +364,7 @@
     <string name="i18n_essay_comment_sheet_title">Comment</string>
     <string name="i18n_essay_comment_placeholder">Write a short self-review…</string>
     <string name="i18n_essay_comment_toast_empty">Enter a comment</string>
-    <string name="i18n_essay_comment_review_block">— Review · %1$s\n%2$s</string>
+    <string name="i18n_essay_comment_review_block">%1$s\n%2$s</string>
     <string name="i18n_essay_search_placeholder">Search body or topic</string>
     <string name="i18n_essay_editor_snackbar_need_summary">Please add a short summary</string>
     <string name="i18n_essay_editor_snackbar_need_secondary">Please select a secondary category</string>
@@ -646,6 +654,12 @@
     <string name="i18n_essay_menu_layout_integrated">Essay: Integrated layout</string>
     <string name="i18n_essay_menu_wallpaper">Essay wallpaper…</string>
     <string name="i18n_essay_menu_clear_wallpaper">Clear essay wallpaper</string>
+    <string name="i18n_essay_menu_card_bg">Card background…</string>
+    <string name="i18n_essay_menu_card_bg_none">Default</string>
+    <string name="i18n_essay_menu_card_bg_color">Solid color</string>
+    <string name="i18n_essay_menu_card_bg_image">Image</string>
+    <string name="i18n_essay_menu_card_bg_opacity">Background opacity</string>
+    <string name="i18n_essay_menu_card_bg_clear">Clear background</string>
     <string name="i18n_cd_more_menu">More menu</string>
     <string name="app_monthvalue_48001">Mood overview · month %1$d</string>
     <string name="app_count_48601">Notes (%1$d)</string>

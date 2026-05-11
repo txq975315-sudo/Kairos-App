@@ -193,7 +193,9 @@ class SettingsViewModel(
         includeNotes: Boolean,
         includeTasks: Boolean,
         includeMoods: Boolean,
-        includeProfile: Boolean
+        includeProfile: Boolean,
+        customFileName: String? = null,
+        saveToDocuments: Boolean = false
     ) {
         viewModelScope.launch {
             _exportState.value = ExportState.Running
@@ -201,7 +203,9 @@ class SettingsViewModel(
                 includeNotes = includeNotes,
                 includeTasks = includeTasks,
                 includeMoods = includeMoods,
-                includeProfile = includeProfile
+                includeProfile = includeProfile,
+                customFileName = customFileName,
+                saveToDocuments = saveToDocuments
             ).onSuccess { file ->
                 dataStoreManager.saveLastBackupTimestamp(System.currentTimeMillis())
                 _exportState.value = ExportState.Success(file)
@@ -211,10 +215,16 @@ class SettingsViewModel(
         }
     }
 
-    fun exportTxt() {
+    fun exportTxt(
+        customFileName: String? = null,
+        saveToDocuments: Boolean = false
+    ) {
         viewModelScope.launch {
             _exportState.value = ExportState.Running
-            dataExporter.exportToTxtFile().onSuccess { file ->
+            dataExporter.exportToTxtFile(
+                customFileName = customFileName,
+                saveToDocuments = saveToDocuments
+            ).onSuccess { file ->
                 dataStoreManager.saveLastBackupTimestamp(System.currentTimeMillis())
                 _exportState.value = ExportState.Success(file)
             }.onFailure { e ->

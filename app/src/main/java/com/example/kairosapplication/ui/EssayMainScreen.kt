@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
@@ -50,11 +52,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -63,6 +68,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -178,6 +184,7 @@ fun EssayMainScreen(
     var commentNoteId by remember { mutableStateOf<Long?>(null) }
     var topicPrimaryFilter by remember { mutableStateOf<String?>(null) }
     var selectedEssayProjectId by remember { mutableStateOf<Long?>(null) }
+    var showCardBgSheet by remember { mutableStateOf(false) }
 
     val uiState by taskViewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -189,10 +196,27 @@ fun EssayMainScreen(
     val themeColorKey by dataStore.getThemeColor().collectAsState(initial = "blue")
     val timelineAccent = remember(themeColorKey) { ThemeAccentColors.fromSettingsKey(themeColorKey) }
     val scope = rememberCoroutineScope()
+
+    // Card-mode background state
+    val cardBgType by dataStore.getEssayCardBgType().collectAsState(initial = "none")
+    val cardBgColor by dataStore.getEssayCardBgColor().collectAsState(initial = "#FFFFFF")
+    val cardBgImageUri by dataStore.getEssayCardBgImageUri().collectAsState(initial = null)
+    val cardBgOpacity by dataStore.getEssayCardBgOpacity().collectAsState(initial = 1f)
+
     val pickEssayWallpaper = rememberLauncherForActivityResult(
         contract = PickVisualMedia()
     ) { uri ->
         uri?.let { u -> scope.launch { dataStore.setEssayIntegratedWallpaperUri(u.toString()) } }
+    }
+    val pickCardBgImage = rememberLauncherForActivityResult(
+        contract = PickVisualMedia()
+    ) { uri ->
+        uri?.let { u ->
+            scope.launch {
+                dataStore.setEssayCardBgImageUri(u.toString())
+                dataStore.setEssayCardBgType("image")
+            }
+        }
     }
     LaunchedEffect(essayWallpaperUri, integratedLayoutActive) {
         essayWallpaperIsDark = if (!integratedLayoutActive || essayWallpaperUri.isNullOrBlank()) {
@@ -211,10 +235,23 @@ fun EssayMainScreen(
         else SecondaryTextColor
     val essayTopicSurfaceColor =
         if (essayWallpaperActive) Color.Transparent else AppColors.ScreenBackground
+
+    // Compute card background override
+    val cardBackgroundOverride = remember(cardBgType, cardBgColor, cardBgImageUri, cardBgOpacity) {
+        when (cardBgType) {
+            "color" -> try {
+                Color(android.graphics.Color.parseColor(cardBgColor)).copy(alpha = cardBgOpacity)
+            } catch (_: Exception) { null }
+            "image" -> Color.White.copy(alpha = cardBgOpacity)
+            else -> null
+        }
+    }
     val inboxCount = uiState.noteInbox.size
 
     val allTimelineNotes = remember(uiState.notePublished) {
-        uiState.notePublished.filter { it.status != NoteStatus.DELETED }
+        uiState.notePublished
+            .filter { it.status != NoteStatus.DELETED }
+            .distinctBy { it.id }
     }
     val projectsByIdMap = remember(uiState.noteProjects) {
         uiState.noteProjects.associate { it.id to it.name }
@@ -309,6 +346,29 @@ fun EssayMainScreen(
         onNoteDeleted = { nid -> if (expandedNoteId == nid) expandedNoteId = null }
     )
 
+    if (showCardBgSheet) {
+        CardBackgroundSettingsSheet(
+            currentType = cardBgType,
+            currentColor = cardBgColor,
+            currentImageUri = cardBgImageUri,
+            currentOpacity = cardBgOpacity,
+            onDismiss = { showCardBgSheet = false },
+            onTypeChange = { scope.launch { dataStore.setEssayCardBgType(it) } },
+            onColorChange = { scope.launch { dataStore.setEssayCardBgColor(it) } },
+            onPickImage = { pickCardBgImage.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
+            onClearImage = { scope.launch { dataStore.setEssayCardBgImageUri(null) } },
+            onOpacityChange = { scope.launch { dataStore.setEssayCardBgOpacity(it) } },
+            onClearAll = {
+                scope.launch {
+                    dataStore.setEssayCardBgType("none")
+                    dataStore.setEssayCardBgColor("#FFFFFF")
+                    dataStore.setEssayCardBgImageUri(null)
+                    dataStore.setEssayCardBgOpacity(1f)
+                }
+            }
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (essayWallpaperActive) {
             AsyncImage(
@@ -337,10 +397,18 @@ fun EssayMainScreen(
             }
         }
     ) { padding ->
+        val layoutDirection = LocalLayoutDirection.current
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(
+                    PaddingValues(
+                        top = padding.calculateTopPadding(),
+                        start = padding.calculateStartPadding(layoutDirection),
+                        end = padding.calculateEndPadding(layoutDirection),
+                        bottom = 0.dp,
+                    ),
+                )
                 .padding(horizontal = AppSpacing.PageHorizontal)
         ) {
             Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
@@ -393,21 +461,27 @@ fun EssayMainScreen(
                             contentDescription = LocalizedStrings.get("cd_more_options"),
                             onClick = { menuOpen = true }
                         )
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        val menuText = Color(0xFF333333)
+                        val menuIcon = Color(0xFF555555)
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false },
+                            containerColor = Color(0xFFFCFCFC),
+                        ) {
                             DropdownMenuItem(
-                                text = { Text(LocalizedStrings.get("topic_manage"), color = PrimaryTextColor) },
+                                text = { Text(LocalizedStrings.get("topic_manage"), color = menuText) },
                                 onClick = {
                                     menuOpen = false
                                     onOpenTopicManage()
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text(LocalizedStrings.get("essay_menu_trash"), color = PrimaryTextColor) },
+                                text = { Text(LocalizedStrings.get("essay_menu_trash"), color = menuText) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = null,
-                                        tint = SecondaryTextColor
+                                        tint = menuIcon
                                     )
                                 },
                                 onClick = {
@@ -416,13 +490,13 @@ fun EssayMainScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(LocalizedStrings.get("essay_menu_layout_card"), color = essayHeaderPrimary) },
+                                text = { Text(LocalizedStrings.get("essay_menu_layout_card"), color = menuText) },
                                 leadingIcon = if (timelineLayout == "card") {
                                     {
                                         Icon(
                                             imageVector = Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = essayHeaderPrimary
+                                            tint = menuIcon
                                         )
                                     }
                                 } else {
@@ -434,13 +508,13 @@ fun EssayMainScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(LocalizedStrings.get("essay_menu_layout_integrated"), color = essayHeaderPrimary) },
+                                text = { Text(LocalizedStrings.get("essay_menu_layout_integrated"), color = menuText) },
                                 leadingIcon = if (timelineLayout == "integrated") {
                                     {
                                         Icon(
                                             imageVector = Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = essayHeaderPrimary
+                                            tint = menuIcon
                                         )
                                     }
                                 } else {
@@ -453,7 +527,7 @@ fun EssayMainScreen(
                             )
                             if (integratedLayoutActive) {
                                 DropdownMenuItem(
-                                    text = { Text(LocalizedStrings.get("essay_menu_wallpaper"), color = essayHeaderPrimary) },
+                                    text = { Text(LocalizedStrings.get("essay_menu_wallpaper"), color = menuText) },
                                     onClick = {
                                         menuOpen = false
                                         pickEssayWallpaper.launch(
@@ -462,12 +536,21 @@ fun EssayMainScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(LocalizedStrings.get("essay_menu_clear_wallpaper"), color = essayHeaderPrimary) },
+                                    text = { Text(LocalizedStrings.get("essay_menu_clear_wallpaper"), color = menuText) },
                                     onClick = {
                                         menuOpen = false
                                         scope.launch { dataStore.setEssayIntegratedWallpaperUri(null) }
                                     },
                                     enabled = essayWallpaperUri != null
+                                )
+                            }
+                            if (!integratedLayoutActive) {
+                                DropdownMenuItem(
+                                    text = { Text(LocalizedStrings.get("essay_menu_card_bg"), color = menuText) },
+                                    onClick = {
+                                        menuOpen = false
+                                        showCardBgSheet = true
+                                    }
                                 )
                             }
                         }
@@ -558,7 +641,8 @@ fun EssayMainScreen(
                                     expandedNoteId = null
                                 }
                             )
-                        }
+                        },
+                        cardBackgroundOverride = cardBackgroundOverride
                     )
                     EssayTab.TOPIC -> TopicTabContent(
                         allNotes = allTimelineNotes,
@@ -662,7 +746,8 @@ private fun TimelineTabContent(
     onToggleExpand: (Long) -> Unit,
     onOpenNoteEditor: (Long) -> Unit,
     projectsById: Map<Long, String>,
-    publishedNoteActions: (Note) -> PublishedNoteCardActions
+    publishedNoteActions: (Note) -> PublishedNoteCardActions,
+    cardBackgroundOverride: Color? = null,
 ) {
     val groupedNoteDays = remember(allNotes) {
         allNotes
@@ -703,6 +788,7 @@ private fun TimelineTabContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             items(
@@ -743,6 +829,7 @@ private fun TimelineTabContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.SectionLarge)
         ) {
             groupedNoteDays.forEach { (date, notes) ->
@@ -762,7 +849,8 @@ private fun TimelineTabContent(
                         onToggleExpand = { onToggleExpand(note.id) },
                         modifier = Modifier.fillMaxWidth(),
                         projectsById = projectsById,
-                        publishedActions = publishedNoteActions(note)
+                        publishedActions = publishedNoteActions(note),
+                        cardBackgroundOverride = cardBackgroundOverride
                     )
                 }
             }
@@ -804,6 +892,223 @@ private fun IntegratedDayHeader(
                 color = subtitleColor
             )
         }
+    }
+}
+
+// ── Card Background Settings Bottom Sheet ──────────────────────────
+
+private val presetCardBgColors = listOf(
+    "#FFFFFF", "#FFF8F0", "#FFF0F5", "#F0F0FF",
+    "#F0FFF4", "#FFFFF0", "#F5F5F5", "#E8E4F5"
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardBackgroundSettingsSheet(
+    currentType: String,
+    currentColor: String,
+    currentImageUri: String?,
+    currentOpacity: Float,
+    onDismiss: () -> Unit,
+    onTypeChange: (String) -> Unit,
+    onColorChange: (String) -> Unit,
+    onPickImage: () -> Unit,
+    onClearImage: () -> Unit,
+    onOpacityChange: (Float) -> Unit,
+    onClearAll: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            // Title
+            Text(
+                text = LocalizedStrings.get("essay_menu_card_bg"),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryTextColor,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Background type selector
+            Text(
+                text = LocalizedStrings.get("essay_menu_card_bg"),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = SecondaryTextColor
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                BgTypeChip(
+                    label = LocalizedStrings.get("essay_menu_card_bg_none"),
+                    selected = currentType == "none",
+                    onClick = { onTypeChange("none") }
+                )
+                BgTypeChip(
+                    label = LocalizedStrings.get("essay_menu_card_bg_color"),
+                    selected = currentType == "color",
+                    onClick = { onTypeChange("color") }
+                )
+                BgTypeChip(
+                    label = LocalizedStrings.get("essay_menu_card_bg_image"),
+                    selected = currentType == "image",
+                    onClick = { onTypeChange("image") }
+                )
+            }
+
+            // Color picker (visible when type == "color")
+            if (currentType == "color") {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = LocalizedStrings.get("essay_menu_card_bg_color"),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = SecondaryTextColor
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    presetCardBgColors.forEach { hex ->
+                        val parsed = try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { Color.White }
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(parsed)
+                                .then(
+                                    if (currentColor.equals(hex, ignoreCase = true)) Modifier.padding(3.dp).background(Color.Transparent, RoundedCornerShape(8.dp)).padding(3.dp)
+                                    else Modifier
+                                )
+                                .clickable { onColorChange(hex) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (currentColor.equals(hex, ignoreCase = true)) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Image picker (visible when type == "image")
+            if (currentType == "image") {
+                Spacer(modifier = Modifier.height(16.dp))
+                if (currentImageUri != null) {
+                    AsyncImage(
+                        model = currentImageUri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = onClearImage) {
+                        Text(LocalizedStrings.get("essay_menu_card_bg_clear"), color = SecondaryTextColor)
+                    }
+                } else {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                            .clickable { onPickImage() },
+                        shape = RoundedCornerShape(12.dp),
+                        color = AppColors.ScreenBackground
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "+",
+                                fontSize = 28.sp,
+                                color = SecondaryTextColor
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Opacity slider (visible when type != "none")
+            if (currentType != "none") {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = LocalizedStrings.get("essay_menu_card_bg_opacity"),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = SecondaryTextColor
+                    )
+                    Text(
+                        text = "${(currentOpacity * 100).toInt()}%",
+                        fontSize = 14.sp,
+                        color = PrimaryTextColor
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Slider(
+                    value = currentOpacity,
+                    onValueChange = onOpacityChange,
+                    valueRange = 0.1f..1f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Clear all button
+            if (currentType != "none") {
+                Spacer(modifier = Modifier.height(12.dp))
+                TextButton(
+                    onClick = { onClearAll(); onDismiss() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(LocalizedStrings.get("essay_menu_card_bg_clear"), color = SecondaryTextColor)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun BgTypeChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = if (selected) PrimaryTextColor.copy(alpha = 0.12f) else Color(0xFFF0F0F0),
+        modifier = Modifier.clickable { onClick() }
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) PrimaryTextColor else SecondaryTextColor
+        )
     }
 }
 
@@ -1354,6 +1659,7 @@ private fun ProjectTabContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 88.dp),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
     ) {
         items(

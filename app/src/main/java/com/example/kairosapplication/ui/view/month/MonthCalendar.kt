@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,10 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
-import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.view.DayCalendarData
@@ -37,8 +34,6 @@ import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 private val DateNumberMuted = Color(0xFF9E9E9E)
 private val NoteEmptyBg = Color(0xFFF0F0F0)
@@ -55,19 +50,10 @@ fun MonthCalendar(
     yearMonth: YearMonth,
     calendarData: Map<LocalDate, DayCalendarData>,
     onDateClick: (LocalDate) -> Unit,
-    onMonthChange: (YearMonth) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
-    val monthFmt = remember(lang) {
-        when (lang) {
-            LocalizationManager.Language.ZH ->
-                DateTimeFormatter.ofPattern("yyyy年M月", Locale.CHINA)
-            LocalizationManager.Language.EN ->
-                DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
-        }
-    }
     val weekHeaders = remember(lang, context) { weekShortHeadersMondayFirst(context, lang) }
     val today = LocalDate.now()
     val dim = yearMonth.lengthOfMonth()
@@ -75,37 +61,6 @@ fun MonthCalendar(
     val totalCells = ((firstCol + dim + 6) / 7) * 7
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "<",
-                color = AppColors.IconNeutral,
-                fontSize = 20.sp,
-                modifier = Modifier
-                    .viewClickable { onMonthChange(yearMonth.minusMonths(1)) }
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-            )
-            Text(
-                text = yearMonth.atDay(1).format(monthFmt),
-                color = AppScreenHeader.titleColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 8.dp),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = ">",
-                color = AppColors.IconNeutral,
-                fontSize = 20.sp,
-                modifier = Modifier
-                    .viewClickable { onMonthChange(yearMonth.plusMonths(1)) }
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-            )
-        }
         Row(modifier = Modifier.fillMaxWidth()) {
             weekHeaders.forEach { label ->
                 Text(

@@ -516,7 +516,7 @@ class NoteRepository private constructor(
     companion object {
         operator fun invoke(context: Context): NoteRepository {
             val db = NoteDatabase.getInstance(context.applicationContext)
-            return NoteRepository(db.noteDao(), db.projectDao(), seedMockOnEmpty = true)
+            return NoteRepository(db.noteDao(), db.projectDao(), seedMockOnEmpty = false)
         }
 
         fun createForTest(

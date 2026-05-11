@@ -88,7 +88,7 @@ fun TopicNotesYearMonthTimeline(
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 12.dp),
+        contentPadding = PaddingValues(bottom = 88.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         if (sorted.isEmpty()) {

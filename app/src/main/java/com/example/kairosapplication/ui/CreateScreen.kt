@@ -84,6 +84,7 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
+import com.example.kairosapplication.core.ui.CommonBackButton
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -278,16 +279,14 @@ fun CreateScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(AppColors.SurfaceWhite)
                 .padding(horizontal = 20.dp)
-                .padding(top = 8.dp),
+                .padding(top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ArrowButton(
+            CommonBackButton(
                 onClick = onBack,
-                direction = ArrowDirection.LEFT,
-                size = 36.dp,
-                tint = Color(0xFF1A1A1A),
-                contentDescription = taskTexts.contentDescBack
+                contentDescription = taskTexts.contentDescBack,
             )
             Text(
                 text = stringResource(R.string.task_create_screen_title),

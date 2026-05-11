@@ -38,7 +38,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Check
@@ -97,6 +96,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -772,7 +772,7 @@ private fun EditorTopBar(
     draftEnabled: Boolean,
     postEnabled: Boolean
 ) {
-    Surface(color = AppColors.ScreenBackground, shadowElevation = 0.dp) {
+    Surface(color = AppColors.SurfaceWhite, shadowElevation = 0.dp) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -781,13 +781,10 @@ private fun EditorTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = LocalizedStrings.get("essay_editor_cd_back"),
-                    tint = AppColors.PrimaryText
-                )
-            }
+            CommonBackButton(
+                onClick = onBackClick,
+                contentDescription = LocalizedStrings.get("essay_editor_cd_back"),
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically

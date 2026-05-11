@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.kairosapplication.widget.data.WidgetConfig
@@ -56,6 +57,10 @@ class DataStoreManager(context: Context) {
     private val keyThemeColor = stringPreferencesKey(KEY_SETTINGS_THEME_COLOR)
     private val keyEssayTimelineLayout = stringPreferencesKey("essay_timeline_layout")
     private val keyEssayIntegratedWallpaperUri = stringPreferencesKey("essay_integrated_wallpaper_uri")
+    private val keyEssayCardBgType = stringPreferencesKey("essay_card_bg_type")
+    private val keyEssayCardBgColor = stringPreferencesKey("essay_card_bg_color")
+    private val keyEssayCardBgImageUri = stringPreferencesKey("essay_card_bg_image_uri")
+    private val keyEssayCardBgOpacity = floatPreferencesKey("essay_card_bg_opacity")
     private val keyLanguage = stringPreferencesKey(KEY_SETTINGS_LANGUAGE)
     private val keyLanguageOnboardingDone = booleanPreferencesKey("language_onboarding_done")
     private val keyDailyReminder = booleanPreferencesKey(KEY_SETTINGS_DAILY_REMINDER)
@@ -176,6 +181,53 @@ class DataStoreManager(context: Context) {
             } else {
                 prefs[keyEssayIntegratedWallpaperUri] = uri
             }
+        }
+    }
+
+    // ── Card-mode background customization ──────────────────────────
+
+    /** "none" (default), "color", or "image". */
+    fun getEssayCardBgType(): Flow<String> = dataStore.data.map { prefs ->
+        prefs[keyEssayCardBgType] ?: "none"
+    }
+
+    suspend fun setEssayCardBgType(type: String) {
+        dataStore.edit { prefs ->
+            prefs[keyEssayCardBgType] = type
+        }
+    }
+
+    /** HEX color string (e.g. "#FFF5E6") for card solid-color background. */
+    fun getEssayCardBgColor(): Flow<String> = dataStore.data.map { prefs ->
+        prefs[keyEssayCardBgColor] ?: "#FFFFFF"
+    }
+
+    suspend fun setEssayCardBgColor(color: String) {
+        dataStore.edit { prefs ->
+            prefs[keyEssayCardBgColor] = color
+        }
+    }
+
+    /** Content URI string for card-mode background image; null/blank = none. */
+    fun getEssayCardBgImageUri(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[keyEssayCardBgImageUri]?.takeIf { it.isNotBlank() }
+    }
+
+    suspend fun setEssayCardBgImageUri(uri: String?) {
+        dataStore.edit { prefs ->
+            if (uri.isNullOrBlank()) prefs.remove(keyEssayCardBgImageUri)
+            else prefs[keyEssayCardBgImageUri] = uri
+        }
+    }
+
+    /** Card background opacity: 0.0 – 1.0, default 1.0 (fully opaque). */
+    fun getEssayCardBgOpacity(): Flow<Float> = dataStore.data.map { prefs ->
+        prefs[keyEssayCardBgOpacity] ?: 1f
+    }
+
+    suspend fun setEssayCardBgOpacity(opacity: Float) {
+        dataStore.edit { prefs ->
+            prefs[keyEssayCardBgOpacity] = opacity.coerceIn(0f, 1f)
         }
     }
 

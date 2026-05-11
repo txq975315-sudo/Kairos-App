@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -48,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.taskmodel.model.EssaySecondaryCategoryConfig
@@ -165,12 +166,11 @@ fun TopicPrimaryEditScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(AppColors.SurfaceWhite)
                 .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = LocalizedStrings.get("back"), tint = TitleColor)
-            }
+            CommonBackButton(onClick = onBack)
             Text(
                 text = EssayCategoryUi.primaryDisplayName(primaryKey, config, lang, context),
                 fontSize = 17.sp,

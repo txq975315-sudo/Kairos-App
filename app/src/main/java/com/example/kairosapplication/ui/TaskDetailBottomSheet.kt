@@ -20,8 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.kairosapplication.core.ui.AppColors
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -90,7 +92,8 @@ fun TaskDetailBottomSheet(
                     text = task.title,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A)
+                    color = if (task.isCompleted) AppColors.HintText else Color(0xFF1A1A1A),
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
                 )
                 if (task.description.isNotBlank()) {
                     Text(

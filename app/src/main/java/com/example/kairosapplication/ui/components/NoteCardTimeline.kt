@@ -5,7 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -54,6 +56,8 @@ fun NoteCardTimeline(
     publishedActions: PublishedNoteCardActions? = null,
     /** When true and collapsed: one line each for topic (primary · secondary), summary, body; expand restores full layout. */
     timelineCompactThreeLines: Boolean = false,
+    /** Optional custom card background color with opacity applied. */
+    cardBackgroundOverride: Color? = null,
 ) {
     val zone = ZoneId.systemDefault()
     val timeStr = remember(note.createdAt) {
@@ -88,7 +92,6 @@ fun NoteCardTimeline(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Max)
             .clickable {
                 if (expandable) onToggleExpand() else onNoteClick(note.id)
             },
@@ -119,29 +122,29 @@ fun NoteCardTimeline(
                 .weight(1f)
                 .shadow(4.dp, RoundedCornerShape(16.dp)),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = AppColors.CardBackground),
+            colors = CardDefaults.cardColors(containerColor = cardBackgroundOverride ?: AppColors.CardBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Max)
+                    .drawBehind {
+                        val stripW = 4.dp.toPx()
+                        drawRect(
+                            color = categoryColor,
+                            topLeft = Offset.Zero,
+                            size = Size(stripW, size.height)
+                        )
+                    }
             ) {
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                        .background(categoryColor)
-                )
                 Column(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .padding(
+                            start = 4.dp + AppSpacing.CardHorizontal,
                             end = AppSpacing.CardHorizontal,
                             top = AppSpacing.CardVertical,
-                            bottom = AppSpacing.CardVertical,
-                            start = AppSpacing.CardHorizontal
+                            bottom = AppSpacing.CardVertical
                         )
                 ) {
                 if (timelineCompactThreeLines && !expanded) {
@@ -216,8 +219,9 @@ fun NoteCardTimeline(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(6.dp))
+                    val (mainBody, parsedReview) = NoteCardConstants.splitReviewFromBody(note.body)
                     Text(
-                        text = note.body.ifBlank { " " },
+                        text = mainBody.ifBlank { " " },
                         fontSize = 14.sp,
                         color = AppColors.SecondaryText,
                         maxLines = bodyMaxLines,
@@ -227,6 +231,16 @@ fun NoteCardTimeline(
                     if (note.imageUris.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         NoteImageRow(imageUris = note.imageUris, maxImages = 4)
+                    }
+                    if (parsedReview != null) {
+                        Spacer(Modifier.height(8.dp))
+                        NoteReviewSection(
+                            review = parsedReview,
+                            expanded = expanded || !expandable,
+                            collapsedMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE,
+                            textColor = AppColors.HintText,
+                            timestampColor = AppColors.HintText,
+                        )
                     }
                     Spacer(Modifier.height(8.dp))
                     Row(

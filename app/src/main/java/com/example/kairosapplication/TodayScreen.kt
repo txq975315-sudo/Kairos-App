@@ -45,7 +45,6 @@ import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Label
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -187,7 +186,7 @@ fun TodayScreen(
     val totalCount = todayTasksForTopBar.size
     val completedCount = todayTasksForTopBar.count { it.isCompleted }
     var createSheetConfig by remember { mutableStateOf<CreateSheetConfig?>(null) }
-    // Create sheet fields: keep text when sheet closes.
+    // Create sheet fields: reset each time the quick-create sheet opens (fresh draft per open).
     var createTitle by remember { mutableStateOf("") }
     var createDescription by remember { mutableStateOf("") }
     var createUrgency by remember { mutableStateOf(3) }
@@ -206,6 +205,10 @@ fun TodayScreen(
 
     // Single create entry: time block drives sheet title and colors.
     val showCreateSheet: (String) -> Unit = { timeBlock ->
+        createTitle = ""
+        createDescription = ""
+        createUrgency = TaskConstants.URGENCY_LOW
+        createLabel = null
         createSheetConfig = CreateSheetConfig(
             timeBlock = timeBlock,
             backgroundColor = TaskUtils.getTimeBlockColor(timeBlock),
@@ -977,6 +980,7 @@ private fun EmptyTaskCard(
                     color = AppColors.SecondaryText.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(12.dp)
                 )
+                .clickable(onClick = onCreateClick)
                 .padding(horizontal = 16.dp), // symmetric horizontal padding
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

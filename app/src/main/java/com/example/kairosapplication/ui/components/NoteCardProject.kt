@@ -127,8 +127,9 @@ fun NoteCardProject(
                 }
             }
             Spacer(Modifier.height(6.dp))
+            val (projectMainBody, projectParsedReview) = NoteCardConstants.splitReviewFromBody(note.body)
             Text(
-                text = note.body.ifBlank { " " },
+                text = projectMainBody.ifBlank { " " },
                 fontSize = 14.sp,
                 color = AppColors.SecondaryText,
                 maxLines = 3,
@@ -138,6 +139,16 @@ fun NoteCardProject(
             if (note.imageUris.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 NoteImageRow(imageUris = note.imageUris, maxImages = 4)
+            }
+            if (projectParsedReview != null) {
+                Spacer(Modifier.height(8.dp))
+                NoteReviewSection(
+                    review = projectParsedReview,
+                    expanded = expanded || !expandable,
+                    collapsedMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE,
+                    textColor = AppColors.HintText,
+                    timestampColor = AppColors.HintText,
+                )
             }
             if (note.sceneTags.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))

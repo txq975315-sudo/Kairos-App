@@ -102,4 +102,43 @@ object NoteCardConstants {
         NotePrimaryCategory.MEANING -> Icons.Filled.Explore
         else -> Icons.Filled.AutoStories
     }
+
+    /**
+     * Trailing self-review / comment appended after the main note body.
+     * @param comment User-visible comment only (no timestamp prefix).
+     * @param timestampLine Machine-friendly time for expanded row (e.g. `2026-05-10 18:29`).
+     */
+    data class ParsedReview(
+        val comment: String,
+        val timestampLine: String,
+    )
+
+    /**
+     * Splits note body into main content and trailing review.
+     * Standard storage: `\n\n{yyyy-MM-dd HH:mm}\n{comment}` ([appendReviewCommentToNote]).
+     * Legacy UI strings sometimes used a labeled line with `复盘` / `Review` before the timestamp.
+     */
+    private val REVIEW_STANDARD =
+        Regex("""\n\n(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\n(.+)$""", RegexOption.DOT_MATCHES_ALL)
+    /** e.g. `\n\n— 复盘 · 2026-05-10 18:29\ncomment` or leading `——`. */
+    private val REVIEW_LEGACY_LABELED = Regex(
+        """\n\n[^\n]*(?:复盘|Review)[^\n]*·\s*(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2})?)[^\n]*\n([\s\S]+)$""",
+        setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE),
+    )
+
+    fun splitReviewFromBody(body: String): Pair<String, ParsedReview?> {
+        REVIEW_STANDARD.find(body)?.let { m ->
+            val mainBody = body.substring(0, m.range.first).trimEnd()
+            val time = m.groupValues[1]
+            val comment = m.groupValues[2].trim()
+            if (comment.isNotEmpty()) return mainBody to ParsedReview(comment, time)
+        }
+        REVIEW_LEGACY_LABELED.find(body)?.let { m ->
+            val mainBody = body.substring(0, m.range.first).trimEnd()
+            val time = m.groupValues[1].trim()
+            val comment = m.groupValues[2].trim()
+            if (comment.isNotEmpty()) return mainBody to ParsedReview(comment, time)
+        }
+        return body to null
+    }
 }

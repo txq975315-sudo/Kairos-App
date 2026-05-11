@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -76,6 +77,7 @@ import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
+import kotlinx.coroutines.delay
 
 internal data class CreateSheetConfig(
     val timeBlock: String,
@@ -208,7 +210,7 @@ internal fun CreateTaskBottomSheet(
     onDeleteClick: (() -> Unit)? = null
 ) {
     val taskText = rememberTaskTextProvider()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -259,8 +261,22 @@ internal fun CreateTaskBottomSheet(
         }
     }
 
-    // Focus main field and show IME when sheet opens
+    val attemptSubmit: () -> Unit = {
+        val success = onCreateTask(title, description, config.timeBlock, meta.stripTaskImages())
+        if (success) {
+            keyboardController?.hide()
+            focusManager.clearFocus(force = true)
+            onDismiss()
+        } else {
+            Toast.makeText(context, taskText.toastEmptyTitle, Toast.LENGTH_SHORT).show()
+            titleFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    // Defer IME slightly so the sheet settle animation does not fight the keyboard (smoother open).
     LaunchedEffect(Unit) {
+        delay(48)
         titleFocusRequester.requestFocus()
         keyboardController?.show()
     }
@@ -322,20 +338,7 @@ internal fun CreateTaskBottomSheet(
                     .fillMaxWidth()
                     .focusRequester(titleFocusRequester),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        val success = onCreateTask(title, description, config.timeBlock, meta.stripTaskImages())
-                        if (success) {
-                            keyboardController?.hide()
-                            focusManager.clearFocus(force = true)
-                            onDismiss()
-                        } else {
-                            Toast.makeText(context, taskText.toastEmptyTitle, Toast.LENGTH_SHORT).show()
-                            titleFocusRequester.requestFocus()
-                            keyboardController?.show()
-                        }
-                    }
-                ),
+                keyboardActions = KeyboardActions(onDone = { attemptSubmit() }),
                 decorationBox = { innerTextField ->
                     if (title.isEmpty()) {
                         Text(
@@ -454,6 +457,15 @@ internal fun CreateTaskBottomSheet(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = taskText.contentDescAddTask,
+                        tint = Color(0xFF1A1A1A),
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .size(26.dp)
+                            .clickable { attemptSubmit() },
+                    )
                     if (showStopButton && onStopClick != null) {
                         IconButton(onClick = onStopClick) {
                             Icon(

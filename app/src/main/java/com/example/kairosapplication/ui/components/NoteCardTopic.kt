@@ -114,8 +114,9 @@ fun NoteCardTopic(
                     },
                 ),
             )
+            val (topicMainBody, topicParsedReview) = NoteCardConstants.splitReviewFromBody(note.body)
             Text(
-                text = note.body.ifBlank { " " },
+                text = topicMainBody.ifBlank { " " },
                 fontSize = 14.sp,
                 color = AppColors.SecondaryText,
                 maxLines = bodyMaxLines,
@@ -125,6 +126,16 @@ fun NoteCardTopic(
             if (note.imageUris.isNotEmpty() && !peekOnlySummaryBody) {
                 Spacer(Modifier.height(8.dp))
                 NoteImageRow(imageUris = note.imageUris, maxImages = 4)
+            }
+            if (topicParsedReview != null && !peekOnlySummaryBody) {
+                Spacer(Modifier.height(8.dp))
+                NoteReviewSection(
+                    review = topicParsedReview,
+                    expanded = expanded || !expandable,
+                    collapsedMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE,
+                    textColor = AppColors.HintText,
+                    timestampColor = AppColors.HintText,
+                )
             }
             if (!peekOnlySummaryBody) {
                 Spacer(Modifier.height(10.dp))

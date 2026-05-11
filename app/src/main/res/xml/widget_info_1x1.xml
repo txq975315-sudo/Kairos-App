@@ -9,5 +9,4 @@
     android:previewLayout="@layout/widget_preview_card"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="@string/widget_picker_description_1x1"
-    android:previewImage="@drawable/ic_launcher_foreground" />
+    android:description="@string/widget_picker_description_1x1" />

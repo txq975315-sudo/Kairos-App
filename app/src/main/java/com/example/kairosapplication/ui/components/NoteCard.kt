@@ -2,6 +2,7 @@ package com.example.kairosapplication.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.taskmodel.model.Note
 import java.time.LocalDate
@@ -46,6 +47,8 @@ fun NoteCard(
     topicPeekWhenCollapsed: Boolean = false,
     /** Used only for [NoteCardVariant.TIMELINE]: collapsed card uses one line each for topic, summary, body. */
     timelineCompactThreeLines: Boolean = false,
+    /** Optional custom card background color for timeline variant. */
+    cardBackgroundOverride: Color? = null,
 ) {
     when (variant) {
         NoteCardVariant.TIMELINE -> NoteCardTimeline(
@@ -58,6 +61,7 @@ fun NoteCard(
             onToggleExpand = onToggleExpand,
             publishedActions = publishedActions,
             timelineCompactThreeLines = timelineCompactThreeLines,
+            cardBackgroundOverride = cardBackgroundOverride,
         )
         NoteCardVariant.TOPIC -> NoteCardTopic(
             note = note,

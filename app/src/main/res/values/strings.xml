@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Legacy / non-extract strings -->
 <string name="app_name">Kairos Application</string>
@@ -160,6 +160,7 @@
     <string name="i18n_view_week_add_task">+ 添加任务</string>
     <string name="i18n_view_week_more_tasks">还有 %1$d 条任务</string>
     <string name="i18n_view_week_this_week"> · 本周</string>
+    <string name="i18n_view_month_this_month"> · 本月</string>
     <string name="i18n_view_day_today"> · 今天</string>
     <string name="i18n_view_month_summary">本月概览</string>
     <string name="i18n_view_metric_notes">笔记</string>
@@ -229,11 +230,11 @@
     <string name="i18n_recorded_days">已记录 </string>
     <string name="i18n_recorded_days_suffix"> 天</string>
     <string name="i18n_weekly_insights">我的每周洞察</string>
-    <string name="i18n_mine_mood_card_title">心情与每日反思</string>
+    <string name="i18n_mine_mood_card_title">每周情绪洞察</string>
     <string name="i18n_mine_planning_heading">我坚持规划的每一天</string>
     <string name="i18n_mine_stat_days_in_a_row">连续天数</string>
     <string name="i18n_mine_stat_total_days">本周有记录天数</string>
-    <string name="i18n_mine_all_records_title">我的全部记录</string>
+    <string name="i18n_mine_all_records_title">我的数据记录</string>
     <string name="i18n_mine_records_completion_days">完成日天数</string>
     <string name="i18n_mine_records_completed_items">已完成项</string>
     <string name="i18n_mine_records_unfinished_today">今日未完成</string>
@@ -300,6 +301,13 @@
     <string name="i18n_export_json_desc">JSON（推荐，用于再次导入）</string>
     <string name="i18n_export_txt_desc">TXT（纯文本，仅笔记内容）</string>
     <string name="i18n_export_to_file">导出到文件</string>
+    <string name="i18n_export_settings">导出设置</string>
+    <string name="i18n_export_filename">文件名</string>
+    <string name="i18n_export_location">保存位置</string>
+    <string name="i18n_export_location_downloads">下载/Kairos</string>
+    <string name="i18n_export_location_documents">文档/Kairos</string>
+    <string name="i18n_export_custom_name_hint">自定义文件名（可选）</string>
+    <string name="i18n_export_default_name">使用默认名称</string>
     <string name="i18n_include_profile">个人设置</string>
     <string name="i18n_parse_failed">文件解析失败</string>
     <string name="i18n_cannot_read_file">无法读取文件</string>
@@ -358,7 +366,7 @@
     <string name="i18n_essay_comment_sheet_title">评论</string>
     <string name="i18n_essay_comment_placeholder">写一段简短的自评…</string>
     <string name="i18n_essay_comment_toast_empty">请输入评论内容</string>
-    <string name="i18n_essay_comment_review_block">— 复盘 · %1$s\n%2$s</string>
+    <string name="i18n_essay_comment_review_block">%1$s\n%2$s</string>
     <string name="i18n_essay_search_placeholder">搜索正文或课题</string>
     <string name="i18n_essay_editor_snackbar_need_summary">请先填写简短摘要</string>
     <string name="i18n_essay_editor_snackbar_need_secondary">请选择二级课题</string>
@@ -648,6 +656,12 @@
     <string name="i18n_essay_menu_layout_integrated">随笔：融合布局</string>
     <string name="i18n_essay_menu_wallpaper">随笔壁纸…</string>
     <string name="i18n_essay_menu_clear_wallpaper">清除随笔壁纸</string>
+    <string name="i18n_essay_menu_card_bg">卡片背景…</string>
+    <string name="i18n_essay_menu_card_bg_none">默认</string>
+    <string name="i18n_essay_menu_card_bg_color">纯色背景</string>
+    <string name="i18n_essay_menu_card_bg_image">图片背景</string>
+    <string name="i18n_essay_menu_card_bg_opacity">背景透明度</string>
+    <string name="i18n_essay_menu_card_bg_clear">清除背景</string>
     <string name="i18n_cd_more_menu">更多菜单</string>
     <string name="app_monthvalue_48001">%1$d月心情分布</string>
     <string name="app_count_48601">笔记（%1$d 条）</string>

@@ -19,12 +19,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -319,16 +318,11 @@ fun ProjectTimelineScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(BackgroundColor)
                     .padding(bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = LocalizedStrings.get("back"),
-                        tint = contentPrimary
-                    )
-                }
+                CommonBackButton(onClick = onBack)
                 Text(
                     text = "$projectName (${projectNotes.size})",
                     fontSize = 16.sp,
@@ -362,13 +356,7 @@ fun ProjectTimelineScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = LocalizedStrings.get("back"),
-                                tint = PrimaryTextColor
-                            )
-                        }
+                        CommonBackButton(onClick = onBack)
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
                 )

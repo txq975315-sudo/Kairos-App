@@ -14,21 +14,25 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -48,6 +52,7 @@ import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 
 private val CardBg = Color.White
@@ -73,6 +78,11 @@ fun DataExportScreen(
     var includeMoods by remember { mutableStateOf(true) }
     var includeProfile by remember { mutableStateOf(true) }
     var formatJson by remember { mutableStateOf(true) }
+    
+    // Export settings dialog state
+    var showExportSettings by remember { mutableStateOf(false) }
+    var customFileName by remember { mutableStateOf("") }
+    var saveToDocuments by remember { mutableStateOf(false) }
 
     LaunchedEffect(exportState) {
         val langSnap = LocalizationManager.Language.fromCode(
@@ -125,9 +135,7 @@ fun DataExportScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = TitleC)
-                    }
+                    CommonBackButton(onClick = onBack)
                 },
                 actions = {
                     TextButton(
@@ -149,7 +157,8 @@ fun DataExportScreen(
                     ) {
                         Text(LocalizedStrings.get("share"), color = Blue, fontSize = 15.sp)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor),
             )
         }
     ) { padding ->
@@ -242,18 +251,7 @@ fun DataExportScreen(
             }
             Spacer(Modifier.height(24.dp))
             Button(
-                onClick = {
-                    if (formatJson) {
-                        viewModel.exportJson(
-                            includeNotes = includeNotes,
-                            includeTasks = includeTasks,
-                            includeMoods = includeMoods,
-                            includeProfile = includeProfile
-                        )
-                    } else {
-                        viewModel.exportTxt()
-                    }
-                },
+                onClick = { showExportSettings = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Blue)
@@ -261,6 +259,36 @@ fun DataExportScreen(
                 Text(LocalizedStrings.get("export_to_file"), fontSize = 16.sp)
             }
             Spacer(Modifier.height(32.dp))
+        }
+
+        // Export Settings Bottom Sheet
+        if (showExportSettings) {
+            ExportSettingsSheet(
+                formatJson = formatJson,
+                customFileName = customFileName,
+                onFileNameChange = { customFileName = it },
+                saveToDocuments = saveToDocuments,
+                onLocationChange = { saveToDocuments = it },
+                onDismiss = { showExportSettings = false },
+                onConfirm = {
+                    showExportSettings = false
+                    if (formatJson) {
+                        viewModel.exportJson(
+                            includeNotes = includeNotes,
+                            includeTasks = includeTasks,
+                            includeMoods = includeMoods,
+                            includeProfile = includeProfile,
+                            customFileName = customFileName.takeIf { it.isNotBlank() },
+                            saveToDocuments = saveToDocuments
+                        )
+                    } else {
+                        viewModel.exportTxt(
+                            customFileName = customFileName.takeIf { it.isNotBlank() },
+                            saveToDocuments = saveToDocuments
+                        )
+                    }
+                }
+            )
         }
     }
 }
@@ -285,5 +313,157 @@ private fun ExportCheckRow(
             onCheckedChange = onCheckedChange,
             enabled = enabled
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExportSettingsSheet(
+    formatJson: Boolean,
+    customFileName: String,
+    onFileNameChange: (String) -> Unit,
+    saveToDocuments: Boolean,
+    onLocationChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            // Title
+            Text(
+                text = LocalizedStrings.get("export_settings"),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TitleC,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Filename input
+            Text(
+                text = LocalizedStrings.get("export_filename"),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = SubC
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            BasicTextField(
+                value = customFileName,
+                onValueChange = onFileNameChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F5F5))
+                    .padding(12.dp),
+                decorationBox = { innerTextField ->
+                    if (customFileName.isEmpty()) {
+                        Text(
+                            text = LocalizedStrings.get("export_custom_name_hint"),
+                            color = SubC.copy(alpha = 0.6f),
+                            fontSize = 15.sp
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+            if (customFileName.isBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = LocalizedStrings.get("export_default_name"),
+                    fontSize = 12.sp,
+                    color = SubC.copy(alpha = 0.7f)
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Save location
+            Text(
+                text = LocalizedStrings.get("export_location"),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = SubC
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                RadioButton(
+                    selected = !saveToDocuments,
+                    onClick = { onLocationChange(false) }
+                )
+                Text(
+                    LocalizedStrings.get("export_location_downloads"),
+                    fontSize = 15.sp,
+                    color = TitleC
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                RadioButton(
+                    selected = saveToDocuments,
+                    onClick = { onLocationChange(true) }
+                )
+                Text(
+                    LocalizedStrings.get("export_location_documents"),
+                    fontSize = 15.sp,
+                    color = TitleC
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // File extension hint
+            val ext = if (formatJson) ".json" else ".txt"
+            Text(
+                text = "${LocalizedStrings.get("export_format")}: $ext",
+                fontSize = 13.sp,
+                color = SubC,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(LocalizedStrings.get("cancel"), color = SubC)
+                }
+                Button(
+                    onClick = onConfirm,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                ) {
+                    Text(LocalizedStrings.get("confirm"), fontSize = 16.sp)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }

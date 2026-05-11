@@ -27,7 +27,9 @@ class DataExporter(
         includeNotes: Boolean,
         includeTasks: Boolean,
         includeMoods: Boolean,
-        includeProfile: Boolean
+        includeProfile: Boolean,
+        customFileName: String? = null,
+        saveToDocuments: Boolean = false
     ): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
             val notes = if (includeNotes) noteRepository.getAllNotesOnce().map { it.toExportDto() } else emptyList()
@@ -45,16 +47,23 @@ class DataExporter(
                 profile = profile
             )
             val json = ExportDataCodec.encodeToJson(data)
-            val fileName = "kairos_export_${System.currentTimeMillis()}.json"
+            val fileName = if (!customFileName.isNullOrBlank()) {
+                if (customFileName.endsWith(".json")) customFileName else "$customFileName.json"
+            } else {
+                "kairos_export_${System.currentTimeMillis()}.json"
+            }
             val cacheDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val cacheFile = File(cacheDir, fileName)
             cacheFile.writeText(json)
-            writeToDownloads(fileName, json.toByteArray(Charsets.UTF_8), "application/json")
+            writeToDownloads(fileName, json.toByteArray(Charsets.UTF_8), "application/json", saveToDocuments)
             cacheFile
         }
     }
 
-    suspend fun exportToTxtFile(): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun exportToTxtFile(
+        customFileName: String? = null,
+        saveToDocuments: Boolean = false
+    ): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
             val notes = noteRepository.getAllNotesOnce()
             val sb = StringBuilder()
@@ -63,11 +72,15 @@ class DataExporter(
                 sb.append(title).append('\n').append(n.body).append("\n\n")
             }
             val text = sb.toString()
-            val fileName = "kairos_notes_${System.currentTimeMillis()}.txt"
+            val fileName = if (!customFileName.isNullOrBlank()) {
+                if (customFileName.endsWith(".txt")) customFileName else "$customFileName.txt"
+            } else {
+                "kairos_notes_${System.currentTimeMillis()}.txt"
+            }
             val cacheDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val cacheFile = File(cacheDir, fileName)
             cacheFile.writeText(text)
-            writeToDownloads(fileName, text.toByteArray(Charsets.UTF_8), "text/plain")
+            writeToDownloads(fileName, text.toByteArray(Charsets.UTF_8), "text/plain", saveToDocuments)
             cacheFile
         }
     }
@@ -82,13 +95,18 @@ class DataExporter(
         }
     }
 
-    private fun writeToDownloads(displayName: String, bytes: ByteArray, mimeType: String) {
+    private fun writeToDownloads(displayName: String, bytes: ByteArray, mimeType: String, saveToDocuments: Boolean = false) {
         val resolver = context.contentResolver
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val relativePath = if (saveToDocuments) {
+                Environment.DIRECTORY_DOCUMENTS + "/Kairos"
+            } else {
+                Environment.DIRECTORY_DOWNLOADS + "/Kairos"
+            }
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
                 put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Kairos")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return

@@ -5,10 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -113,30 +114,25 @@ fun NoteTimelineIntegrated(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Max)
             .clickable {
                 if (expandable) onToggleExpand() else onNoteClick(note.id)
             }
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .width(railWidth)
-                .fillMaxHeight()
-                .align(Alignment.TopStart)
-        ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxHeight()
-                    .padding(
-                        top = RailLineEndInset + RailLineBelowTimeShift + RailLineTopCut,
-                        bottom = railBottomInset.coerceAtLeast(0.dp)
+                .fillMaxWidth()
+                .drawBehind {
+                    val topPx = (RailLineEndInset + RailLineBelowTimeShift + RailLineTopCut).toPx()
+                    val bottomPx = railBottomInset.coerceAtLeast(0.dp).toPx()
+                    val cx = railWidth.toPx() / 2f
+                    val lineW = 2.dp.toPx()
+                    drawRect(
+                        color = AppColors.TimelineLine,
+                        topLeft = Offset(cx - lineW / 2f, topPx),
+                        size = Size(lineW, (size.height - topPx - bottomPx).coerceAtLeast(0f))
                     )
-                    .width(2.dp)
-                    .background(AppColors.TimelineLine)
-            )
-        }
-        Column(modifier = Modifier.fillMaxWidth()) {
+                }
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -218,8 +214,9 @@ fun NoteTimelineIntegrated(
                     }
                 )
             )
+            val (mainBody, parsedReview) = NoteCardConstants.splitReviewFromBody(note.body)
             Text(
-                text = note.body.ifBlank { " " },
+                text = mainBody.ifBlank { " " },
                 modifier = Modifier.padding(start = railWidth + railToTextGap),
                 fontSize = 14.sp,
                 color = bodyColor,
@@ -233,6 +230,19 @@ fun NoteTimelineIntegrated(
                     imageUris = note.imageUris,
                     maxImages = 4,
                     modifier = Modifier.padding(start = railWidth + railToTextGap)
+                )
+            }
+            if (parsedReview != null) {
+                Spacer(Modifier.height(8.dp))
+                val commentTint = if (lightForeground) Color(0x99FFFFFF) else AppColors.HintText
+                val timeTint = if (lightForeground) Color(0xB3FFFFFF) else AppColors.HintText
+                NoteReviewSection(
+                    review = parsedReview,
+                    expanded = expanded || !expandable,
+                    collapsedMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE,
+                    textColor = commentTint,
+                    timestampColor = timeTint,
+                    modifier = Modifier.padding(start = railWidth + railToTextGap),
                 )
             }
             if (tagsLine != null || projectGuillemet != null) {

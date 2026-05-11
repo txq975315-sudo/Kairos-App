@@ -47,10 +47,10 @@ import com.example.kairosapplication.core.ui.AppReviewLayout
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.ui.components.ArrowButton
-import com.example.kairosapplication.ui.components.ArrowDirection
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
@@ -148,16 +148,11 @@ fun DailyReviewScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp),
+                .background(AppColors.SurfaceWhite)
+                .padding(top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ArrowButton(
-                onClick = onBack,
-                direction = ArrowDirection.LEFT,
-                size = 36.dp,
-                tint = Color(0xFF1A1A1A),
-                contentDescription = LocalizedStrings.get("back")
-            )
+            CommonBackButton(onClick = onBack)
             Text(
                 text = LocalizedStrings.get("daily_review_title"),
                 fontSize = AppScreenHeader.titleSp,
@@ -419,9 +414,10 @@ private fun DailyTaskCard(
         ) {
             Text(
                 text = task.title,
-                color = Color(0xFF000000),
+                color = if (task.isCompleted) AppColors.HintText else Color(0xFF000000),
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
             )
             Box(
                 modifier = Modifier

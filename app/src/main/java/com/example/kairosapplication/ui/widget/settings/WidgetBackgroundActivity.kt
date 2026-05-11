@@ -139,7 +139,11 @@ private fun BackgroundEditScreen(
         return when (backgroundType) {
             WidgetBackgroundType.WHITE -> WidgetBackground(type = WidgetBackgroundType.WHITE)
             WidgetBackgroundType.SOLID_COLOR ->
-                b.copy(type = WidgetBackgroundType.SOLID_COLOR, solidColor = solidColor)
+                b.copy(
+                    type = WidgetBackgroundType.SOLID_COLOR,
+                    solidColor = solidColor,
+                    alphaPercent = alphaPercent,
+                )
             WidgetBackgroundType.IMAGE ->
                 WidgetBackground(
                     type = WidgetBackgroundType.IMAGE,
@@ -340,6 +344,19 @@ private fun BackgroundEditScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(LocalizedStrings.get("widget_custom_color")) },
                     singleLine = true
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "${LocalizedStrings.get("widget_alpha")}: $alphaPercent%",
+                    fontSize = 13.sp,
+                    color = SettingsTitleC
+                )
+                Slider(
+                    value = alphaPercent.toFloat(),
+                    onValueChange = {
+                        alphaPercent = it.roundToInt().coerceIn(10, 100)
+                    },
+                    valueRange = 10f..100f
                 )
             }
             if (backgroundType == WidgetBackgroundType.IMAGE) {

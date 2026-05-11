@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.AlertDialog
@@ -59,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
@@ -494,19 +494,12 @@ private fun SearchBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(AppColors.ScreenBackground)
+            .background(AppColors.SurfaceWhite)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(onClick = onBackClick) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = LocalizedStrings.get("back"),
-                tint = AppColors.PrimaryText,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+        CommonBackButton(onClick = onBackClick)
         Box(
             modifier = Modifier
                 .weight(1f)

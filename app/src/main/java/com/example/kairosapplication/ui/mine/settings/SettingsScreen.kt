@@ -52,8 +52,8 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.theme.BackgroundColor
 
-private val ScreenBg = Color(0xFFFAFAFA)
 private val RowText = Color(0xFF1A1A1A)
 
 @Composable
@@ -91,7 +91,7 @@ fun SettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(ScreenBg)
+            .background(BackgroundColor)
             .statusBarsPadding()
     ) {
         Row(

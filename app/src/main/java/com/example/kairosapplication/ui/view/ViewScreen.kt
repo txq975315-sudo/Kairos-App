@@ -38,6 +38,7 @@ import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.kairosapplication.ui.components.CreateSheetConfig
 import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.kairosapplication.ui.components.CreateTaskMeta
+import com.example.kairosapplication.ui.view.month.MonthSwitcher
 import com.example.kairosapplication.ui.view.month.MonthTab
 import com.example.kairosapplication.ui.view.today.DaySwitcher
 import com.example.kairosapplication.ui.view.today.TodayTab
@@ -48,6 +49,7 @@ import com.example.taskmodel.model.CreateTaskParam
 import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
+import java.time.YearMonth
 
 @Composable
 fun ViewScreen(
@@ -138,6 +140,17 @@ fun ViewScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
+                2 -> {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MonthSwitcher(
+                        yearMonth = uiState.calendarYearMonth,
+                        viewingCurrentMonth = uiState.calendarYearMonth == YearMonth.now(),
+                        onPreviousMonth = { viewModel.shiftCalendarYearMonthBy(-1) },
+                        onNextMonth = { viewModel.shiftCalendarYearMonthBy(1) },
+                        onJumpToCurrentMonth = { viewModel.setCalendarYearMonth(YearMonth.now()) },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 else -> Spacer(modifier = Modifier.height(12.dp))
             }
             HorizontalDivider(
@@ -203,7 +216,6 @@ fun ViewScreen(
                             viewModel.setFocusedDate(d)
                             selectedTabIndex = 0
                         },
-                        onMonthChange = { viewModel.setCalendarYearMonth(it) },
                         monthOverviewMetrics = uiState.monthOverviewMetrics,
                         onMonthOverviewMetricsChange = { viewModel.setMonthOverviewMetrics(it) },
                     )

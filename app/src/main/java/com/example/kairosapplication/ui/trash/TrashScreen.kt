@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.MoreVert
@@ -53,11 +52,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.UserVisibleStrings
+import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.topic.TopicDisplayStrings
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.model.Note
@@ -253,13 +254,7 @@ private fun TrashTopBar(
             }
         },
         navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = cdBack,
-                    tint = AppColors.BackIcon
-                )
-            }
+            CommonBackButton(onClick = onBackClick, contentDescription = cdBack)
         },
         actions = {
             Box {
@@ -344,7 +339,7 @@ private fun TrashTopBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.SurfaceWhite)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
     )
 }
 

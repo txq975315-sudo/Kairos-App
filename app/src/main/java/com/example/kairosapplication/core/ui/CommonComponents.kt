@@ -44,8 +44,12 @@ import com.example.kairosapplication.ui.common.CommonBackButton as LegacyCommonB
  */
 
 @Composable
-fun CommonBackButton(onClick: () -> Unit) {
-    LegacyCommonBackButton(onClick = onClick)
+fun CommonBackButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    LegacyCommonBackButton(onClick = onClick, modifier = modifier, contentDescription = contentDescription)
 }
 
 @Composable

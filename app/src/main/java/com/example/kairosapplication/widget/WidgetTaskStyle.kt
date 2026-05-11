@@ -30,7 +30,8 @@ object WidgetTaskStyle {
         Color.parseColor("#9E9E9E")
     )
 
-    private const val URGENCY_TINT_ALPHA = 0.45f
+    /** Aligned with month grid summary pills (Compose ~0.28 alpha on urgency tint). */
+    private const val URGENCY_TINT_ALPHA = 0.28f
 
     fun urgencyRowBackgroundArgb(urgency: Int, done: Boolean): Int {
         if (done) return Color.TRANSPARENT
