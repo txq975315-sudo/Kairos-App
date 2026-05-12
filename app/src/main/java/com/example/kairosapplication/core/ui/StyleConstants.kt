@@ -46,6 +46,8 @@ object AppColors {
     val TaskCardGlassBottom = Color(0xFFF0F4FA).copy(alpha = 0.10f)
     /** Extra gray mist overlay for simulated blur effect */
     val TaskCardGrayMist = Color(0xFF808080).copy(alpha = 0.10f)
+    /** Gaussian blur radius for frosted glass effect */
+    val TaskCardBlurRadius = 70.dp
     /** Subtle glass edge that defines the border gently */
     val TaskCardGlassHairline = Color.White.copy(alpha = 0.35f)
     /** Soft inner glow for glass dimensionality */

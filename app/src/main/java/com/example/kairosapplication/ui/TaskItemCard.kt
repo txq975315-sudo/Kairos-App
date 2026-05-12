@@ -225,18 +225,18 @@ fun TaskItemCard(
                     .clip(cardShape)
                     .background(glassBrush, cardShape)
             ) {
-                // 灰色朦胧层 - 模拟模糊效果
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = minCardHeight)
+                        .fillMaxHeight()
+                        .blur(AppColors.TaskCardBlurRadius)
                         .background(AppColors.TaskCardGrayMist, cardShape)
                 )
-                // 内部光晕层
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = minCardHeight)
+                        .fillMaxHeight()
+                        .blur(AppColors.TaskCardBlurRadius)
                         .background(innerGlowBrush, cardShape)
                 )
                 Row(
