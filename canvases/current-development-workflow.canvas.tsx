@@ -20,6 +20,16 @@ export default function CurrentDevelopmentWorkflow() {
         圆 + 18dp 图标）。Gradle 在部分环境因下载超时失败，以本机 assemble 为准。
       </Callout>
 
+      <Callout tone="info">
+        2026-05-13 对接补充（已写入 Git 提交 b4e585b，仅 app 目录）：MainAppBottomBar
+        去掉包裹 Tab 的 blur，避免图标与标签被糊；TaskItemCard 增加 StyleConstants 中 TaskCardGlass*
+        白系玻璃渐变与亮边，废弃 SwipeToDismissBox 整幅红底；改为 TaskCardSwipeStack：卡片
+        horizontal offset，右侧红色删除条宽度随滑动 reveal 增长（静止为 0），阈值约屏宽 28%。
+        1×1 小组件布局 B：widget_1x1_1b 顶栏为「日号 | 周几 | 完成度 | +」；Widget1x1TodoDisplayState
+        使用 dayOfMonthText + weekdayText；WidgetViewFactory / WidgetContrast / WidgetMainScreen
+        Preview1BCard 对齐。多屏 Theme 与 GlassFill 等为同期视觉收敛。
+      </Callout>
+
       <Divider />
 
       <H2>一、开发流程时间线（合并历史 + 本轮）</H2>
@@ -82,6 +92,24 @@ export default function CurrentDevelopmentWorkflow() {
             "头部 + 与空卡片 + 样式一致",
             "TimeBlockAddTaskButton 复用",
             "Row CenterVertically 对齐",
+          ],
+          [
+            "主底栏可读性",
+            "Tab 图标与文字被 blur 糊掉",
+            "MainAppBottomBar 移除子树 blur，仅渐变 + 描边",
+            "真机 / 模拟器目视 Tab 清晰",
+          ],
+          [
+            "TaskItemCard 删除交互",
+            "透明卡 + SwipeToDismiss 红底静止透出",
+            "TaskCardSwipeStack：右缘红条随 reveal；玻璃面遮挡",
+            "左滑删除 + 长按跨块拖并存",
+          ],
+          [
+            "1×1 Widget 1B",
+            "顶栏圆环 + 计数与 + 叠层",
+            "XML 四段顶栏；RemoteViews 与预览一致",
+            "桌面与 WidgetMainScreen「小」预览",
           ],
         ]}
       />
@@ -219,9 +247,17 @@ export default function CurrentDevelopmentWorkflow() {
       <Table
         headers={["文件", "职责", "本轮/近期要点"]}
         rows={[
-          ["MainScreen.kt", "Tab、NavHost、TaskViewModel、Create 限额弹窗", "传入 TodayScreen 的 ViewModel"],
+          [
+            "MainScreen.kt",
+            "Tab、NavHost、TaskViewModel、Create 限额弹窗",
+            "MainAppBottomBar：去 blur；传入 TodayScreen 的 ViewModel",
+          ],
           ["TodayScreen.kt", "日视图、分块、编辑/创建/统计/拖拽边界", "TopBar 统计；TimeBlockAddTaskButton；editingTask 链路"],
-          ["TaskItemCard.kt", "卡片 UI、滑动删除、长按拖、圆圈/内容区手势分流", "仅用 props task；无 currentTask"],
+          [
+            "TaskItemCard.kt",
+            "卡片 UI、滑动删除、长按拖、圆圈/内容区手势分流",
+            "TaskCardSwipeStack + TaskCardGlass*；无 SwipeToDismiss 整幅红底",
+          ],
           [
             "CreateTaskBottomSheet.kt",
             "创建/编辑表单、图标行、删除/Stop",
@@ -230,6 +266,14 @@ export default function CurrentDevelopmentWorkflow() {
           ["CreateScreen.kt", "独立创建页、日历与重复规则", "与 TaskCreationBus、限额协同"],
           ["TaskViewModel.kt（task-model）", "单一状态源与持久化 API", "所有列表变更归口"],
           ["TaskUtils.kt（task-model）", "stopRepeat、completeToday 等", "Stop 整链逻辑"],
+          ["StyleConstants.kt", "AppColors / AppShapes 等全局 token", "TaskCardGlassTop/Mid/Bottom/Hairline"],
+          [
+            "widget/WidgetViewFactory.kt 等",
+            "RemoteViews 构建",
+            "createRemoteViews1x1_1b / _1bWithData 绑定新顶栏 id",
+          ],
+          ["res/layout/widget_1x1_1b.xml", "1×1 布局 B 布局树", "顶栏 TextView + ImageButton 内联"],
+          ["WidgetMainScreen.kt", "小组件页预览", "Preview1BCard 顶栏与真机一致"],
         ]}
       />
 
@@ -265,7 +309,8 @@ export default function CurrentDevelopmentWorkflow() {
       <H2>五、固定验证命令</H2>
       <Code>.\gradlew.bat :app:compileDebugKotlin :app:assembleDebug</Code>
       <Text tone="secondary" size="small">
-        功能验收：TopBar 数字、圆圈完成、编辑紧急程度色、左滑删除、长按换时段、头部与空卡加号一致。
+        功能验收：TopBar 数字、圆圈完成、编辑紧急程度色、左滑删除（右缘红条随拖出）、长按换时段、头部与空卡加号一致；主底栏
+        Tab 清晰；1×1 小组件 B 顶栏四段文案与 + 同行。
       </Text>
     </Stack>
   );
