@@ -323,7 +323,7 @@ private fun TimelineCardCategoryEmoji(
     Box(
         modifier = Modifier
             .size(32.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
             .background(accent.copy(alpha = 0.14f)),
         contentAlignment = Alignment.Center
     ) {

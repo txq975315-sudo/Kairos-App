@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.topic.TopicDisplayStrings
 import com.example.kairosapplication.ui.theme.BackgroundColor
@@ -304,7 +305,7 @@ private fun InboxNoteCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(

@@ -404,15 +404,11 @@ object WidgetViewFactory {
         appWidgetId: Int
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_1x1_1b)
-        views.setTextViewText(R.id.widget_date, state.dateText)
+        views.setTextViewText(R.id.widget_1b_day, state.dayOfMonthText)
+        views.setTextViewText(R.id.widget_1b_weekday, state.weekdayText)
         val showTasks = config.displayConfig.showTasks
-        val progressPercent1b = when {
-            !showTasks || state.total <= 0 -> 0
-            else -> ((state.completed * 100) / state.total).coerceIn(0, 100)
-        }
-        views.setProgressBar(R.id.widget_1b_header_progress, 100, progressPercent1b, false)
         views.setTextViewText(
-            R.id.widget_1b_header_progress_text,
+            R.id.widget_1b_task_count,
             if (showTasks) "${state.completed}/${state.total}" else "0/0"
         )
         bind1x1TodoRows(context, views, appWidgetId, state.lines, showTasks)
@@ -581,18 +577,20 @@ object WidgetViewFactory {
     ): RemoteViews {
         val today = LocalDate.now()
         val views = RemoteViews(context.packageName, R.layout.widget_1x1_1b)
-        views.setTextViewText(R.id.widget_date, dataRepository.getTodayDateString())
+        val locale =
+            if (language == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
+        val weekdayText = today.dayOfWeek.getDisplayName(
+            java.time.format.TextStyle.FULL,
+            locale
+        )
+        views.setTextViewText(R.id.widget_1b_day, today.dayOfMonth.toString())
+        views.setTextViewText(R.id.widget_1b_weekday, weekdayText)
         val showTasks = config.displayConfig.showTasks
         val taskData = dataRepository.getTodayTaskData()
         val completed = if (showTasks) taskData.completedCount else 0
         val total = if (showTasks) taskData.totalCount else 0
-        val progressPercent1b = when {
-            !showTasks || total <= 0 -> 0
-            else -> ((completed * 100) / total).coerceIn(0, 100)
-        }
-        views.setProgressBar(R.id.widget_1b_header_progress, 100, progressPercent1b, false)
         views.setTextViewText(
-            R.id.widget_1b_header_progress_text,
+            R.id.widget_1b_task_count,
             if (showTasks) "$completed/$total" else "0/0"
         )
         val lines = if (showTasks) {

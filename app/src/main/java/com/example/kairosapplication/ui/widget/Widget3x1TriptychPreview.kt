@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppShapes
 
 /**
  * In-app / Studio preview for 3×1 triptych widget (`widget_3x1_3a`).
@@ -89,7 +90,7 @@ fun Widget3x1TriptychStrip(
         modifier = modifier
             .fillMaxWidth()
             .height(132.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(AppShapes.CardRadius))
             .background(Color.White)
             .padding(6.dp),
         verticalAlignment = Alignment.Top

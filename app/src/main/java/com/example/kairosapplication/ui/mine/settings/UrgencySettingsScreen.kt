@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.taskmodel.model.UrgencyConfig
 import com.example.taskmodel.model.UrgencyLevelConfig
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
@@ -116,7 +117,7 @@ private fun UrgencyPreviewBar(config: UrgencyConfig) {
         modifier = Modifier
             .fillMaxWidth()
             .height(24.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(AppShapes.InsetContentRadius))
             .background(Color(0xFFF0F0F0)),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {

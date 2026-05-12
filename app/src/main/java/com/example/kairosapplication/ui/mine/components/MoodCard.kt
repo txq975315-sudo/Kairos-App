@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
@@ -142,12 +143,12 @@ fun MoodCard(
                 .fillMaxWidth()
                 .shadow(
                     elevation = 5.dp,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
                     ambientColor = Color.Black.copy(alpha = 0.06f),
                     spotColor = Color.Black.copy(alpha = 0.08f)
                 )
-                .background(AppColors.GlassFill, RoundedCornerShape(20.dp))
-                .border(1.dp, CardStroke, RoundedCornerShape(20.dp))
+                .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+                .border(1.dp, CardStroke, RoundedCornerShape(AppShapes.FeaturePanelRadius))
                 .padding(horizontal = 18.dp, vertical = 18.dp)
         ) {
             Text(

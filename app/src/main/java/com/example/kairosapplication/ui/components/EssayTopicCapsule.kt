@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.taskmodel.constants.EssayConstants
 import com.example.taskmodel.model.EssayTopic
 
@@ -29,7 +30,7 @@ fun EssayTopicCapsule(
     /** When set, overrides the default topic label (e.g. English list copy) */
     labelOverride: String? = null
 ) {
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(AppShapes.DenseInsetRadius)
     val canClick = enabled && !(lockedSelected && selected)
     val bg = when {
         selected -> Color(0xFF1A1A1A)

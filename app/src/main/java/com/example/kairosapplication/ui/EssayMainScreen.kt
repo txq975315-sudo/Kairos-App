@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppMaterials
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.ThemeAccentColors
 import coil.compose.AsyncImage
@@ -922,7 +923,7 @@ private fun CardBackgroundSettingsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp)
+        shape = RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius)
     ) {
         Column(
             modifier = Modifier
@@ -987,10 +988,10 @@ private fun CardBackgroundSettingsSheet(
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(AppShapes.EmbedRadius))
                                 .background(parsed)
                                 .then(
-                                    if (currentColor.equals(hex, ignoreCase = true)) Modifier.padding(3.dp).background(Color.Transparent, RoundedCornerShape(8.dp)).padding(3.dp)
+                                    if (currentColor.equals(hex, ignoreCase = true)) Modifier.padding(3.dp).background(Color.Transparent, RoundedCornerShape(AppShapes.DenseInsetRadius)).padding(3.dp)
                                     else Modifier
                                 )
                                 .clickable { onColorChange(hex) },
@@ -1019,7 +1020,7 @@ private fun CardBackgroundSettingsSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(AppShapes.InsetContentRadius)),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -1032,7 +1033,7 @@ private fun CardBackgroundSettingsSheet(
                             .fillMaxWidth()
                             .height(80.dp)
                             .clickable { onPickImage() },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
                         color = AppColors.ScreenBackground
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1098,7 +1099,7 @@ private fun BgTypeChip(
     onClick: () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
         color = if (selected) PrimaryTextColor.copy(alpha = 0.12f) else Color(0xFFF0F0F0),
         modifier = Modifier.clickable { onClick() }
     ) {
@@ -1373,7 +1374,7 @@ private fun TopicNavPrimaryRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) categoryColor.copy(alpha = 0.12f) else Color.White
         ),
@@ -1449,7 +1450,7 @@ private fun TopicNavSecondaryRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(AppShapes.CompactRadius))
             .background(
                 if (selected) categoryColor.copy(alpha = 0.12f) else Color.Transparent
             )
@@ -1608,7 +1609,7 @@ private fun ProjectSidebarRail(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSelectProject(project.id) },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(AppShapes.EmbedRadius),
                 colors = CardDefaults.cardColors(
                     containerColor = if (selected) NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS).copy(alpha = 0.12f) else Color.White
                 ),
@@ -1690,7 +1691,7 @@ private fun ProjectSummaryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

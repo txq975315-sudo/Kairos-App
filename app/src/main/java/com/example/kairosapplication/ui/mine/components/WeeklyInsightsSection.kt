@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
@@ -65,11 +66,11 @@ fun WeeklyInsightsSection(
             .fillMaxWidth()
             .shadow(
                 elevation = 2.dp,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                 ambientColor = Color.Black.copy(alpha = 0.08f),
                 spotColor = Color.Black.copy(alpha = 0.08f)
             )
-            .background(AppColors.GlassFill, RoundedCornerShape(8.dp))
+            .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.DenseInsetRadius))
             .padding(16.dp)
     ) {
         Row(

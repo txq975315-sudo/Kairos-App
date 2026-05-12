@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.model.LocalProfile
 
@@ -75,7 +76,7 @@ fun ProfileEditSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius),
         modifier = modifier
     ) {
         Column(
@@ -106,7 +107,7 @@ fun ProfileEditSheet(
                         modifier = Modifier
                             .background(
                                 if (selected) Color(0xFFE3F2FD) else Color.Transparent,
-                                RoundedCornerShape(8.dp)
+                                RoundedCornerShape(AppShapes.DenseInsetRadius)
                             )
                             .padding(horizontal = 6.dp, vertical = 4.dp)
                             .clickable { selectedEmoji = emoji }

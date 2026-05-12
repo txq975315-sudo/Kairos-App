@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.taskmodel.model.Note
@@ -166,7 +167,7 @@ fun NoteTimelineIntegrated(
                 }
                 Spacer(Modifier.width(8.dp))
                 Surface(
-                    shape = RoundedCornerShape(50),
+                    shape = RoundedCornerShape(AppShapes.CircularButton),
                     color = capsuleBg,
                     shadowElevation = 0.dp
                 ) {

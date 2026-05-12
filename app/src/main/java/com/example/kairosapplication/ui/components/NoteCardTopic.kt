@@ -165,7 +165,7 @@ fun NoteCardTopic(
                                     fontSize = 12.sp,
                                     color = AppColors.HintText,
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
                                         .background(AppColors.BottomBarSelectedContainer)
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
                                 )

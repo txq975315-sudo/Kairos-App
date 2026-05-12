@@ -32,6 +32,15 @@ object AppColors {
     val NoteCardFace = GlassFill
     /** Rim light (edge brighter than center — glass read) */
     val CardRimLight = Color.White.copy(alpha = 0.38f)
+    /**
+     * Today [TaskItemCard] frosted face: white-forward gradient so the swipe-delete layer
+     * never bleeds through at rest, with a cool undertone (liquid-glass / air reference).
+     */
+    val TaskCardGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.84f)
+    val TaskCardGlassMid = Color(0xFFF7F9FC).copy(alpha = 0.80f)
+    val TaskCardGlassBottom = Color(0xFFE9EEF6).copy(alpha = 0.78f)
+    /** Crisp glass edge over busy atmosphere */
+    val TaskCardGlassHairline = Color.White.copy(alpha = 0.62f)
     /** Subtle cool depth (optional second pass / dividers) */
     val CardRimDepth = Color(0xFF2A3328).copy(alpha = 0.06f)
     /** Timeline vertical rail */
@@ -62,10 +71,17 @@ object AppColors {
     val Normal = Color(0xFFFFFC3A)
     val Low = Color(0xFF9E9E9E)
 
-    // ---------- BottomBar (floating strip) ----------
-    val BottomBarSurface = Color(0xFFF2F4F1)
+    // ---------- BottomBar (floating frosted island — neutral, not sage-tinted) ----------
+    /** Theme surface token; also base for non-glass surfaces */
+    val BottomBarSurface = Color(0xFFF6F6F9)
     val BottomBarItem = Color(0xFF5C625C)
-    val BottomBarSelectedContainer = Color(0xFFE4EAE4).copy(alpha = 0.52f)
+    val BottomBarSelectedContainer = Color(0xFFD9DCE6).copy(alpha = 0.58f)
+    /** Vertical gradient stops for main nav pill */
+    val BottomBarGlassVeilTop = Color(0xFFFCFCFE).copy(alpha = 0.94f)
+    val BottomBarGlassVeilBottom = Color(0xFFE9ECF3).copy(alpha = 0.82f)
+    /** Hairline stroke + top edge light */
+    val BottomBarGlassStroke = Color.White.copy(alpha = 0.26f)
+    val BottomBarGlassRim = Color.White.copy(alpha = 0.48f)
 
     // ---------- Small controls (e.g. time-block +) ----------
     val SoftCircleFill = Color(0xFF2A3328).copy(alpha = 0.06f)
@@ -81,13 +97,38 @@ object AppMaterials {
     val StripOverAtmosphere = Color(0xFFEDF1ED).copy(alpha = 0.62f)
 }
 
+/**
+ * Corner-radius ladder (one source of truth). Prefer these over raw `N.dp` in UI code.
+ *
+ * Tiering: micro → mini → compact → dense inset → inset → pill → card → feature panel → sheet.
+ */
 object AppShapes {
+    /** Modal / bottom sheet top corners */
     val SheetTopRadius = 28.dp
+    /** Task rows, note cards, CommonCard, dense list surfaces */
     val CardRadius = 16.dp
-    val TimeBlockRadius = 18.dp
-    /** Pill behind selected tab icon + label */
+    /** Large glass panels (Mine stats, mood, records, widget phone chrome) */
+    val FeaturePanelRadius = 20.dp
+    /** Prominent capsules (e.g. full-width search field) */
+    val ProminentRadius = 24.dp
+    /** Secondary surfaces: review rows, inbox cards, editor sections */
+    val InsetContentRadius = 12.dp
+    /** Tool rows / image tiles between dense inset (8) and inset (12) */
+    val EmbedRadius = 10.dp
+    /** Thumbnails & embeds inside a card (keeps density) */
+    val DenseInsetRadius = 8.dp
+    /** Bottom-nav selection, ~pill controls */
     val BottomBarSelectedRadius = 14.dp
+    /** Time blocks use the same tier as cards */
+    val TimeBlockRadius = CardRadius
+    /** Full pill / circular tap targets */
     val CircularButton = 999.dp
+    /** Calendar “today”, tight toggles */
+    val CompactRadius = 6.dp
+    /** Hairline chips, week bar caps */
+    val MicroRadius = 2.dp
+    /** Tiny palette / preview tiles */
+    val MiniRadius = 4.dp
 }
 
 object AppSpacing {
@@ -98,6 +139,9 @@ object AppSpacing {
     val SectionLarge = 12.dp
     val SectionXLarge = 16.dp
     val BlockGap = 12.dp
+
+    /** Vertical gap between stacked glass sections (e.g. Mine) */
+    val GlassSectionStack = 14.dp
 
     // In-component
     val CardHorizontal = 16.dp
@@ -114,6 +158,9 @@ object AppSize {
 
     // Time-block header height (tightened)
     val TimeBlockHeaderHeight = 32.dp
+
+    // Backdrop blur (API 31+ only — see MainAppBottomBar)
+    val BottomBarBackdropBlur = 22.dp
 
     // Input / cards
     val EmptyTaskCardHeight = 48.dp

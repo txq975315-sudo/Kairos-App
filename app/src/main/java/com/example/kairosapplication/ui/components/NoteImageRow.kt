@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 
 /**
@@ -73,7 +74,7 @@ private fun ImageGridCell(uriString: String?, cell: Dp) {
             contentDescription = LocalizedStrings.get("cd_note_image"),
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(RoundedCornerShape(AppShapes.DenseInsetRadius)),
             contentScale = ContentScale.Crop
         )
     }

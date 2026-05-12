@@ -96,6 +96,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -123,10 +124,10 @@ private val SummaryFocusBg = Color.Transparent
 private const val MaxLinkedCategories = 2
 
 /**
- * Primary chip: corner radius 3 (Figma). [padding(1.dp)] between neighbours; [clip] clips fills;
+ * Primary chip: [AppShapes.MiniRadius] tier (was 3dp in Figma). [padding(1.dp)] between neighbours; [clip] clips fills;
  * tight [shadow] per design (blur ~1, black 25%).
  */
-private val PrimaryCategoryChipShape = RoundedCornerShape(3.dp)
+private val PrimaryCategoryChipShape = RoundedCornerShape(AppShapes.MiniRadius)
 
 /** Figma: inside stroke ~0.1 — use hairline in dp. */
 private val PrimaryChipStrokeWidth = 0.5.dp
@@ -806,7 +807,7 @@ private fun EditorTopBar(
                         disabledContentColor = Color.White.copy(alpha = 0.7f)
                     ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(18.dp)
+                    shape = RoundedCornerShape(AppShapes.CardRadius)
                 ) {
                     Text(LocalizedStrings.get("essay_editor_post"), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
@@ -1330,7 +1331,7 @@ private fun TagsRow(tags: List<String>, onRemove: (String) -> Unit) {
         tags.forEach { tag ->
             Row(
                 modifier = Modifier
-                    .border(1.dp, DividerLight, RoundedCornerShape(14.dp))
+                    .border(1.dp, DividerLight, RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
                     .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1365,7 +1366,7 @@ private fun ImageSectionCompact(
             Box(
                 modifier = Modifier
                     .size(72.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(AppShapes.CompactRadius))
             ) {
                 AsyncImage(
                     model = uri,
@@ -1393,8 +1394,8 @@ private fun ImageSectionCompact(
             Box(
                 modifier = Modifier
                     .size(72.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .border(1.dp, DividerLight, RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(AppShapes.CompactRadius))
+                    .border(1.dp, DividerLight, RoundedCornerShape(AppShapes.CompactRadius))
                     .clickable(onClick = onAdd),
                 contentAlignment = Alignment.Center
             ) {
@@ -1418,7 +1419,7 @@ private fun EditorBottomBarSymbolButton(
 ) {
     Box(
         modifier = Modifier
-            .border(1.dp, DividerLight, RoundedCornerShape(8.dp))
+            .border(1.dp, DividerLight, RoundedCornerShape(AppShapes.DenseInsetRadius))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
@@ -1489,7 +1490,7 @@ private fun EditorBottomToolBar(
             ) {
                 Row(
                     modifier = Modifier
-                        .border(1.dp, DividerLight, RoundedCornerShape(8.dp))
+                        .border(1.dp, DividerLight, RoundedCornerShape(AppShapes.DenseInsetRadius))
                         .clickable {
                             showMoodExpand = false
                             showProjectPicker = !showProjectPicker
@@ -1538,15 +1539,15 @@ private fun EditorBottomToolBar(
                     Box(
                         modifier = Modifier
                             .size(34.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(AppShapes.EmbedRadius))
                             .background(
                                 if (sel) Color(0xFFFFE76F) else Color.Transparent,
-                                RoundedCornerShape(10.dp)
+                                RoundedCornerShape(AppShapes.EmbedRadius)
                             )
                             .border(
                                 width = 1.dp,
                                 color = if (sel) Color(0xFFFFA500) else DividerLight,
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(AppShapes.EmbedRadius)
                             )
                             .clickable {
                                 onMoodSelected(m)

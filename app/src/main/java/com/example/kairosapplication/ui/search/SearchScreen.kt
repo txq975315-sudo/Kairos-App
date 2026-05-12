@@ -58,8 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.kairosapplication.core.ui.AppColors
-import com.example.kairosapplication.core.ui.CommonBackButton
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -503,7 +504,7 @@ private fun SearchBar(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(AppShapes.ProminentRadius))
                 .background(SearchFieldPurple)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
@@ -667,9 +668,9 @@ private fun RecentSearchChip(
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(2.dp))
-            .background(AppColors.SurfaceWhite, RoundedCornerShape(2.dp))
-            .border(1.dp, RecentChipBorderColor, RoundedCornerShape(2.dp))
+            .clip(RoundedCornerShape(AppShapes.MicroRadius))
+            .background(AppColors.SurfaceWhite, RoundedCornerShape(AppShapes.MicroRadius))
+            .border(1.dp, RecentChipBorderColor, RoundedCornerShape(AppShapes.MicroRadius))
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -736,7 +737,7 @@ private fun KeyLabelFilterDialog(
     val accent = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS)
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(AppShapes.CardRadius),
             color = AppColors.SurfaceWhite,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -786,7 +787,7 @@ private fun <T> EnumFilterDialog(
     val accent = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS)
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(AppShapes.CardRadius),
             color = AppColors.SurfaceWhite,
             modifier = Modifier.fillMaxWidth()
         ) {

@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.mine.components.MoodStoredIcon
@@ -273,12 +274,12 @@ private fun MonthGrid(
                                 .weight(1f)
                                 .height(52.dp)
                                 .then(
-                                    if (isToday) Modifier.border(2.dp, TodayBorder, RoundedCornerShape(6.dp))
+                                    if (isToday) Modifier.border(2.dp, TodayBorder, RoundedCornerShape(AppShapes.CompactRadius))
                                     else Modifier
                                 )
                                 .background(
                                     if (isSel) SelectedBg else Color.Transparent,
-                                    RoundedCornerShape(6.dp)
+                                    RoundedCornerShape(AppShapes.CompactRadius)
                                 )
                                 .clickable { onDayClick(date) }
                                 .padding(2.dp),

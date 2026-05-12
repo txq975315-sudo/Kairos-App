@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppReviewLayout
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import androidx.compose.ui.graphics.Color
@@ -227,7 +228,7 @@ fun DailyReviewScreen(
                 },
                 modifier = Modifier.weight(1f),
                 enabled = selectedTasks.isNotEmpty(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(AppShapes.InsetContentRadius),
                 border = BorderStroke(1.dp, Color(0xFF1A1A1A)),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AppColors.GlassFill,
@@ -259,7 +260,7 @@ fun DailyReviewScreen(
                 },
                 modifier = Modifier.weight(1f),
                 enabled = selectedOverdueTasks.isNotEmpty(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(AppShapes.InsetContentRadius),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF8A7CF8),
                     contentColor = Color.White,
@@ -335,8 +336,8 @@ private fun ReviewSection(
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
+            .border(1.dp, borderColor, RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
             .background(backgroundColor)
             .padding(10.dp)
     ) {
@@ -401,7 +402,7 @@ private fun DailyTaskCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onEdit),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
         colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {

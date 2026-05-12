@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.border
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.mine.EmojiConstants
 
 private val SelectGreen = Color(0xFF4CAF50)
@@ -35,12 +36,12 @@ fun CustomEmoji(
         contentScale = ContentScale.Fit,
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
             .clickable(onClick = onClick)
             .border(
                 width = if (selected) 2.dp else 0.dp,
                 color = if (selected) SelectGreen else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius)
             )
     )
 }

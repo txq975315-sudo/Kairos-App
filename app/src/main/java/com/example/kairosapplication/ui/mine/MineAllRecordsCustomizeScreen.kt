@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.CommonBackButton
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.mine.components.MineRecordsMetricsCard
 import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
@@ -271,8 +272,8 @@ private fun ScopeChip(
         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
-            .border(1.dp, borderColor, RoundedCornerShape(20.dp))
-            .background(bg, RoundedCornerShape(20.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .background(bg, RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     )

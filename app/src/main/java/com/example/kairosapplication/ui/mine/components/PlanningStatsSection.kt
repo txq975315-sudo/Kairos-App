@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.model.WeeklyInsights
 
@@ -56,12 +57,12 @@ fun PlanningStatsSection(
             .fillMaxWidth()
             .shadow(
                 elevation = 5.dp,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
                 ambientColor = Color.Black.copy(alpha = 0.06f),
                 spotColor = Color.Black.copy(alpha = 0.08f)
             )
-            .background(AppColors.GlassFill, RoundedCornerShape(20.dp))
-            .border(1.dp, Color(0xFFE8E8EC), RoundedCornerShape(20.dp))
+            .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .border(1.dp, Color(0xFFE8E8EC), RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .padding(horizontal = 18.dp, vertical = 18.dp)
     ) {
         Row(
@@ -167,7 +168,7 @@ private fun StatBlock(
     outlined: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(AppShapes.CardRadius)
     Column(
         modifier = modifier
             .clip(shape)

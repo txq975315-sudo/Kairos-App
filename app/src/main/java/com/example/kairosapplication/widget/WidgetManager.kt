@@ -56,7 +56,10 @@ data class Widget1x1TodoLine(
 )
 
 data class Widget1x1TodoDisplayState(
-    val dateText: String,
+    /** Day of month (e.g. "12") — first column in 1B header. */
+    val dayOfMonthText: String,
+    /** Localized weekday (e.g. "星期二"). */
+    val weekdayText: String,
     val completed: Int,
     val total: Int,
     val lines: List<Widget1x1TodoLine>,
@@ -147,13 +150,17 @@ object WidgetManager {
     suspend fun load1x1TodoDisplayState(context: Context, config: WidgetConfig): Widget1x1TodoDisplayState {
         val appContext = context.applicationContext
         val today = LocalDate.now()
-        val dateText = today.format(dateFormatterMmDd)
         val taskRepository = TaskRepository(appContext)
         val dayTasks = TaskUtils.sortTasks(
             taskRepository.getTasksSnapshot().filter { it.taskDate == today }
         )
         val dataStoreManager = DataStoreManager(appContext)
         val language = LocalizationManager.Language.fromCode(dataStoreManager.getLanguageSync())
+        val locale =
+            if (language == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
+        val weekdayText =
+            today.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+        val dayOfMonthText = today.dayOfMonth.toString()
         val showTasks = config.displayConfig.showTasks
         val total = if (showTasks) dayTasks.size else 0
         val completed = if (showTasks) dayTasks.count { it.isCompleted } else 0
@@ -171,7 +178,8 @@ object WidgetManager {
         }
         val quoteBody = loadDailyQuoteBody(taskRepository, language, appContext)
         return Widget1x1TodoDisplayState(
-            dateText = dateText,
+            dayOfMonthText = dayOfMonthText,
+            weekdayText = weekdayText,
             completed = completed,
             total = total,
             lines = lines,

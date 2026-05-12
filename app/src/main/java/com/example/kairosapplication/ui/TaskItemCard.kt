@@ -5,43 +5,49 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
@@ -51,8 +57,92 @@ import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+/**
+ * Swipe-to-delete: **no** full-width red underlay at rest.
+ * A red strip is **only** laid out on the trailing edge; its width grows with swipe distance
+ * (`-offsetX`) while the card slides left, so delete UI “exports” from the right during the gesture.
+ */
+@Composable
+private fun TaskCardSwipeStack(
+    taskId: Int,
+    cardShape: RoundedCornerShape,
+    onSwipeDelete: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    var offsetX by remember(taskId) { mutableFloatStateOf(0f) }
+    LaunchedEffect(taskId) {
+        offsetX = 0f
+    }
+    val density = LocalDensity.current
+    val deleteBrush = remember {
+        Brush.horizontalGradient(
+            colorStops = arrayOf(
+                0f to Color(0xFFE57373).copy(alpha = 0.95f),
+                1f to Color(0xFFE53935).copy(alpha = 0.98f),
+            ),
+        )
+    }
+    val stripEndShape = remember {
+        RoundedCornerShape(
+            topStart = 0.dp,
+            bottomStart = 0.dp,
+            topEnd = AppShapes.CardRadius,
+            bottomEnd = AppShapes.CardRadius,
+        )
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(cardShape),
+    ) {
+        val widthPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+        val maxDragPx = widthPx * 0.48f
+        val dismissThresholdPx = widthPx * 0.28f
+        val revealPx = (-offsetX).coerceIn(0f, widthPx * 0.52f)
+        val stripWidthDp = with(density) { revealPx.toDp() }
+
+        if (revealPx > 0.5f) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(stripWidthDp)
+                    .fillMaxHeight()
+                    .background(deleteBrush, stripEndShape),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset {
+                    IntOffset(offsetX.roundToInt(), 0)
+                }
+                .pointerInput(taskId, widthPx, maxDragPx) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            offsetX = (offsetX + dragAmount).coerceIn(-maxDragPx, 0f)
+                        },
+                        onDragEnd = {
+                            if (-offsetX >= dismissThresholdPx) {
+                                onSwipeDelete()
+                            }
+                            offsetX = 0f
+                        },
+                        onDragCancel = {
+                            offsetX = 0f
+                        },
+                    )
+                },
+        ) {
+            content()
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskItemCard(
     task: Task,
@@ -69,21 +159,7 @@ fun TaskItemCard(
     val titleFontSize = 15.sp
     val descriptionFontSize = 10.sp
     val minCardHeight = if (hasDescription) 58.dp else 48.dp
-
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (enableSwipeToDelete && value == SwipeToDismissBoxValue.EndToStart) {
-                onSwipeDelete()
-                true
-            } else {
-                false
-            }
-        }
-    )
-
-    LaunchedEffect(task.id, task.isCompleted, task.taskDate, enableSwipeToDelete) {
-        dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-    }
+    val cardShape = RoundedCornerShape(AppShapes.CardRadius)
 
     val dragEnd = onDragVerticalEnd
     val dragModifier = if (dragEnd != null) {
@@ -105,85 +181,99 @@ fun TaskItemCard(
 
     @Composable
     fun TaskCardInner() {
-        val cardShape = RoundedCornerShape(AppShapes.CardRadius)
+        val glassBrush = Brush.verticalGradient(
+            colorStops = arrayOf(
+                0f to AppColors.TaskCardGlassTop,
+                0.42f to AppColors.TaskCardGlassMid,
+                1f to AppColors.TaskCardGlassBottom,
+            ),
+        )
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, AppColors.CardRimLight, cardShape)
                 .shadow(
-                    elevation = 0.5.dp,
+                    elevation = 1.5.dp,
                     shape = cardShape,
-                    ambientColor = Color.Black.copy(alpha = 0.06f),
-                    spotColor = Color.Black.copy(alpha = 0.06f),
+                    ambientColor = Color.Black.copy(alpha = 0.05f),
+                    spotColor = Color(0xFF1A2850).copy(alpha = 0.04f),
                 )
+                .clip(cardShape)
+                .border(1.dp, AppColors.TaskCardGlassHairline, cardShape)
                 .onGloballyPositioned { lc ->
                     onDragAnchorYRoot?.invoke(lc.boundsInRoot().center.y)
                 },
             shape = cardShape,
-            colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = minCardHeight)
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .clip(cardShape)
+                    .background(glassBrush, cardShape)
             ) {
-                TaskTagLeading(
-                    label = task.label,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-
-                Column(
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .then(dragModifier)
-                        .clickable { onOpenDetail() },
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .fillMaxWidth()
+                        .heightIn(min = minCardHeight)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = task.title,
-                        fontSize = titleFontSize,
-                        fontWeight = FontWeight.Medium,
-                        color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
-                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    TaskTagLeading(
+                        label = task.label,
+                        modifier = Modifier.size(22.dp)
                     )
-                    if (hasDescription) {
+                    Spacer(Modifier.width(12.dp))
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .then(dragModifier)
+                            .clickable { onOpenDetail() },
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = task.description,
-                            fontSize = descriptionFontSize,
-                            color = Color(0xFF757575),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            text = task.title,
+                            fontSize = titleFontSize,
+                            fontWeight = FontWeight.Medium,
+                            color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
                             textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                         )
+                        if (hasDescription) {
+                            Text(
+                                text = task.description,
+                                fontSize = descriptionFontSize,
+                                color = Color(0xFF757575),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                            )
+                        }
                     }
-                }
 
-                Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(12.dp))
 
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clip(CircleShape)
-                        .background(if (task.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
-                        .border(
-                            width = 2.dp,
-                            color = if (task.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
-                            shape = CircleShape
-                        )
-                        .clickable { onToggleComplete() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (task.isCompleted) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = LocalizedStrings.get("cd_completed_task"),
-                            tint = Color(0xFF9E9E9E),
-                            modifier = Modifier.size(14.dp)
-                        )
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(if (task.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
+                            .border(
+                                width = 2.dp,
+                                color = if (task.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
+                                shape = CircleShape
+                            )
+                            .clickable { onToggleComplete() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (task.isCompleted) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = LocalizedStrings.get("cd_completed_task"),
+                                tint = Color(0xFF9E9E9E),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -191,26 +281,10 @@ fun TaskItemCard(
     }
 
     if (enableSwipeToDelete) {
-        SwipeToDismissBox(
-            state = dismissState,
-            enableDismissFromStartToEnd = false,
-            enableDismissFromEndToStart = true,
-            backgroundContent = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFE53935), RoundedCornerShape(AppShapes.CardRadius))
-                        .padding(horizontal = 20.dp),
-                    contentAlignment = Alignment.CenterEnd
-                ) {
-                    Text(
-                        text = LocalizedStrings.get("task_swipe_delete"),
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
+        TaskCardSwipeStack(
+            taskId = task.id,
+            cardShape = cardShape,
+            onSwipeDelete = onSwipeDelete,
         ) {
             TaskCardInner()
         }

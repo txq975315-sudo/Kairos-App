@@ -43,11 +43,13 @@ object WidgetContrast {
             if (Color.red(primary) > 200) Color.parseColor("#616161") else Color.parseColor("#BDBDBD")
         when (size) {
             WidgetSize._1X1 -> {
-                views.setTextColor(R.id.widget_date, primary)
                 views.setTextColor(R.id.widget_daily_quote, muted)
                 when (config.layoutKind) {
                     WidgetLayoutKind._1B -> apply1x1b(config, views, primary, muted)
-                    else -> views.setTextColor(R.id.widget_progress_text, primary)
+                    else -> {
+                        views.setTextColor(R.id.widget_date, primary)
+                        views.setTextColor(R.id.widget_progress_text, primary)
+                    }
                 }
             }
             WidgetSize._2X2 -> {
@@ -129,8 +131,9 @@ object WidgetContrast {
     private fun apply1x1b(config: WidgetConfig, views: RemoteViews, primary: Int, muted: Int) {
         if (config.layoutKind != WidgetLayoutKind._1B) return
         runCatching {
-            views.setTextColor(R.id.widget_1b_header_progress_text, primary)
-            views.setTextColor(R.id.widget_date, primary)
+            views.setTextColor(R.id.widget_1b_day, primary)
+            views.setTextColor(R.id.widget_1b_weekday, muted)
+            views.setTextColor(R.id.widget_1b_task_count, primary)
             // Todo row mark colors come from WidgetViewFactory.bind1x1TodoRows (completed vs incomplete).
         }
     }

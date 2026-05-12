@@ -2,6 +2,7 @@
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -26,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,6 +57,7 @@ import com.example.kairosapplication.notification.NotificationHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -631,35 +632,63 @@ private fun KairosAtmosphereBackground(modifier: Modifier = Modifier) {
 }
 
 /**
- * Compact bottom nav: no downward shadow (avoids “strip above painting”);
- * soft darkening along the **top** edge only, reads like a top inset shadow.
+ * Main bottom nav as a **floating frosted island** (neutral veil gradient + hairline rim).
+ * Icons and labels stay sharp: never apply [Modifier.blur] to a layer that also draws tab content —
+ * blur would composite the entire subtree (including text/icons) into a blurred texture.
  */
 @Composable
 private fun MainAppBottomBar(
     selectedTab: AppTab,
     onTabSelected: (AppTab) -> Unit,
 ) {
-    Surface(
+    val pillShape = RoundedCornerShape(AppShapes.ProminentRadius)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding(),
-        color = AppColors.BottomBarSurface.copy(alpha = 0.68f),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
+            .navigationBarsPadding()
+            .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 12.dp,
+                    shape = pillShape,
+                    ambientColor = Color.Black.copy(alpha = 0.07f),
+                    spotColor = Color.Black.copy(alpha = 0.10f),
+                    clip = false,
+                )
+                .clip(pillShape)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0f to AppColors.BottomBarGlassVeilTop,
+                            0.42f to AppColors.BottomBarGlassVeilTop.copy(alpha = 0.88f),
+                            1f to AppColors.BottomBarGlassVeilBottom,
+                        ),
+                    ),
+                    shape = pillShape,
+                )
+                .border(width = 1.dp, color = AppColors.BottomBarGlassStroke, shape = pillShape),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(AppColors.BottomBarGlassRim),
+            )
             HorizontalDivider(
                 thickness = 0.5.dp,
-                color = AppColors.Divider.copy(alpha = 0.35f),
+                color = Color.White.copy(alpha = 0.22f),
             )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(5.dp)
+                    .height(4.dp)
                     .background(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
-                                0f to Color.Black.copy(alpha = 0.085f),
+                                0f to Color.Black.copy(alpha = 0.03f),
                                 1f to Color.Transparent,
                             ),
                         ),
@@ -668,51 +697,51 @@ private fun MainAppBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 6.dp, bottom = 2.dp),
+                    .padding(top = 4.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.Top,
             ) {
-            AppTab.entries.forEach { tab ->
-                val selected = selectedTab == tab
-                val labelText = mainNavLabel(tab)
-                val interaction = remember(tab) { MutableInteractionSource() }
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(
-                            interactionSource = interaction,
-                            indication = null,
-                        ) { onTabSelected(tab) }
-                        .padding(top = 0.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
+                AppTab.entries.forEach { tab ->
+                    val selected = selectedTab == tab
+                    val labelText = mainNavLabel(tab)
+                    val interaction = remember(tab) { MutableInteractionSource() }
+                    Column(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
-                            .background(
-                                if (selected) AppColors.BottomBarSelectedContainer
-                                else Color.Transparent,
-                            )
-                            .padding(horizontal = 16.dp, vertical = 5.dp),
-                        contentAlignment = Alignment.Center,
+                            .weight(1f)
+                            .clickable(
+                                interactionSource = interaction,
+                                indication = null,
+                            ) { onTabSelected(tab) }
+                            .padding(top = 0.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = labelText,
-                                modifier = Modifier.size(22.dp),
-                                tint = if (selected) PrimaryTextColor else SecondaryTextColor,
-                            )
-                            Text(
-                                text = labelText,
-                                fontSize = 11.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (selected) PrimaryTextColor else SecondaryTextColor,
-                                modifier = Modifier.padding(top = 3.dp),
-                            )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
+                                .background(
+                                    if (selected) AppColors.BottomBarSelectedContainer
+                                    else Color.Transparent,
+                                )
+                                .padding(horizontal = 16.dp, vertical = 5.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = labelText,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = if (selected) PrimaryTextColor else SecondaryTextColor,
+                                )
+                                Text(
+                                    text = labelText,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (selected) PrimaryTextColor else SecondaryTextColor,
+                                    modifier = Modifier.padding(top = 3.dp),
+                                )
+                            }
                         }
                     }
                 }
-            }
             }
         }
     }

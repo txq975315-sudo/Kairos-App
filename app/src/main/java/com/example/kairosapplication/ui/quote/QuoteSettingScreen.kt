@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -305,7 +306,7 @@ fun QuoteSettingScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
                         .background(Color(0xFFF5F5F5))
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -390,7 +391,7 @@ fun QuoteSettingScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
                     .background(Color(0xFFFAFAFA))
                     .padding(horizontal = 12.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically

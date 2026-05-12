@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.NoteCardConstants
@@ -40,7 +41,6 @@ private val NoteEmptyBg = Color(0xFFF0F0F0)
 private val TaskEmptyBg = Color(0xFFF0F0F0)
 private val TodayCellBg = Color(0xFFF0F4FF)
 private val SummaryCardText = Color(0xFF1A1A1A)
-private val SummaryCardRadius = 4.dp
 private val SummaryCardHeight = 18.dp
 /** Date number + two summary rows (tasks + notes), compact height. */
 private val CalendarRowMinHeight = 76.dp
@@ -182,7 +182,7 @@ private fun MonthDaySummaryCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(SummaryCardHeight)
-            .clip(RoundedCornerShape(SummaryCardRadius))
+            .clip(RoundedCornerShape(AppShapes.MiniRadius))
             .background(backgroundColor),
         contentAlignment = Alignment.Center,
     ) {

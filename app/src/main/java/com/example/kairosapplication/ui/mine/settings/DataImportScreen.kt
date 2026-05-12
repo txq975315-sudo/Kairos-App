@@ -47,6 +47,7 @@ import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import java.io.BufferedReader
@@ -162,7 +163,7 @@ fun DataImportScreen(
             Spacer(Modifier.height(8.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                 color = CardBg,
                 shadowElevation = 2.dp
             ) {
@@ -177,7 +178,7 @@ fun DataImportScreen(
                             openDoc.launch(arrayOf("application/json", "application/*", "*/*"))
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Blue),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(AppShapes.DenseInsetRadius)
                     ) {
                         Text(LocalizedStrings.get("select_file_import"))
                     }
@@ -189,7 +190,7 @@ fun DataImportScreen(
             preview?.let { data ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                     color = CardBg,
                     shadowElevation = 2.dp
                 ) {
@@ -262,7 +263,7 @@ fun DataImportScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)
                         ) {
                             Text(LocalizedStrings.get("start_import"))

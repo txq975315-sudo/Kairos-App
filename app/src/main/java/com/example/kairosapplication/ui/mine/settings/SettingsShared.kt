@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
@@ -76,7 +77,7 @@ fun SettingsL2Scaffold(
 fun SettingsGroupCard(title: String, content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
         color = SettingsCardBg,
         shadowElevation = 2.dp
     ) {

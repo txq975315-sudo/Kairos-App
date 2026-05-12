@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.taskmodel.model.Note
@@ -80,7 +81,7 @@ fun NoteCommentBottomSheet(
         containerColor = sheetBg,
         contentColor = Color.Black,
         dragHandle = null,
-        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp)
+        shape = RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius)
     ) {
         Column(
             modifier = Modifier

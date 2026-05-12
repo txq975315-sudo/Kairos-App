@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -277,7 +278,7 @@ private fun WeekTimelineNoteBlock(
                 modifier = Modifier
                     .width(3.dp)
                     .height(40.dp)
-                    .background(barColor, RoundedCornerShape(2.dp)),
+                    .background(barColor, RoundedCornerShape(AppShapes.MicroRadius)),
             )
             Spacer(modifier = Modifier.width(6.dp))
             Column(modifier = Modifier.weight(1f)) {

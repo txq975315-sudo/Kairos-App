@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizationManager
 
 /**
@@ -46,7 +47,7 @@ fun FirstRunLanguageOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 28.dp),
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
             color = Color.White,
             shadowElevation = 8.dp,
         ) {

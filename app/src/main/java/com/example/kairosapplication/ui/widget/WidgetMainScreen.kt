@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.widget.WidgetTaskTitleClip
 import com.example.kairosapplication.widget.WidgetViewFactory
@@ -314,7 +315,8 @@ private fun SmallPreviewsRow(
         }
         Box(modifier = Modifier.weight(1f)) {
             Preview1BCard(
-                headerDateLabel = dayNum,
+                dayNum = dayNum,
+                weekdayLabel = dayName,
                 completed = completed,
                 total = total,
                 quote = quote,
@@ -336,8 +338,8 @@ private fun Preview1ACard(
 ) {
     Column(
         modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .background(PreviewCardBg)
             .padding(12.dp)
             .aspectRatio(1f)
@@ -404,7 +406,8 @@ private fun Preview1ACard(
 
 @Composable
 private fun Preview1BCard(
-    headerDateLabel: String,
+    dayNum: String,
+    weekdayLabel: String,
     completed: Int,
     total: Int,
     quote: String,
@@ -413,60 +416,39 @@ private fun Preview1BCard(
 ) {
     Column(
         modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .background(PreviewCardBg)
             .padding(12.dp)
             .aspectRatio(1f)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                headerDateLabel,
+                text = dayNum,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
                 maxLines = 1,
+            )
+            Text(
+                text = weekdayLabel,
+                fontSize = 10.sp,
+                color = TextMuted,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
-            Box(
-                modifier = Modifier.padding(end = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                val frac = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-                Canvas(modifier = Modifier.size(38.dp)) {
-                    val stroke = 3.dp.toPx()
-                    val diameter = size.minDimension
-                    drawArc(
-                        color = WidgetPurpleTrack,
-                        startAngle = -90f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        topLeft = androidx.compose.ui.geometry.Offset.Zero,
-                        size = Size(diameter, diameter),
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
-                    )
-                    drawArc(
-                        color = WidgetPurpleProgress,
-                        startAngle = -90f,
-                        sweepAngle = 360f * frac,
-                        useCenter = false,
-                        topLeft = androidx.compose.ui.geometry.Offset.Zero,
-                        size = Size(diameter, diameter),
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
-                    )
-                }
-                Text(
-                    text = if (total > 0) "$completed/$total" else "0/0",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-            }
+            Text(
+                text = if (total > 0) "$completed/$total" else "0/0",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                maxLines = 1,
+            )
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = null,
@@ -547,8 +529,8 @@ private fun Split2x2WidgetPreviewCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .background(PreviewCardBg)
             .padding(horizontal = 10.dp, vertical = 10.dp)
     ) {
@@ -754,8 +736,8 @@ private fun Widget3x1WeekQuotePreview(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 228.dp)
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .background(PreviewCardBg)
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
@@ -836,7 +818,7 @@ private fun Widget3x1WeekQuotePreview(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(18.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(RoundedCornerShape(AppShapes.MiniRadius))
                                 .background(Color(0xFFF0F0F0)),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -855,7 +837,7 @@ private fun Widget3x1WeekQuotePreview(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(18.dp)
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(AppShapes.MiniRadius))
                                     .background(widget3x3PreviewTaskBackground(task.urgency, task.isCompleted)),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -921,8 +903,8 @@ private fun SuperLargePreviewCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
             .background(PreviewCardBg)
             .padding(12.dp)
     ) {
@@ -1023,7 +1005,7 @@ private fun SuperLargePreviewCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(18.dp)
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(AppShapes.MiniRadius))
                                     .background(widget3x3PreviewTaskBackground(t.urgency, t.isCompleted)),
                                 contentAlignment = Alignment.Center,
                             ) {

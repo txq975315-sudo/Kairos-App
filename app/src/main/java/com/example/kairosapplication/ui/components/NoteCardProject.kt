@@ -111,7 +111,7 @@ fun NoteCardProject(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(AppShapes.EmbedRadius))
                         .background(AppColors.MorningBackground.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -174,7 +174,7 @@ fun NoteCardProject(
                             modifier = Modifier
                                 .background(
                                     AppColors.EveningBackground.copy(alpha = 0.35f),
-                                    RoundedCornerShape(8.dp)
+                                    RoundedCornerShape(AppShapes.DenseInsetRadius)
                                 )
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         )

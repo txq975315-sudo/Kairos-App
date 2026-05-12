@@ -98,6 +98,7 @@ import com.example.kairosapplication.ui.TaskDetailBottomSheet
 import com.example.kairosapplication.ui.TaskItemCard
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppInteraction
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.core.ui.AppTypography
 import com.example.kairosapplication.ui.components.ArrowButton
@@ -550,7 +551,7 @@ private fun FirstUseOnboarding(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(AppShapes.BottomBarSelectedRadius),
         colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -570,7 +571,7 @@ private fun FirstUseOnboarding(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { onLoadSample() },
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(AppShapes.EmbedRadius),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF8A7CF8))
                 ) {
                     Text(
@@ -584,7 +585,7 @@ private fun FirstUseOnboarding(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { onStartEmpty() },
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(AppShapes.EmbedRadius),
                     colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill)
                 ) {
                     Text(
@@ -619,11 +620,11 @@ private fun TopBar(
         Card(
             modifier = Modifier.shadow(
                 elevation = shadowElevation,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(AppShapes.CardRadius),
                 ambientColor = shadowColor,
                 spotColor = shadowColor
             ),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(AppShapes.CardRadius),
             colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
@@ -759,7 +760,7 @@ private fun QuoteSection(onClick: () -> Unit, quoteText: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
             .background(Color.Transparent)
             .clickable(
                 interactionSource = interactionSource,
@@ -870,7 +871,7 @@ private fun TimeBlock(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(AppShapes.CardRadius),
                     colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.48f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
@@ -967,7 +968,7 @@ private fun EmptyTaskCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -978,7 +979,7 @@ private fun EmptyTaskCard(
                 .border(
                     width = 1.dp,
                     color = AppColors.SecondaryText.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(AppShapes.InsetContentRadius)
                 )
                 .clickable(onClick = onCreateClick)
                 .padding(horizontal = 16.dp), // symmetric horizontal padding

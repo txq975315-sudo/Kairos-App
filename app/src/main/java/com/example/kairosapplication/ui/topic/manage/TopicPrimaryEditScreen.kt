@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.theme.BackgroundColor
@@ -230,7 +231,7 @@ fun TopicPrimaryEditScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(SectionBg, RoundedCornerShape(8.dp))
+                            .background(SectionBg, RoundedCornerShape(AppShapes.DenseInsetRadius))
                             .padding(10.dp),
                     ) {
                         Row(

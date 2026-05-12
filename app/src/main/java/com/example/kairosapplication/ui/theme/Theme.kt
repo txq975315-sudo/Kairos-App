@@ -12,15 +12,15 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 
 private val KairosShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(22.dp),
-    extraLarge = RoundedCornerShape(28.dp),
+    extraSmall = RoundedCornerShape(AppShapes.DenseInsetRadius),
+    small = RoundedCornerShape(AppShapes.InsetContentRadius),
+    medium = RoundedCornerShape(AppShapes.CardRadius),
+    large = RoundedCornerShape(AppShapes.FeaturePanelRadius),
+    extraLarge = RoundedCornerShape(AppShapes.SheetTopRadius),
 )
 
 private val KairosLightColorScheme = lightColorScheme(

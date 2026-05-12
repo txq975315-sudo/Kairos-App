@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.mine.settings.SettingsDividerC
 import com.example.kairosapplication.ui.mine.settings.SettingsL2Scaffold
 import com.example.kairosapplication.ui.mine.settings.SettingsSubC
@@ -236,8 +237,8 @@ private fun BackgroundEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, SettingsDividerC, RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
+                    .border(1.dp, SettingsDividerC, RoundedCornerShape(AppShapes.DenseInsetRadius)),
                 contentAlignment = Alignment.Center
             ) {
                 val bmp = previewBitmap
@@ -364,7 +365,7 @@ private fun BackgroundEditScreen(
                 OutlinedButton(
                     onClick = { pickImage.launch(arrayOf("image/*")) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RoundedCornerShape(AppShapes.MiniRadius)
                 ) {
                     Text(
                         LocalizedStrings.get("widget_select_image"),
@@ -480,7 +481,7 @@ private fun BackgroundEditScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(AppShapes.MiniRadius)
             ) {
                 Text(
                     LocalizedStrings.get("widget_apply_all_sizes"),
@@ -501,7 +502,7 @@ private fun BackgroundEditScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(AppShapes.MiniRadius)
             ) {
                 Text(
                     LocalizedStrings.get("widget_apply_current_size"),

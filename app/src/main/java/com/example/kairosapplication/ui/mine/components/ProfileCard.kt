@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.model.LocalProfile
 
@@ -38,11 +39,11 @@ fun ProfileCard(
             .fillMaxWidth()
             .shadow(
                 elevation = 2.dp,
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                 ambientColor = Color.Black.copy(alpha = 0.08f),
                 spotColor = Color.Black.copy(alpha = 0.08f)
             )
-            .background(AppColors.GlassFill, RoundedCornerShape(8.dp))
+            .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.DenseInsetRadius))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -50,7 +51,7 @@ fun ProfileCard(
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
+                .background(Color(0xFFF5F5F5), RoundedCornerShape(AppShapes.DenseInsetRadius)),
             contentAlignment = Alignment.Center
         ) {
             Text(

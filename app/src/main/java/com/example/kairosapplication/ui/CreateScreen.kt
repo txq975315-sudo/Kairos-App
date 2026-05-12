@@ -78,6 +78,7 @@ import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
@@ -593,7 +594,7 @@ private fun CalendarSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(AppShapes.CardRadius))
             .background(AppColors.GlassFill)
             .padding(14.dp)
     ) {
@@ -728,7 +729,7 @@ private fun InputField(
         onValueChange = onValueChange,
         modifier = fieldModifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(AppShapes.InsetContentRadius))
             .background(AppColors.GlassFill)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         keyboardOptions = keyboardOptions,
@@ -1008,7 +1009,7 @@ private fun CreateToolPanel(
                             onValueChange = onCustomRepeatRuleChanged,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(AppShapes.EmbedRadius))
                                 .background(Color(0xFFF5F5F5))
                                 .padding(horizontal = 10.dp, vertical = 8.dp),
                             textStyle = TextStyle(fontSize = 13.sp, color = Color(0xFF1A1A1A)),
@@ -1099,7 +1100,7 @@ private fun OptionPill(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(AppShapes.EmbedRadius))
             .background(if (selected) Color(0xFFEFEFEF) else Color.Transparent)
             .clickable { onClick() }
             .padding(start = 10.dp, end = 10.dp, top = 1.dp, bottom = 1.dp),
@@ -1144,7 +1145,7 @@ private fun SelectionChip(
     }
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
             .background(backgroundColor)
             .clickable(enabled = enabled) { onClick() }
             .padding(start = 10.dp, end = 10.dp, top = 1.dp, bottom = 1.dp)

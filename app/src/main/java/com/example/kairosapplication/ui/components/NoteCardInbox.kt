@@ -91,7 +91,7 @@ fun NoteCardInbox(
                         .fillMaxWidth()
                         .background(
                             AppColors.MorningBackground.copy(alpha = 0.5f),
-                            RoundedCornerShape(8.dp)
+                            RoundedCornerShape(AppShapes.DenseInsetRadius)
                         )
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,

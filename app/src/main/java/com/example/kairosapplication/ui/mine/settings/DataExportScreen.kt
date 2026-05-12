@@ -53,6 +53,7 @@ import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 
@@ -173,7 +174,7 @@ fun DataExportScreen(
             Spacer(Modifier.height(8.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                 color = CardBg,
                 shadowElevation = 2.dp
             ) {
@@ -216,7 +217,7 @@ fun DataExportScreen(
             Spacer(Modifier.height(16.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                 color = CardBg,
                 shadowElevation = 2.dp
             ) {
@@ -254,7 +255,7 @@ fun DataExportScreen(
             Button(
                 onClick = { showExportSettings = true },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                 colors = ButtonDefaults.buttonColors(containerColor = Blue)
             ) {
                 Text(LocalizedStrings.get("export_to_file"), fontSize = 16.sp)
@@ -334,7 +335,7 @@ private fun ExportSettingsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp)
+        shape = RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius)
     ) {
         Column(
             modifier = Modifier
@@ -365,7 +366,7 @@ private fun ExportSettingsSheet(
                 onValueChange = onFileNameChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
                     .background(Color(0xFFF5F5F5))
                     .padding(12.dp),
                 decorationBox = { innerTextField ->
@@ -458,7 +459,7 @@ private fun ExportSettingsSheet(
                 Button(
                     onClick = onConfirm,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
                     colors = ButtonDefaults.buttonColors(containerColor = Blue)
                 ) {
                     Text(LocalizedStrings.get("confirm"), fontSize = 16.sp)

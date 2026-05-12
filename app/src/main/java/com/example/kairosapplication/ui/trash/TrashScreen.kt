@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -394,7 +395,7 @@ private fun TrashNoteCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = AppColors.CardBackground),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(AppShapes.InsetContentRadius)
     ) {
         Column(
             modifier = Modifier.padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical),

@@ -34,6 +34,7 @@ import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.theme.BackgroundColor
@@ -142,7 +143,7 @@ private fun TopicManagePrimaryCard(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
             .background(CardBg)
             .clickable(onClick = onClick)
             .padding(12.dp),

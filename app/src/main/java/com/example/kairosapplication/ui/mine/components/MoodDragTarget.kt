@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.core.ui.AppShapes
 import java.time.LocalDate
 
 @Suppress("UNUSED_PARAMETER")
@@ -40,7 +41,7 @@ fun MoodDragTarget(
             }
             .background(
                 if (isHighlighted) Color(0x334CAF50) else Color.Transparent,
-                RoundedCornerShape(8.dp)
+                RoundedCornerShape(AppShapes.DenseInsetRadius)
             )
     ) {
         content()

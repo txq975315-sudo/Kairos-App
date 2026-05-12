@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.ui.components.NoteCardConstants
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
 import com.example.taskmodel.constants.NotePrimaryCategory
@@ -76,7 +77,7 @@ fun NoteCardView(
                         .height(16.dp)
                         .background(
                             NoteCardConstants.categoryColor(note.primaryCategory),
-                            RoundedCornerShape(2.dp),
+                            RoundedCornerShape(AppShapes.MicroRadius),
                         ),
                 )
                 Spacer(modifier = Modifier.width(8.dp))

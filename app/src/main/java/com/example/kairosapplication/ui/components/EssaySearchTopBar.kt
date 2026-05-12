@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.i18n.LocalizedStrings
 
@@ -203,8 +204,8 @@ fun EssaySearchHistorySection(
 ) {
     if (history.isEmpty() && !historyEditMode) return
 
-    // Was 8dp radius; scaled ~0.6 → ~5dp
-    val chipShape = RoundedCornerShape(5.dp)
+    // Small history chips — [AppShapes.MiniRadius] tier
+    val chipShape = RoundedCornerShape(AppShapes.MiniRadius)
     val scroll = rememberScrollState()
 
     Column(modifier = modifier.fillMaxWidth()) {

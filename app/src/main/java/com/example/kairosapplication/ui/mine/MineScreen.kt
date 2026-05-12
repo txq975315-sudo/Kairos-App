@@ -48,6 +48,7 @@ import com.example.kairosapplication.ui.mine.components.MoodCard
 import com.example.kairosapplication.ui.mine.components.PlanningStatsSection
 import com.example.kairosapplication.ui.mine.components.ProfileEditSheet
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 
 private val MoonTint = Color(0xFFFFC107)
@@ -100,8 +101,8 @@ fun MineScreen(
                         .wrapContentWidth()
                         .widthIn(max = nicknameMaxWidth)
                         .heightIn(min = 44.dp)
-                        .shadow(1.dp, RoundedCornerShape(22.dp), clip = false)
-                        .clip(RoundedCornerShape(22.dp))
+                        .shadow(1.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius), clip = false)
+                        .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
                         .background(AppColors.GlassFill)
                         .clickable(onClick = openEdit)
                         .padding(horizontal = 16.dp, vertical = 12.dp),

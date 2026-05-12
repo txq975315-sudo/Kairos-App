@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.mine.records.CheckInViewMode
 import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
@@ -54,18 +56,18 @@ fun AllRecordsSection(
             modifier = Modifier.fillMaxWidth(),
             onClick = onCustomizeClick,
         )
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(AppSpacing.GlassSectionStack))
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
                     elevation = 5.dp,
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
                     ambientColor = Color.Black.copy(alpha = 0.06f),
                     spotColor = Color.Black.copy(alpha = 0.08f),
                 )
-                .background(AppColors.GlassFill, RoundedCornerShape(20.dp))
-                .border(1.dp, CheckInCardStroke, RoundedCornerShape(20.dp))
+                .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+                .border(1.dp, CheckInCardStroke, RoundedCornerShape(AppShapes.FeaturePanelRadius))
                 .padding(horizontal = 18.dp, vertical = 18.dp),
         ) {
             CheckInStatsSection(

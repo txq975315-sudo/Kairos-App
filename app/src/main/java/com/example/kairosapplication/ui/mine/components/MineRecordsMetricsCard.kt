@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -64,7 +65,7 @@ fun MineRecordsMetricsCard(
             .fillMaxWidth()
             .shadow(
                 elevation = 4.dp,
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(AppShapes.CardRadius),
                 ambientColor = Color.Black.copy(alpha = 0.12f),
                 spotColor = Color.Black.copy(alpha = 0.12f)
             )
@@ -74,7 +75,7 @@ fun MineRecordsMetricsCard(
                     start = Offset(0f, 0f),
                     end = Offset(600f, 280f)
                 ),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(AppShapes.CardRadius)
             )
             .then(
                 if (onClick != null && onMetricIndexClick == null) {

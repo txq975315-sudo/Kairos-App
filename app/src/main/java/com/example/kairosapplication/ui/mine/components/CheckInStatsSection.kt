@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
@@ -116,7 +117,7 @@ fun CheckInStatsSection(
                 )
                 Row(
                     modifier = Modifier
-                        .background(ToggleBg, RoundedCornerShape(20.dp))
+                        .background(ToggleBg, RoundedCornerShape(AppShapes.FeaturePanelRadius))
                         .padding(3.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -269,7 +270,7 @@ private fun CheckInModeChip(
         fontWeight = FontWeight.Medium,
         color = fg,
         modifier = Modifier
-            .background(bg, RoundedCornerShape(16.dp))
+            .background(bg, RoundedCornerShape(AppShapes.CardRadius))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp)
     )
@@ -382,7 +383,7 @@ private fun CheckInDayCell(
         modifier = modifier
             .height(54.dp)
             .then(
-                if (isToday) Modifier.border(2.dp, TodayBorder, RoundedCornerShape(6.dp))
+                if (isToday) Modifier.border(2.dp, TodayBorder, RoundedCornerShape(AppShapes.CompactRadius))
                 else Modifier
             )
             .padding(2.dp),

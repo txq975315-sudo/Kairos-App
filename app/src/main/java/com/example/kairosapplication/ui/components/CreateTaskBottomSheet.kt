@@ -70,6 +70,7 @@ import com.example.kairosapplication.core.text.TaskUiLocalLabels
 import com.example.kairosapplication.core.text.rememberTaskTextProvider
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppTypography
 import com.example.taskmodel.constants.TaskConstants
@@ -291,7 +292,7 @@ internal fun CreateTaskBottomSheet(
         containerColor = config.backgroundColor,
         contentColor = Color.Black,
         dragHandle = null,
-        shape = RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+        shape = RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius, bottomStart = 0.dp, bottomEnd = 0.dp)
     ) {
         // Bottom sheet window may not inherit composition locals; re-attach app language for i18n.
         CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
@@ -505,7 +506,7 @@ internal fun CreateTaskBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(iconSheetPanelHeight)
-                        .clip(RoundedCornerShape(topStart = 25.dp, topEnd = 25.dp))
+                        .clip(RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius))
                         .background(config.backgroundColor)
                         .padding(top = 8.dp)
                 ) {
