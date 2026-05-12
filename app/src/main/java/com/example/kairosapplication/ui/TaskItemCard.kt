@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -188,17 +189,29 @@ fun TaskItemCard(
                 1f to AppColors.TaskCardGlassBottom,
             ),
         )
+        val innerGlowBrush = Brush.verticalGradient(
+            colorStops = arrayOf(
+                0f to AppColors.TaskCardGlassInnerGlow,
+                0.3f to Color.Transparent,
+                0.7f to Color.Transparent,
+                1f to AppColors.TaskCardGlassInnerGlow.copy(alpha = 0.2f),
+            ),
+        )
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 1.5.dp,
+                    elevation = AppColors.TaskCardShadowElevation,
                     shape = cardShape,
-                    ambientColor = Color.Black.copy(alpha = 0.05f),
-                    spotColor = Color(0xFF1A2850).copy(alpha = 0.04f),
+                    ambientColor = AppColors.TaskCardShadowColor,
+                    spotColor = Color(0xFF1A2850).copy(alpha = 0.20f),
                 )
                 .clip(cardShape)
-                .border(1.dp, AppColors.TaskCardGlassHairline, cardShape)
+                .border(
+                    width = 1.1.dp,
+                    color = AppColors.TaskCardGlassHairline,
+                    shape = cardShape
+                )
                 .onGloballyPositioned { lc ->
                     onDragAnchorYRoot?.invoke(lc.boundsInRoot().center.y)
                 },
@@ -212,11 +225,25 @@ fun TaskItemCard(
                     .clip(cardShape)
                     .background(glassBrush, cardShape)
             ) {
+                // 灰色朦胧层 - 模拟模糊效果
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = minCardHeight)
+                        .background(AppColors.TaskCardGrayMist, cardShape)
+                )
+                // 内部光晕层
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = minCardHeight)
+                        .background(innerGlowBrush, cardShape)
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = minCardHeight)
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TaskTagLeading(
@@ -253,14 +280,33 @@ fun TaskItemCard(
 
                     Spacer(Modifier.width(12.dp))
 
+                    val completedBrush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFE8E8E8).copy(alpha = 0.9f),
+                            Color(0xFFDFDFDF).copy(alpha = 0.7f)
+                        ),
+                        center = androidx.compose.ui.geometry.Offset(12f, 12f),
+                        radius = 12f
+                    )
+                    val incompleteColor = urgencyColor.copy(alpha = 0.12f)
                     Box(
                         modifier = Modifier
-                            .size(22.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
-                            .background(if (task.isCompleted) Color(0xFFE0E0E0) else Color.Transparent)
+                            .then(
+                                if (task.isCompleted) {
+                                    Modifier.background(completedBrush)
+                                } else {
+                                    Modifier.background(incompleteColor)
+                                }
+                            )
                             .border(
-                                width = 2.dp,
-                                color = if (task.isCompleted) Color(0xFFE0E0E0) else urgencyColor,
+                                width = 2.2.dp,
+                                color = if (task.isCompleted) {
+                                    Color(0xFFCCCCCC)
+                                } else {
+                                    urgencyColor.copy(alpha = 0.85f)
+                                },
                                 shape = CircleShape
                             )
                             .clickable { onToggleComplete() },
@@ -270,7 +316,7 @@ fun TaskItemCard(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = LocalizedStrings.get("cd_completed_task"),
-                                tint = Color(0xFF9E9E9E),
+                                tint = Color(0xFF8A8A8A),
                                 modifier = Modifier.size(14.dp)
                             )
                         }

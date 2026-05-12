@@ -33,14 +33,26 @@ object AppColors {
     /** Rim light (edge brighter than center — glass read) */
     val CardRimLight = Color.White.copy(alpha = 0.38f)
     /**
-     * Today [TaskItemCard] frosted face: white-forward gradient so the swipe-delete layer
-     * never bleeds through at rest, with a cool undertone (liquid-glass / air reference).
+     * Today [TaskItemCard] frosted glass face: thin white + gray mist.
+     * Creates a "misty glass" effect without making the card too bright.
+     * 
+     * Key characteristics:
+     * - Low white opacity (10-15%) for background transparency
+     * - Extra gray mist layer (10%) for added "blur" visual
+     * - Soft gradient from near-white top to pale blue-gray bottom
      */
-    val TaskCardGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.84f)
-    val TaskCardGlassMid = Color(0xFFF7F9FC).copy(alpha = 0.80f)
-    val TaskCardGlassBottom = Color(0xFFE9EEF6).copy(alpha = 0.78f)
-    /** Crisp glass edge over busy atmosphere */
-    val TaskCardGlassHairline = Color.White.copy(alpha = 0.62f)
+    val TaskCardGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.15f)
+    val TaskCardGlassMid = Color(0xFFFAFBFD).copy(alpha = 0.12f)
+    val TaskCardGlassBottom = Color(0xFFF0F4FA).copy(alpha = 0.10f)
+    /** Extra gray mist overlay for simulated blur effect */
+    val TaskCardGrayMist = Color(0xFF808080).copy(alpha = 0.10f)
+    /** Subtle glass edge that defines the border gently */
+    val TaskCardGlassHairline = Color.White.copy(alpha = 0.35f)
+    /** Soft inner glow for glass dimensionality */
+    val TaskCardGlassInnerGlow = Color(0xFFFFFFFF).copy(alpha = 0.15f)
+    /** Moderate shadow elevation for floating effect */
+    val TaskCardShadowColor = Color(0xFF1A2850).copy(alpha = 0.12f)
+    val TaskCardShadowElevation = 3.5.dp
     /** Subtle cool depth (optional second pass / dividers) */
     val CardRimDepth = Color(0xFF2A3328).copy(alpha = 0.06f)
     /** Timeline vertical rail */
