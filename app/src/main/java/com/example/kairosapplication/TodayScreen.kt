@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
@@ -77,9 +78,11 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -612,45 +615,99 @@ private fun TopBar(
     val shadowElevation = 4.dp
     val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
 
+    val topBarGlassBrush = Brush.verticalGradient(
+        colorStops = arrayOf(
+            0f to AppColors.TopBarGlassTop,
+            0.42f to AppColors.TopBarGlassMid,
+            1f to AppColors.TopBarGlassBottom,
+        ),
+    )
+    val topBarInnerGlowBrush = Brush.verticalGradient(
+        colorStops = arrayOf(
+            0f to AppColors.TopBarGlassInnerGlow,
+            0.3f to Color.Transparent,
+            0.7f to Color.Transparent,
+            1f to AppColors.TopBarGlassInnerGlow.copy(alpha = 0.2f),
+        ),
+    )
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left: summary card with shadow
+        // Left: summary card with glass effect
         Card(
-            modifier = Modifier.shadow(
-                elevation = shadowElevation,
-                shape = RoundedCornerShape(AppShapes.CardRadius),
-                ambientColor = shadowColor,
-                spotColor = shadowColor
-            ),
+            modifier = Modifier
+                .shadow(
+                    elevation = shadowElevation,
+                    shape = RoundedCornerShape(AppShapes.CardRadius),
+                    ambientColor = shadowColor,
+                    spotColor = Color(0xFF1A2850).copy(alpha = 0.15f)
+                )
+                .clip(RoundedCornerShape(AppShapes.CardRadius))
+                .border(
+                    width = 1.1.dp,
+                    color = AppColors.TopBarGlassHairline,
+                    shape = RoundedCornerShape(AppShapes.CardRadius)
+                ),
             shape = RoundedCornerShape(AppShapes.CardRadius),
-            colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = null,
-                    tint = AppColors.SecondaryText,
-                    modifier = Modifier.size(18.dp)
+            Box {
+                // Glass effect layers (bottom to top)
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(AppShapes.CardRadius))
+                        .background(topBarGlassBrush)
                 )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "$completed / $total",
-                    color = AppColors.PrimaryText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(AppShapes.CardRadius))
+                        .blur(AppColors.TaskCardBlurRadius)
+                        .background(AppColors.TopBarGrayMist)
                 )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(AppShapes.CardRadius))
+                        .blur(AppColors.TaskCardBlurRadius)
+                        .background(topBarInnerGlowBrush)
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(AppShapes.CardRadius))
+                        .background(AppColors.GlassFill.copy(alpha = 0.07f))
+                )
+                // Content (topmost layer)
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = AppColors.SecondaryText,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "$completed / $total",
+                        color = AppColors.PrimaryText,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
         Spacer(Modifier.weight(1f))
 
-        // Center: create FAB (white, black icon, shadow)
+        // Center: create FAB with glass effect
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -658,13 +715,31 @@ private fun TopBar(
                     elevation = shadowElevation,
                     shape = CircleShape,
                     ambientColor = shadowColor,
-                    spotColor = shadowColor
+                    spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
                 )
                 .clip(CircleShape)
-                .background(AppColors.GlassFill)
+                .border(width = 1.1.dp, color = AppColors.TopBarGlassHairline, shape = CircleShape)
+                .background(topBarGlassBrush)
                 .clickable { onCreateClick() },
             contentAlignment = Alignment.Center
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(AppColors.TaskCardBlurRadius)
+                    .background(AppColors.TopBarGrayMist)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(AppColors.TaskCardBlurRadius)
+                    .background(topBarInnerGlowBrush)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(AppColors.GlassFill.copy(alpha = 0.07f))
+            )
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = taskText.contentDescAddTask,
@@ -675,7 +750,7 @@ private fun TopBar(
 
         Spacer(Modifier.width(8.dp))
 
-        // Right: Daily Review entry (shadow)
+        // Right: Daily Review entry with glass effect
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -683,13 +758,31 @@ private fun TopBar(
                     elevation = shadowElevation,
                     shape = CircleShape,
                     ambientColor = shadowColor,
-                    spotColor = shadowColor
+                    spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
                 )
                 .clip(CircleShape)
-                .background(AppColors.GlassFill)
+                .border(width = 1.1.dp, color = AppColors.TopBarGlassHairline, shape = CircleShape)
+                .background(topBarGlassBrush)
                 .clickable { onDailyReviewClick() },
             contentAlignment = Alignment.Center
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(AppColors.TaskCardBlurRadius)
+                    .background(AppColors.TopBarGrayMist)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(AppColors.TaskCardBlurRadius)
+                    .background(topBarInnerGlowBrush)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(AppColors.GlassFill.copy(alpha = 0.07f))
+            )
             Icon(
                 imageVector = Icons.Default.MoreHoriz,
                 contentDescription = LocalizedStrings.get("cd_daily_review"),
@@ -773,7 +866,8 @@ private fun QuoteSection(onClick: () -> Unit, quoteText: String) {
         Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = Icons.Default.FormatQuote,
@@ -785,7 +879,7 @@ private fun QuoteSection(onClick: () -> Unit, quoteText: String) {
             Text(
                 text = quoteText,
                 fontSize = 14.sp,
-                color = AppColors.SecondaryText
+                color = Color(0xFF2D4A2D)
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -870,44 +964,90 @@ private fun TimeBlock(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val timeBlockGlassBrush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to AppColors.TimeBlockGlassTop,
+                        0.42f to AppColors.TimeBlockGlassMid,
+                        1f to AppColors.TimeBlockGlassBottom,
+                    ),
+                )
+                val timeBlockInnerGlowBrush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to AppColors.TimeBlockGlassInnerGlow,
+                        0.3f to Color.Transparent,
+                        0.7f to Color.Transparent,
+                        1f to AppColors.TimeBlockGlassInnerGlow.copy(alpha = 0.2f),
+                    ),
+                )
                 Card(
+                    modifier = Modifier
+                        .shadow(
+                            elevation = AppColors.TimeBlockShadowElevation,
+                            shape = RoundedCornerShape(AppShapes.CardRadius),
+                            ambientColor = AppColors.TimeBlockShadowColor,
+                            spotColor = Color(0xFF1A2850).copy(alpha = 0.15f),
+                        )
+                        .clip(RoundedCornerShape(AppShapes.CardRadius))
+                        .border(
+                            width = 1.1.dp,
+                            color = AppColors.TimeBlockGlassHairline,
+                            shape = RoundedCornerShape(AppShapes.CardRadius)
+                        ),
                     shape = RoundedCornerShape(AppShapes.CardRadius),
-                    colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.48f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    colors = CardDefaults.cardColors(containerColor = backgroundColor.copy(alpha = 0.7f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 ) {
-                    Row(
+                    Box(
                         modifier = Modifier
-                            .height(32.dp)
-                            .clickable(enabled = hasTasks) { if (hasTasks) onToggle() }
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .clip(RoundedCornerShape(AppShapes.CardRadius))
+                            .background(timeBlockGlassBrush, RoundedCornerShape(AppShapes.CardRadius))
                     ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = AppColors.SecondaryText,
-                            modifier = Modifier.size(14.dp)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(AppColors.TimeBlockGrayMist, RoundedCornerShape(AppShapes.CardRadius))
                         )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = displayTitle,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppColors.PrimaryText
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(timeBlockInnerGlowBrush, RoundedCornerShape(AppShapes.CardRadius))
                         )
-                        Spacer(Modifier.width(2.dp))
-                        Text(
-                            text = "($count)",
-                            fontSize = 14.sp,
-                            color = AppColors.SecondaryText
-                        )
-                        Spacer(Modifier.width(2.dp))
-                        Icon(
-                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (expanded) "Collapse" else "Expand",
-                            tint = AppColors.SecondaryText,
-                            modifier = Modifier.size(14.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .height(32.dp)
+                                .clickable(enabled = hasTasks) { if (hasTasks) onToggle() }
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = AppColors.SecondaryText,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = displayTitle,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.PrimaryText
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Text(
+                                text = "($count)",
+                                fontSize = 14.sp,
+                                color = AppColors.SecondaryText
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (expanded) "Collapse" else "Expand",
+                                tint = AppColors.SecondaryText,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
                 }
 

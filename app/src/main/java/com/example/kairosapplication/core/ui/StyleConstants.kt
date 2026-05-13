@@ -41,17 +41,17 @@ object AppColors {
      * - Extra gray mist layer (10%) for added "blur" visual
      * - Soft gradient from near-white top to pale blue-gray bottom
      */
-    val TaskCardGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.15f)
-    val TaskCardGlassMid = Color(0xFFFAFBFD).copy(alpha = 0.12f)
-    val TaskCardGlassBottom = Color(0xFFF0F4FA).copy(alpha = 0.10f)
+    val TaskCardGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.08f)
+    val TaskCardGlassMid = Color(0xFFFAFBFD).copy(alpha = 0.05f)
+    val TaskCardGlassBottom = Color(0xFFF0F4FA).copy(alpha = 0.08f)
     /** Extra gray mist overlay for simulated blur effect */
-    val TaskCardGrayMist = Color(0xFF808080).copy(alpha = 0.10f)
+    val TaskCardGrayMist = Color(0xFF808080).copy(alpha = 0.05f)
     /** Gaussian blur radius for frosted glass effect */
-    val TaskCardBlurRadius = 70.dp
+    val TaskCardBlurRadius = 100.dp
     /** Subtle glass edge that defines the border gently */
-    val TaskCardGlassHairline = Color.White.copy(alpha = 0.35f)
+    val TaskCardGlassHairline = Color.White.copy(alpha = 0.20f)
     /** Soft inner glow for glass dimensionality */
-    val TaskCardGlassInnerGlow = Color(0xFFFFFFFF).copy(alpha = 0.15f)
+    val TaskCardGlassInnerGlow = Color(0xFFFFFFFF).copy(alpha = 0.08f)
     /** Moderate shadow elevation for floating effect */
     val TaskCardShadowColor = Color(0xFF1A2850).copy(alpha = 0.12f)
     val TaskCardShadowElevation = 3.5.dp
@@ -73,11 +73,29 @@ object AppColors {
     val AfternoonBackground = Color(0xFFF3E4DC)
     val EveningBackground = Color(0xFFE9E5F2)
 
+    // ---------- Time-block glass effect (similar to TaskCard but lighter) ----------
+    val TimeBlockGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.18f)
+    val TimeBlockGlassMid = Color(0xFFFAFBFD).copy(alpha = 0.14f)
+    val TimeBlockGlassBottom = Color(0xFFF0F4FA).copy(alpha = 0.12f)
+    val TimeBlockGrayMist = Color(0xFF808080).copy(alpha = 0.08f)
+    val TimeBlockGlassHairline = Color.White.copy(alpha = 0.35f)
+    val TimeBlockGlassInnerGlow = Color(0xFFFFFFFF).copy(alpha = 0.15f)
+    val TimeBlockShadowColor = Color(0xFF1A2850).copy(alpha = 0.08f)
+    val TimeBlockShadowElevation = 2.5.dp
+
     // ---------- Time-block title (dark) ----------
     val AnytimeTitle = Color(0xFF5E564A)
     val MorningTitle = Color(0xFF7A6430)
     val AfternoonTitle = Color(0xFF8B5845)
     val EveningTitle = Color(0xFF564A7E)
+
+    // ---------- TopBar glass effect (similar to TaskCard) ----------
+    val TopBarGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.08f)
+    val TopBarGlassMid = Color(0xFFFAFBFD).copy(alpha = 0.05f)
+    val TopBarGlassBottom = Color(0xFFF0F4FA).copy(alpha = 0.08f)
+    val TopBarGrayMist = Color(0xFF808080).copy(alpha = 0.05f)
+    val TopBarGlassHairline = Color.White.copy(alpha = 0.20f)
+    val TopBarGlassInnerGlow = Color(0xFFFFFFFF).copy(alpha = 0.08f)
 
     // ---------- Urgency (keep prior hues for recognition) ----------
     val Urgent = Color(0xFFFF4444)

@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication
+package com.example.kairosapplication
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
