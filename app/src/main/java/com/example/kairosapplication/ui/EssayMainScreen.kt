@@ -10,9 +10,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +35,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inbox
@@ -44,12 +47,18 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -83,6 +92,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppInteraction
 import com.example.kairosapplication.core.ui.AppMaterials
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
@@ -354,11 +364,11 @@ fun EssayMainScreen(
             currentImageUri = cardBgImageUri,
             currentOpacity = cardBgOpacity,
             onDismiss = { showCardBgSheet = false },
-            onTypeChange = { scope.launch { dataStore.setEssayCardBgType(it) } },
-            onColorChange = { scope.launch { dataStore.setEssayCardBgColor(it) } },
+            onTypeChange = { t -> scope.launch { dataStore.setEssayCardBgType(t) } },
+            onColorChange = { c -> scope.launch { dataStore.setEssayCardBgColor(c) } },
             onPickImage = { pickCardBgImage.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
             onClearImage = { scope.launch { dataStore.setEssayCardBgImageUri(null) } },
-            onOpacityChange = { scope.launch { dataStore.setEssayCardBgOpacity(it) } },
+            onOpacityChange = { o -> scope.launch { dataStore.setEssayCardBgOpacity(o) } },
             onClearAll = {
                 scope.launch {
                     dataStore.setEssayCardBgType("none")
@@ -380,95 +390,242 @@ fun EssayMainScreen(
             )
         }
         Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Transparent,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onNavigateToEditor(null) },
-                containerColor = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS),
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_feather),
-                    contentDescription = LocalizedStrings.get("cd_new_note"),
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        }
-    ) { padding ->
-        val layoutDirection = LocalLayoutDirection.current
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    PaddingValues(
-                        top = padding.calculateTopPadding(),
-                        start = padding.calculateStartPadding(layoutDirection),
-                        end = padding.calculateEndPadding(layoutDirection),
-                        bottom = 0.dp,
+            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            topBar = {
+                val shadowElevation = 4.dp
+                val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
+                val topBarGlassBrush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to AppColors.TopBarGlassTop,
+                        0.42f to AppColors.TopBarGlassMid,
+                        1f to AppColors.TopBarGlassBottom,
                     ),
                 )
-                .padding(horizontal = AppSpacing.PageHorizontal)
-        ) {
-            Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.clickable { showDatePicker = true },
-                    verticalAlignment = Alignment.CenterVertically
+                val topBarInnerGlowBrush = Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to AppColors.TopBarGlassInnerGlow,
+                        0.3f to Color.Transparent,
+                        0.7f to Color.Transparent,
+                        1f to AppColors.TopBarGlassInnerGlow.copy(alpha = 0.2f),
+                    ),
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppSpacing.PageHorizontal),
                 ) {
-                    Text(
-                        text = dateLabel,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = essayHeaderPrimary
-                    )
-                    Text(
-                        text = " ▼",
-                        fontSize = 14.sp,
-                        color = essayHeaderSecondary
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BadgedBox(
-                        badge = {
-                            if (inboxCount > 0) {
-                                Badge { Text(text = inboxCount.toString()) }
-                            }
-                        }
+                    // TopBar with glass effect (aligned with TodayScreen)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        EssayCircleIconButton(
+                // Left: Date card with glass effect
+                Card(
+                    modifier = Modifier
+                        .shadow(
+                            elevation = shadowElevation,
+                            shape = RoundedCornerShape(AppShapes.CardRadius),
+                            ambientColor = shadowColor,
+                            spotColor = Color(0xFF1A2850).copy(alpha = 0.15f)
+                        )
+                        .clip(RoundedCornerShape(AppShapes.CardRadius))
+                        .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), RoundedCornerShape(AppShapes.CardRadius)),
+                    shape = RoundedCornerShape(AppShapes.CardRadius),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Box {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(AppShapes.CardRadius))
+                                .background(topBarGlassBrush)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(AppShapes.CardRadius))
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(AppColors.TopBarGrayMist)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(AppShapes.CardRadius))
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(topBarInnerGlowBrush)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(AppShapes.CardRadius))
+                                .background(AppColors.GlassFill.copy(alpha = 0.07f))
+                        )
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clickable { showDatePicker = true },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = dateLabel,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = essayHeaderPrimary
+                            )
+                            Text(
+                                text = " ▼",
+                                fontSize = 12.sp,
+                                color = essayHeaderSecondary
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.weight(1f))
+                
+                // Center: Inbox button with glass effect
+                BadgedBox(
+                    badge = {
+                        if (inboxCount > 0) {
+                            Badge { Text(text = inboxCount.toString()) }
+                        }
+                    },
+                    modifier = Modifier.clickable { onNavigateToInbox() }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .shadow(
+                                elevation = shadowElevation,
+                                shape = CircleShape,
+                                ambientColor = shadowColor,
+                                spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
+                            )
+                            .clip(CircleShape)
+                            .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), CircleShape)
+                            .background(topBarGlassBrush),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(AppColors.TopBarGrayMist)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(topBarInnerGlowBrush)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(AppColors.GlassFill.copy(alpha = 0.07f))
+                        )
+                        Icon(
                             imageVector = Icons.Default.Inbox,
                             contentDescription = LocalizedStrings.get("cd_inbox"),
-                            onClick = onNavigateToInbox
+                            tint = essayHeaderPrimary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
-                    EssayCircleIconButton(
+                }
+                
+                Spacer(Modifier.width(8.dp))
+                
+                // Right: Search button with glass effect
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .shadow(
+                            elevation = shadowElevation,
+                            shape = CircleShape,
+                            ambientColor = shadowColor,
+                            spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
+                        )
+                        .clip(CircleShape)
+                        .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), CircleShape)
+                        .background(topBarGlassBrush)
+                        .clickable { onNavigateToSearch() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(AppColors.TaskCardBlurRadius)
+                            .background(AppColors.TopBarGrayMist)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(AppColors.TaskCardBlurRadius)
+                            .background(topBarInnerGlowBrush)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(AppColors.GlassFill.copy(alpha = 0.07f))
+                    )
+                    Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = LocalizedStrings.get("cd_search"),
-                        onClick = onNavigateToSearch
+                        tint = essayHeaderPrimary,
+                        modifier = Modifier.size(18.dp)
                     )
-                    Box {
-                        EssayCircleIconButton(
+                }
+                
+                Spacer(Modifier.width(8.dp))
+                
+                // More options button with glass effect
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .shadow(
+                                elevation = shadowElevation,
+                                shape = CircleShape,
+                                ambientColor = shadowColor,
+                                spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
+                            )
+                            .clip(CircleShape)
+                            .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), CircleShape)
+                            .background(topBarGlassBrush)
+                            .clickable { menuOpen = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(AppColors.TopBarGrayMist)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(AppColors.TaskCardBlurRadius)
+                                .background(topBarInnerGlowBrush)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(AppColors.GlassFill.copy(alpha = 0.07f))
+                        )
+                        Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = LocalizedStrings.get("cd_more_options"),
-                            onClick = { menuOpen = true }
+                            tint = essayHeaderPrimary,
+                            modifier = Modifier.size(26.dp)
                         )
-                        val menuText = Color(0xFF333333)
-                        val menuIcon = Color(0xFF555555)
-                        DropdownMenu(
-                            expanded = menuOpen,
-                            onDismissRequest = { menuOpen = false },
-                            containerColor = Color(0xFFFCFCFC),
-                        ) {
+                    }
+                    val menuText = Color(0xFF333333)
+                    val menuIcon = Color(0xFF555555)
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                        containerColor = Color(0xFFFCFCFC),
+                    ) {
                             DropdownMenuItem(
                                 text = { Text(LocalizedStrings.get("topic_manage"), color = menuText) },
                                 onClick = {
@@ -559,53 +716,83 @@ fun EssayMainScreen(
                 }
             }
 
-            Row(
+            },
+            containerColor = Color.Transparent,
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { onNavigateToEditor(null) },
+                    containerColor = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS),
+                    contentColor = Color.White,
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_feather),
+                        contentDescription = LocalizedStrings.get("cd_new_note"),
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            },
+        ) { padding ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = AppSpacing.SectionLarge),
-                horizontalArrangement = Arrangement.spacedBy(0.dp)
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                tabs.forEach { (tab, label) ->
-                    val selected = selectedTab == tab
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedTab = tab }
-                            .padding(vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = label,
-                            fontSize = 15.sp,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (selected) essayHeaderPrimary else essayHeaderSecondary
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Box(
+                // Tab switching bar (moved from topBar to content area for visual separation)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppSpacing.PageHorizontal),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    tabs.forEach { (tab, label) ->
+                        val selected = selectedTab == tab
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(2.dp)
-                                .background(
-                                    if (selected) essayHeaderPrimary else Color.Transparent
-                                )
-                        )
+                                .weight(1f)
+                                .clickable { selectedTab = tab }
+                                .padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 15.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (selected) essayHeaderPrimary else essayHeaderSecondary
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(2.dp)
+                                    .background(
+                                        if (selected) essayHeaderPrimary else Color.Transparent
+                                    )
+                            )
+                        }
                     }
                 }
-            }
 
-            AnimatedContent(
-                targetState = selectedTab,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(200)) togetherWith
-                        fadeOut(animationSpec = tween(200))
-                },
-                label = "essayTabContent",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) { tab ->
-                when (tab) {
-                    EssayTab.TIMELINE -> TimelineTabContent(
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = AppSpacing.PageHorizontal),
+                    thickness = 0.5.dp,
+                    color = Color.White.copy(alpha = 0.22f)
+                )
+
+                AnimatedContent(
+                    targetState = selectedTab,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(200)) togetherWith
+                            fadeOut(animationSpec = tween(200))
+                    },
+                    label = "essayTabContent",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = AppSpacing.PageHorizontal),
+                ) { tab ->
+                    when (tab) {
+                        EssayTab.TIMELINE -> TimelineTabContent(
                         selectedDate = selectedDate,
                         allNotes = allTimelineNotes,
                         integratedLayout = integratedLayoutActive,
@@ -729,8 +916,8 @@ fun EssayMainScreen(
                     )
                 }
             }
+            }
         }
-    }
     }
 }
 
@@ -1378,11 +1565,6 @@ private fun TopicNavPrimaryRow(
         colors = CardDefaults.cardColors(
             containerColor = if (selected) categoryColor.copy(alpha = 0.12f) else Color.White
         ),
-        border = if (selected) {
-            BorderStroke(1.dp, categoryColor.copy(alpha = 0.45f))
-        } else {
-            null
-        },
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -1413,15 +1595,30 @@ private fun TopicNavPrimaryRow(
                     .weight(1f)
                     .clickable(onClick = onSelect)
             ) {
-                Text(
-                    text = labelShort,
-                    fontSize = 12.sp,
-                    lineHeight = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = primaryText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Text with underline beneath it
+                    Column {
+                        Text(
+                            text = labelShort,
+                            fontSize = 12.sp,
+                            lineHeight = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = primaryText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        // Underline that adapts to text width (no gap, tight to text)
+                        Box(
+                            modifier = Modifier
+                                .height(1.5.dp)
+                                .background(if (selected) categoryColor else Color.Transparent)
+                                .align(Alignment.Start)
+                        )
+                    }
+                }
                 Text(
                     text = "($count)",
                     fontSize = 8.sp,

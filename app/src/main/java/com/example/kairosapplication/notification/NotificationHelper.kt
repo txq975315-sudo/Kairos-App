@@ -28,6 +28,7 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_DAILY_REMINDER = "daily_reminder"
         const val CHANNEL_DAILY_REFLECTION = "daily_reflection"
+        const val CHANNEL_TASK_REMINDER = "task_reminder"
         const val NOTIFICATION_ID_REMINDER = 1001
         const val NOTIFICATION_ID_REFLECTION = 1002
         private const val RC_REMINDER_ALARM = 91001
@@ -37,7 +38,7 @@ class NotificationHelper(private val context: Context) {
     fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val lang = appLanguage()
-        val nm = appCtx.getSystemService(NotificationManager::class.java)
+        val nm = appCtx.getSystemService(NotificationManager::class.java) ?: return
         val reminderName = LocalizedStrings.stringFor(lang, "notif_channel_reminder_name", appCtx)
         val reminderDesc = LocalizedStrings.stringFor(lang, "notif_channel_reminder_desc", appCtx)
         val chReminder = NotificationChannel(
@@ -57,8 +58,19 @@ class NotificationHelper(private val context: Context) {
         ).apply {
             description = reflectionDesc
         }
+        val taskName = LocalizedStrings.stringFor(lang, "notif_channel_task_reminder_name", appCtx)
+        val taskDesc = LocalizedStrings.stringFor(lang, "notif_channel_task_reminder_desc", appCtx)
+        val chTask = NotificationChannel(
+            CHANNEL_TASK_REMINDER,
+            taskName,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = taskDesc
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+        }
         nm.createNotificationChannel(chReminder)
         nm.createNotificationChannel(chReflection)
+        nm.createNotificationChannel(chTask)
     }
 
     fun showDailyReminderNotification() {
@@ -102,6 +114,30 @@ class NotificationHelper(private val context: Context) {
             .setAutoCancel(true)
             .build()
         nm.notify(NOTIFICATION_ID_REFLECTION, notification)
+    }
+
+    fun showTaskReminderNotification(taskId: Int, taskTitle: String) {
+        val lang = appLanguage()
+        val nm = appCtx.getSystemService(NotificationManager::class.java) ?: return
+        val tap = PendingIntent.getActivity(
+            appCtx,
+            3,
+            Intent(appCtx, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val body = LocalizedStrings.stringFor(lang, "notif_task_reminder_body", appCtx)
+        val notification = NotificationCompat.Builder(appCtx, CHANNEL_TASK_REMINDER)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(taskTitle)
+            .setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(tap)
+            .setAutoCancel(true)
+            .build()
+        val nid = 28_000 + (taskId % 72_000)
+        nm.notify(nid, notification)
     }
 
     fun scheduleDailyReminder(hour: Int, minute: Int) {

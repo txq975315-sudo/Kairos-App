@@ -60,6 +60,7 @@ object ExportDataCodec {
             o.put("repeatRule", t.repeatRule)
             if (t.emojiImage != null) o.put("emojiImage", t.emojiImage) else o.put("emojiImage", JSONObject.NULL)
             if (t.localImageUri != null) o.put("localImageUri", t.localImageUri) else o.put("localImageUri", JSONObject.NULL)
+            if (t.reminderTime != null) o.put("reminderTime", t.reminderTime) else o.put("reminderTime", JSONObject.NULL)
             tasksArr.put(o)
         }
         root.put("tasks", tasksArr)
@@ -169,7 +170,8 @@ object ExportDataCodec {
                         label = if (o.isNull("label")) null else o.optString("label").ifBlank { null },
                         repeatRule = o.optString("repeatRule", "NONE"),
                         emojiImage = if (o.isNull("emojiImage")) null else o.optString("emojiImage").ifBlank { null },
-                        localImageUri = if (o.isNull("localImageUri")) null else o.optString("localImageUri").ifBlank { null }
+                        localImageUri = if (o.isNull("localImageUri")) null else o.optString("localImageUri").ifBlank { null },
+                        reminderTime = if (o.isNull("reminderTime")) null else o.optString("reminderTime").ifBlank { null }
                     )
                 )
             }

@@ -48,7 +48,8 @@ data class TaskExportDto(
     val label: String? = null,
     val repeatRule: String = "NONE",
     val emojiImage: String? = null,
-    val localImageUri: String? = null
+    val localImageUri: String? = null,
+    val reminderTime: String? = null,
 )
 
 fun NoteExportDto.toNote(): Note = Note(
@@ -83,7 +84,8 @@ fun TaskExportDto.toTask(): Task {
         repeatRule = repeatRule,
         isCompleted = isCompleted,
         emojiImage = emojiImage,
-        localImageUri = localImageUri
+        localImageUri = localImageUri,
+        reminderTime = reminderTime,
     )
 }
 
@@ -119,5 +121,6 @@ fun Task.toExportDto(): TaskExportDto = TaskExportDto(
     label = label,
     repeatRule = repeatRule,
     emojiImage = emojiImage,
-    localImageUri = localImageUri
+    localImageUri = localImageUri,
+    reminderTime = reminderTime,
 )

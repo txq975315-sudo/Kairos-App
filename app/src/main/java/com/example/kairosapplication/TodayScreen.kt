@@ -195,6 +195,8 @@ fun TodayScreen(
     var createDescription by remember { mutableStateOf("") }
     var createUrgency by remember { mutableStateOf(3) }
     var createLabel by remember { mutableStateOf<String?>(null) }
+    var createReminderTime by remember { mutableStateOf<String?>(null) }
+    var createSheetTaskDate by remember { mutableStateOf(LocalDate.now()) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var detailTask by remember { mutableStateOf<Task?>(null) }
 
@@ -213,6 +215,8 @@ fun TodayScreen(
         createDescription = ""
         createUrgency = TaskConstants.URGENCY_LOW
         createLabel = null
+        createReminderTime = null
+        createSheetTaskDate = currentDate
         createSheetConfig = CreateSheetConfig(
             timeBlock = timeBlock,
             backgroundColor = TaskUtils.getTimeBlockColor(timeBlock),
@@ -439,7 +443,10 @@ fun TodayScreen(
     createSheetConfig?.let { config ->
         CreateTaskBottomSheet(
             config = config,
-            onDismiss = { createSheetConfig = null },
+            onDismiss = {
+                createSheetConfig = null
+                createReminderTime = null
+            },
             title = createTitle,
             onTitleChange = { createTitle = it },
             description = createDescription,
@@ -461,13 +468,17 @@ fun TodayScreen(
                     titleColor = TaskUtils.getTimeBlockTitleColor(newTimeBlock)
                 )
             },
+            sheetTaskDate = createSheetTaskDate,
+            onSheetTaskDateChange = { createSheetTaskDate = it },
+            reminderTime = createReminderTime,
+            onReminderTimeChange = { createReminderTime = it },
             onCreateTask = { title, description, timeBlock, meta ->
                 val trimmedTitle = title.trim()
                 val trimmedDescription = description.trim()
                 if (trimmedTitle.isEmpty()) {
                     false
                 } else {
-                    if (taskViewModel.wouldExceedDailyPendingLimit(currentDate, 1)) {
+                    if (taskViewModel.wouldExceedDailyPendingLimit(createSheetTaskDate, 1)) {
                         showDailyLimitDialog = true
                         false
                     } else {
@@ -480,7 +491,8 @@ fun TodayScreen(
                             label = meta.label,
                             emojiImage = null,
                             localImageUri = null,
-                            taskDate = currentDate
+                            taskDate = createSheetTaskDate,
+                            reminderTime = createReminderTime,
                         ).toTask(id = nextTaskId)
                         taskViewModel.saveTasks(allTasks + newTask)
                         true
@@ -503,10 +515,14 @@ fun TodayScreen(
                     // Stop repeat: clear series from this day; drop future same-series rows.
                     val updatedTasks = TaskUtils.stopRepeat(allTasks.toList(), task)
                     taskViewModel.saveTasks(updatedTasks)
+                    true
+                } else if (taskViewModel.wouldExceedLimitIfPendingTaskMovedTo(task, updated.taskDate)) {
+                    showDailyLimitDialog = true
+                    false
                 } else {
-                    taskViewModel.updateTask(updated.copy(id = task.id, taskDate = task.taskDate))
+                    taskViewModel.updateTask(updated.copy(id = task.id))
+                    true
                 }
-                editingTask = null
             },
             onDelete = { deleted ->
                 taskViewModel.deleteTask(deleted)

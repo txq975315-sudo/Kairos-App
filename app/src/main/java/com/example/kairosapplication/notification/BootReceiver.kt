@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.widget.WidgetAlarmScheduler
+import com.example.taskmodel.repository.TaskRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
 class BootReceiver : BroadcastReceiver() {
@@ -29,6 +31,8 @@ class BootReceiver : BroadcastReceiver() {
                 helper.cancelDailyReflection()
             }
             WidgetAlarmScheduler.rescheduleAll(appCtx)
+            val tasks = TaskRepository(appCtx).tasksFlow.first()
+            TaskReminderScheduler.syncAlarms(appCtx, tasks)
         }
     }
 }

@@ -13,5 +13,7 @@ data class Task(
     val repeatRule: String = "NONE",
     val isCompleted: Boolean = false,
     val emojiImage: String? = null,
-    val localImageUri: String? = null
+    val localImageUri: String? = null,
+    /** Local wall-clock time `HH:mm` for a one-shot reminder on [taskDate]; null = off. */
+    val reminderTime: String? = null,
 )

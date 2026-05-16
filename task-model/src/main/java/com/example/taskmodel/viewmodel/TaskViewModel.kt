@@ -331,6 +331,9 @@ class TaskViewModel(
     fun wouldExceedDailyPendingLimit(date: LocalDate, additionalIncomplete: Int): Boolean =
         pendingTaskCountForDate(date) + additionalIncomplete > DAILY_PENDING_LIMIT
 
+    fun wouldExceedLimitIfPendingTaskMovedTo(original: Task, newDate: LocalDate): Boolean =
+        wouldExceedDailyPendingLimitWhenMovingTask(uiState.value.tasks, original, newDate)
+
     fun addRoomNote(note: Note) {
         viewModelScope.launch {
             try {
@@ -508,6 +511,22 @@ class TaskViewModel(
 
     companion object {
         const val DAILY_PENDING_LIMIT = 12
+
+        /**
+         * Whether moving pending [original] to [newDate] would exceed [DAILY_PENDING_LIMIT] incomplete
+         * tasks on [newDate]. Completed tasks or same-day edits are ignored.
+         */
+        fun wouldExceedDailyPendingLimitWhenMovingTask(
+            tasks: List<Task>,
+            original: Task,
+            newDate: LocalDate,
+        ): Boolean {
+            if (original.isCompleted) return false
+            if (original.taskDate == newDate) return false
+            val pendingOnNew =
+                tasks.count { it.taskDate == newDate && !it.isCompleted && it.id != original.id }
+            return pendingOnNew + 1 > DAILY_PENDING_LIMIT
+        }
 
         fun factory(appContext: Context): ViewModelProvider.Factory {
             val repository = TaskRepository(appContext)

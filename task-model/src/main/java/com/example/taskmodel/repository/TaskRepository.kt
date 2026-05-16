@@ -324,7 +324,8 @@ private data class TaskEntity(
     val repeatRule: String = "NONE",
     val isCompleted: Boolean = false,
     val emojiImage: String? = null,
-    val localImageUri: String? = null
+    val localImageUri: String? = null,
+    val reminderTime: String? = null,
 )
 
 private fun Task.toEntity(): TaskEntity = TaskEntity(
@@ -338,7 +339,8 @@ private fun Task.toEntity(): TaskEntity = TaskEntity(
     repeatRule = repeatRule,
     isCompleted = isCompleted,
     emojiImage = emojiImage,
-    localImageUri = localImageUri
+    localImageUri = localImageUri,
+    reminderTime = reminderTime,
 )
 
 private fun TaskEntity.toModel(): Task = Task(
@@ -352,7 +354,8 @@ private fun TaskEntity.toModel(): Task = Task(
     repeatRule = repeatRule,
     isCompleted = isCompleted,
     emojiImage = emojiImage,
-    localImageUri = localImageUri
+    localImageUri = localImageUri,
+    reminderTime = reminderTime,
 )
 
 private fun encodeTasks(tasks: List<Task>): String {
@@ -370,6 +373,7 @@ private fun encodeTasks(tasks: List<Task>): String {
             put("isCompleted", task.isCompleted)
             put("emojiImage", task.emojiImage)
             put("localImageUri", task.localImageUri)
+            if (task.reminderTime != null) put("reminderTime", task.reminderTime) else put("reminderTime", JSONObject.NULL)
         }
         array.put(json)
     }
@@ -495,7 +499,8 @@ private fun decodeTasks(raw: String): List<Task> {
                         repeatRule = obj.optString("repeatRule", "NONE"),
                         isCompleted = obj.optBoolean("isCompleted", false),
                         emojiImage = obj.optString("emojiImage").ifBlank { null },
-                        localImageUri = obj.optString("localImageUri").ifBlank { null }
+                        localImageUri = obj.optString("localImageUri").ifBlank { null },
+                        reminderTime = if (obj.isNull("reminderTime")) null else obj.optString("reminderTime").ifBlank { null }
                     ).toModel()
                 )
             }

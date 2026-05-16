@@ -223,6 +223,7 @@ fun TaskItemCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(cardShape)
+                    .blur(AppColors.TaskCardBackgroundBlurRadius)
                     .background(glassBrush, cardShape)
             ) {
                 Box(
@@ -244,7 +245,7 @@ fun TaskItemCard(
                         .fillMaxWidth()
                         .heightIn(min = minCardHeight)
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     TaskTagLeading(
                         label = task.label,

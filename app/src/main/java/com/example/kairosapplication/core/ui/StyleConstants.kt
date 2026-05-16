@@ -48,6 +48,8 @@ object AppColors {
     val TaskCardGrayMist = Color(0xFF808080).copy(alpha = 0.05f)
     /** Gaussian blur radius for frosted glass effect */
     val TaskCardBlurRadius = 100.dp
+    /** Blur radius for the base glass gradient layer (softer, background-only blur to make the gradient "melt" into the atmosphere) */
+    val TaskCardBackgroundBlurRadius = 30.dp
     /** Subtle glass edge that defines the border gently */
     val TaskCardGlassHairline = Color.White.copy(alpha = 0.20f)
     /** Soft inner glow for glass dimensionality */

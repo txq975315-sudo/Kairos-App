@@ -1,6 +1,5 @@
 ﻿package com.example.kairosapplication.ui.components
 
-import com.example.kairosapplication.BuildConfig
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,14 +33,19 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -60,12 +64,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.R
 import com.example.kairosapplication.core.text.TaskUiLocalLabels
 import com.example.kairosapplication.core.text.rememberTaskTextProvider
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -79,6 +85,9 @@ import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 internal data class CreateSheetConfig(
     val timeBlock: String,
@@ -110,11 +119,10 @@ private fun isRepeatingTask(task: Task): Boolean {
 fun CreateTaskBottomSheet(
     task: Task? = null,
     onDismiss: () -> Unit,
-    onSave: (Task) -> Unit,
+    onSave: (Task) -> Boolean,
     onDelete: ((Task) -> Unit)? = null
 ) {
     val shouldShowStopButton = task?.let(::isRepeatingTask) ?: false
-    val debugRepeatRuleText = task?.repeatRule
     val seed = task ?: Task(
         id = 0,
         title = "",
@@ -153,6 +161,10 @@ fun CreateTaskBottomSheet(
         meta = meta,
         onMetaChange = { meta = it },
         onTimeBlockChange = { draftTask = draftTask.copy(timeBlock = it) },
+        sheetTaskDate = draftTask.taskDate,
+        onSheetTaskDateChange = { picked -> draftTask = draftTask.copy(taskDate = picked) },
+        reminderTime = draftTask.reminderTime,
+        onReminderTimeChange = { picked -> draftTask = draftTask.copy(reminderTime = picked) },
         onCreateTask = { valueTitle, valueDescription, timeBlock, valueMeta ->
             val trimmed = valueTitle.trim()
             if (trimmed.isEmpty()) {
@@ -169,11 +181,9 @@ fun CreateTaskBottomSheet(
                         localImageUri = null
                     )
                 )
-                true
             }
         },
         showStopButton = shouldShowStopButton,
-        debugRepeatRuleText = debugRepeatRuleText,
         onStopClick = {
             val sourceTask = task ?: draftTask
             onSave(sourceTask.copy(repeatRule = TaskConstants.REPEAT_RULE_NONE))
@@ -203,9 +213,12 @@ internal fun CreateTaskBottomSheet(
     meta: CreateTaskMeta,
     onMetaChange: (CreateTaskMeta) -> Unit,
     onTimeBlockChange: (String) -> Unit,
+    sheetTaskDate: LocalDate = LocalDate.now(),
+    onSheetTaskDateChange: ((LocalDate) -> Unit)? = null,
+    reminderTime: String?,
+    onReminderTimeChange: (String?) -> Unit,
     onCreateTask: (title: String, description: String, timeBlock: String, meta: CreateTaskMeta) -> Boolean,
     showStopButton: Boolean = false,
-    debugRepeatRuleText: String? = null,
     onStopClick: (() -> Unit)? = null,
     showDeleteButton: Boolean = false,
     onDeleteClick: (() -> Unit)? = null
@@ -227,10 +240,14 @@ internal fun CreateTaskBottomSheet(
     var isRecording by remember { mutableStateOf(false) }
     var hasSelectedTime by remember { mutableStateOf(false) }
     var hasSelectedUrgency by remember { mutableStateOf(false) }
+    var hasSelectedTaskDate by remember { mutableStateOf(false) }
+    var showTaskDatePicker by remember { mutableStateOf(false) }
+    var showReminderDialog by remember { mutableStateOf(false) }
     val urgencyColorConfig = LocalUrgencyConfig.current
     var keyboardHeightDp by remember { mutableStateOf(280.dp) }
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val isKeyboardVisible = imeBottomPx > 0
+    val zone = remember { ZoneId.systemDefault() }
     /** Icon panel height ~ half keyboard to avoid huge empty space on short lists */
     val iconSheetPanelHeight = keyboardHeightDp * 0.5f
 
@@ -263,15 +280,20 @@ internal fun CreateTaskBottomSheet(
     }
 
     val attemptSubmit: () -> Unit = {
-        val success = onCreateTask(title, description, config.timeBlock, meta.stripTaskImages())
-        if (success) {
-            keyboardController?.hide()
-            focusManager.clearFocus(force = true)
-            onDismiss()
-        } else {
+        if (title.trim().isEmpty()) {
             Toast.makeText(context, taskText.toastEmptyTitle, Toast.LENGTH_SHORT).show()
             titleFocusRequester.requestFocus()
             keyboardController?.show()
+        } else {
+            val success = onCreateTask(title, description, config.timeBlock, meta.stripTaskImages())
+            if (success) {
+                keyboardController?.hide()
+                focusManager.clearFocus(force = true)
+                onDismiss()
+            } else {
+                titleFocusRequester.requestFocus()
+                keyboardController?.show()
+            }
         }
     }
 
@@ -312,18 +334,6 @@ internal fun CreateTaskBottomSheet(
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center
             )
-
-            if (BuildConfig.DEBUG) {
-                debugRepeatRuleText?.let { repeatRule ->
-                    Text(
-                        text = "repeatRule: $repeatRule",
-                        color = Color.Red,
-                        fontSize = 12.sp,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -378,20 +388,29 @@ internal fun CreateTaskBottomSheet(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = taskText.contentDescTimeIcon,
+                        tint = if (hasSelectedTime) TaskUtils.getTimeBlockTitleColor(config.timeBlock) else AppColors.IconNeutral,
+                        modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
+                    )
+                    if (onSheetTaskDateChange != null) {
                         Icon(
-                            imageVector = Icons.Default.AccessTime,
-                            contentDescription = taskText.contentDescTimeIcon,
-                            tint = if (hasSelectedTime) TaskUtils.getTimeBlockTitleColor(config.timeBlock) else AppColors.IconNeutral,
-                            modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = taskText.contentDescDateIcon,
+                            tint = if (hasSelectedTaskDate) config.titleColor else AppColors.IconNeutral,
+                            modifier = Modifier.clickable {
+                                keyboardController?.hide()
+                                iconSheetType = null
+                                showTaskDatePicker = true
+                            }
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -430,7 +449,17 @@ internal fun CreateTaskBottomSheet(
                             )
                         }
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Outlined.Notifications,
+                        contentDescription = taskText.contentDescReminderIcon,
+                        tint = if (!reminderTime.isNullOrBlank()) config.titleColor else AppColors.IconNeutral,
+                        modifier = Modifier.clickable {
+                            keyboardController?.hide()
+                            iconSheetType = null
+                            showReminderDialog = true
+                        }
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Mic,
                             contentDescription = taskText.contentDescMicIcon,
@@ -450,48 +479,49 @@ internal fun CreateTaskBottomSheet(
                             }
                         )
                         if (isRecording) {
-                            Text(text = taskText.recording, fontSize = AppTypography.Caption, color = AppColors.Urgent)
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = taskText.recording,
+                                fontSize = AppTypography.Caption,
+                                color = AppColors.Urgent,
+                            )
                         }
                     }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = taskText.contentDescAddTask,
                         tint = Color(0xFF1A1A1A),
                         modifier = Modifier
-                            .padding(end = 4.dp)
                             .size(26.dp)
                             .clickable { attemptSubmit() },
                     )
                     if (showStopButton && onStopClick != null) {
-                        IconButton(onClick = onStopClick) {
-                            Icon(
-                                imageVector = Icons.Default.Stop,
-                                contentDescription = LocalizedStrings.stringFor(
-                                    sheetLang,
-                                    "task_sheet_stop_repeating",
-                                    context,
-                                ),
-                                tint = Color(0xFFFF9800)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = LocalizedStrings.stringFor(
+                                sheetLang,
+                                "task_sheet_stop_repeating",
+                                context,
+                            ),
+                            tint = Color(0xFFFF9800),
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clickable { onStopClick() },
+                        )
                     }
                     if (showDeleteButton && onDeleteClick != null) {
-                        IconButton(onClick = onDeleteClick) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = LocalizedStrings.stringFor(
-                                    sheetLang,
-                                    "task_sheet_delete_task",
-                                    context,
-                                ),
-                                tint = Color(0xFFD32F2F)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = LocalizedStrings.stringFor(
+                                sheetLang,
+                                "task_sheet_delete_task",
+                                context,
+                            ),
+                            tint = Color(0xFFD32F2F),
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clickable { onDeleteClick() },
+                        )
                     }
                 }
             }
@@ -633,8 +663,62 @@ internal fun CreateTaskBottomSheet(
                     }
                 }
             }
+
         }
         }
+    }
+
+    if (showTaskDatePicker && onSheetTaskDateChange != null) {
+        val millis = sheetTaskDate.atStartOfDay(zone).toInstant().toEpochMilli()
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = millis)
+        DatePickerDialog(
+            onDismissRequest = { showTaskDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { m ->
+                            val picked = Instant.ofEpochMilli(m).atZone(zone).toLocalDate()
+                            onSheetTaskDateChange.invoke(picked)
+                            hasSelectedTaskDate = true
+                        }
+                        showTaskDatePicker = false
+                    }
+                ) {
+                    Text(
+                        LocalizedStrings.get("confirm"),
+                        color = AppColors.PrimaryText,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTaskDatePicker = false }) {
+                    Text(
+                        LocalizedStrings.get("cancel"),
+                        color = AppColors.SecondaryText,
+                    )
+                }
+            },
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.task_sheet_pick_task_date),
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    color = AppColors.PrimaryText,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                DatePicker(state = datePickerState)
+            }
+        }
+    }
+
+    if (showReminderDialog) {
+        TaskReminderTimeDialog(
+            initialTime = reminderTime,
+            onDismiss = { showReminderDialog = false },
+            onConfirm = { onReminderTimeChange(it) },
+            onClear = { onReminderTimeChange(null) },
+        )
     }
 }
 

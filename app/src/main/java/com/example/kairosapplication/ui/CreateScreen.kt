@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -85,6 +86,7 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
 import com.example.kairosapplication.ui.components.ArrowButton
 import com.example.kairosapplication.ui.components.ArrowDirection
+import com.example.kairosapplication.ui.components.TaskReminderTimeDialog
 import com.example.kairosapplication.core.ui.CommonBackButton
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -115,6 +117,8 @@ fun CreateScreen(
     var selectedLabel by remember { mutableStateOf<String?>(null) }
     var selectedSticker by remember { mutableStateOf<String?>(null) }
     var activeTool by remember { mutableStateOf<CreateTool?>(null) }
+    var reminderTime by remember { mutableStateOf<String?>(null) }
+    var showReminderDialog by remember { mutableStateOf(false) }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
@@ -229,6 +233,7 @@ fun CreateScreen(
     val resetInputsAfterCreate: () -> Unit = {
         titleInput = ""
         descriptionInput = ""
+        reminderTime = null
     }
 
     val submitCreateTask: () -> Unit = {
@@ -258,7 +263,8 @@ fun CreateScreen(
                     label = selectedLabel,
                     taskDate = date,
                     repeatRule = normalizedRepeatRule,
-                    emojiImage = selectedSticker
+                    emojiImage = selectedSticker,
+                    reminderTime = reminderTime,
                 ).toTask(id = nowSeed + index)
             }
             onTasksCreated(tasks)
@@ -520,6 +526,12 @@ fun CreateScreen(
             }
             ActionIconsRow(
             taskTexts = taskTexts,
+            hasReminder = !reminderTime.isNullOrBlank(),
+            onReminderClick = {
+                keyboardController?.hide()
+                activeTool = null
+                showReminderDialog = true
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 0.dp),
@@ -552,6 +564,15 @@ fun CreateScreen(
             onSubmit = submitCreateTask
         )
         }
+    }
+
+    if (showReminderDialog) {
+        TaskReminderTimeDialog(
+            initialTime = reminderTime,
+            onDismiss = { showReminderDialog = false },
+            onConfirm = { picked -> reminderTime = picked },
+            onClear = { reminderTime = null },
+        )
     }
     }
 }
@@ -752,6 +773,8 @@ private fun InputField(
 private fun ActionIconsRow(
     taskTexts: TaskTextProvider,
     modifier: Modifier = Modifier,
+    hasReminder: Boolean,
+    onReminderClick: () -> Unit,
     selectedUrgency: Int,
     onTimeClick: () -> Unit,
     onUrgencyClick: () -> Unit,
@@ -794,6 +817,12 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescAttachIcon,
                 tint = Color(0xFF757575),
                 modifier = Modifier.clickable { onStickerClick() }
+            )
+            Icon(
+                imageVector = Icons.Default.Notifications,
+                contentDescription = taskTexts.contentDescReminderIcon,
+                tint = if (hasReminder) Color(0xFF1976D2) else Color(0xFF757575),
+                modifier = Modifier.clickable { onReminderClick() }
             )
             Icon(
                 imageVector = Icons.Default.Mic,

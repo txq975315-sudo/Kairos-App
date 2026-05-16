@@ -1,4 +1,4 @@
-﻿# translation_extract.txt - user-visible Chinese in .kt / .xml / string resources
+# translation_extract.txt - user-visible Chinese in .kt / .xml / string resources
 # Format: unique_id | chinese_string | file:line
 # Excludes: // comment-only lines, Log/println/Timber, package/import lines.
 # LocalizedStrings.kt: id is i18n_<key> (same-line zh branch or block if (zh) { multiline }).
@@ -417,7 +417,6 @@ app_han_96be53d7_1401 | 难受 | app/src/main/java/com/example/kairosapplication
 app_han_832b7136_1501 | 茫然 | app/src/main/java/com/example/kairosapplication/ui/mine/EmojiConstants.kt:15
 app_yyyym_7801 | yyyy年M月 | app/src/main/java/com/example/kairosapplication/ui/mine/MoodCalendarScreen.kt:78
 app_yyyym_6201 | yyyy年M月 | app/src/main/java/com/example/kairosapplication/ui/view/month/MonthCalendar.kt:62
-app_yyyymd_3701 | yyyy年M月d日 | app/src/main/java/com/example/kairosapplication/ui/view/today/DateSelector.kt:37
 app_han_66688dd1_20701 | 晨跑 | app/src/main/java/com/example/kairosapplication/ui/widget/Widget3x1TriptychPreview.kt:207
 app_han_96058bfb_20801 | 阅读 | app/src/main/java/com/example/kairosapplication/ui/widget/Widget3x1TriptychPreview.kt:208
 app_han_51994f5c_20901 | 写作 | app/src/main/java/com/example/kairosapplication/ui/widget/Widget3x1TriptychPreview.kt:209

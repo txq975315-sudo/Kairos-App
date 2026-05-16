@@ -13,6 +13,8 @@ data class TaskTextProvider(
     val contentDescLabelIcon: String,
     val contentDescAttachIcon: String,
     val contentDescMicIcon: String,
+    val contentDescDateIcon: String,
+    val contentDescReminderIcon: String,
     val contentDescCompleted: String,
     val contentDescBack: String,
     val toastNoSpeech: String,
@@ -65,6 +67,8 @@ fun rememberTaskTextProvider(): TaskTextProvider {
     val contentDescLabelIcon = stringResource(R.string.task_content_desc_label_icon)
     val contentDescAttachIcon = stringResource(R.string.task_content_desc_attach_icon)
     val contentDescMicIcon = stringResource(R.string.task_content_desc_mic_icon)
+    val contentDescDateIcon = stringResource(R.string.task_content_desc_date_icon)
+    val contentDescReminderIcon = stringResource(R.string.task_content_desc_reminder_icon)
     val contentDescCompleted = stringResource(R.string.task_content_desc_completed)
     val contentDescBack = stringResource(R.string.task_content_desc_back)
     val toastNoSpeech = stringResource(R.string.task_toast_no_speech)
@@ -96,6 +100,8 @@ fun rememberTaskTextProvider(): TaskTextProvider {
         contentDescLabelIcon,
         contentDescAttachIcon,
         contentDescMicIcon,
+        contentDescDateIcon,
+        contentDescReminderIcon,
         contentDescCompleted,
         contentDescBack,
         toastNoSpeech,
@@ -127,6 +133,8 @@ fun rememberTaskTextProvider(): TaskTextProvider {
             contentDescLabelIcon = contentDescLabelIcon,
             contentDescAttachIcon = contentDescAttachIcon,
             contentDescMicIcon = contentDescMicIcon,
+            contentDescDateIcon = contentDescDateIcon,
+            contentDescReminderIcon = contentDescReminderIcon,
             contentDescCompleted = contentDescCompleted,
             contentDescBack = contentDescBack,
             toastNoSpeech = toastNoSpeech,

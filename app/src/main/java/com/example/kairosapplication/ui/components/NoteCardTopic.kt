@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,7 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,28 +75,83 @@ fun NoteCardTopic(
         else -> Int.MAX_VALUE
     }
     val cardShape = RoundedCornerShape(AppShapes.CardRadius)
+    
+    // Glass effect brushes (aligned with TaskCard)
+    val taskCardGlassBrush = Brush.verticalGradient(
+        colorStops = arrayOf(
+            0f to AppColors.TaskCardGlassTop,
+            0.42f to AppColors.TaskCardGlassMid,
+            1f to AppColors.TaskCardGlassBottom,
+        ),
+    )
+    val taskCardInnerGlowBrush = Brush.verticalGradient(
+        colorStops = arrayOf(
+            0f to AppColors.TaskCardGlassInnerGlow,
+            0.3f to Color.Transparent,
+            0.7f to Color.Transparent,
+            1f to AppColors.TaskCardGlassInnerGlow.copy(alpha = 0.2f),
+        ),
+    )
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .border(1.dp, AppColors.CardRimLight, cardShape)
             .shadow(
-                elevation = 0.5.dp,
+                elevation = AppColors.TaskCardShadowElevation,
                 shape = cardShape,
-                ambientColor = Color.Black.copy(alpha = 0.06f),
-                spotColor = Color.Black.copy(alpha = 0.06f),
+                ambientColor = AppColors.TaskCardShadowColor,
+                spotColor = Color(0xFF1A2850).copy(alpha = 0.15f),
+            )
+            .clip(cardShape)
+            .border(
+                width = 1.1.dp,
+                color = AppColors.TaskCardGlassHairline,
+                shape = cardShape
             )
             .clickable {
                 if (expandable) onToggleExpand() else onNoteClick(note.id)
             },
         shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = AppColors.NoteCardFace),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
-        ) {
+        Box {
+            // Layer 1: Glass gradient base
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(cardShape)
+                    .background(taskCardGlassBrush)
+            )
+            // Layer 2: Gray mist overlay
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(cardShape)
+                    .blur(AppColors.TaskCardBlurRadius)
+                    .background(AppColors.TaskCardGrayMist)
+            )
+            // Layer 3: Inner glow
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(cardShape)
+                    .blur(AppColors.TaskCardBlurRadius)
+                    .background(taskCardInnerGlowBrush)
+            )
+            // Layer 4: Top veil
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(cardShape)
+                    .background(AppColors.GlassFill.copy(alpha = 0.07f))
+            )
+            // Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
+            ) {
             if (!peekOnlySummaryBody) {
                 Text(
                     text = topicLabelLine,
@@ -183,21 +242,22 @@ fun NoteCardTopic(
                 }
             }
             if (expandable && expanded) {
-                Spacer(Modifier.height(8.dp))
-                if (publishedActions != null) {
-                    PublishedNoteActionsRow(
-                        actions = publishedActions,
-                        hasProjects = note.projectIds.isNotEmpty()
-                    )
-                } else {
-                    TextButton(
-                        onClick = { onNoteClick(note.id) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
+                    Spacer(Modifier.height(8.dp))
+                    if (publishedActions != null) {
+                        PublishedNoteActionsRow(
+                            actions = publishedActions,
+                            hasProjects = note.projectIds.isNotEmpty()
+                        )
+                    } else {
+                        TextButton(
+                            onClick = { onNoteClick(note.id) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
+                        }
                     }
                 }
-            }
-        }
+            } // Column close
+        } // Box close
     }
 }

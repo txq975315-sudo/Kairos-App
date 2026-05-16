@@ -74,9 +74,11 @@ fun ViewScreen(
     var createDescription by remember { mutableStateOf("") }
     var createUrgency by remember { mutableStateOf(3) }
     var createLabel by remember { mutableStateOf<String?>(null) }
+    var createReminderTime by remember { mutableStateOf<String?>(null) }
     var showWeekCreateLimitDialog by remember { mutableStateOf(false) }
     var weekCreateLimitDate by remember { mutableStateOf<LocalDate?>(null) }
     var lastTaskToggleUptimeMs by remember { mutableLongStateOf(0L) }
+    var createTargetDate by remember { mutableStateOf(LocalDate.now()) }
 
     val deleteNoteTitle = LocalizedStrings.get("essay_note_delete_title_question")
     val deleteNoteBody = LocalizedStrings.get("essay_note_delete_body")
@@ -98,6 +100,12 @@ fun ViewScreen(
         expandedNoteId = null
         changeTopicNoteId = null
         deleteConfirmNoteId = null
+    }
+
+    LaunchedEffect(createSheetConfig, quickCreateTaskDate) {
+        if (createSheetConfig != null) {
+            createTargetDate = quickCreateTaskDate ?: LocalDate.now()
+        }
     }
 
     Box(
@@ -192,6 +200,7 @@ fun ViewScreen(
                             createDescription = ""
                             createUrgency = TaskConstants.URGENCY_LOW
                             createLabel = null
+                            createReminderTime = null
                             createSheetConfig = CreateSheetConfig(
                                 timeBlock = TaskConstants.TIME_BLOCK_ANYTIME,
                                 backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_ANYTIME),
@@ -268,6 +277,7 @@ fun ViewScreen(
                 onDismiss = {
                     createSheetConfig = null
                     quickCreateTaskDate = null
+                    createReminderTime = null
                 },
                 title = createTitle,
                 onTitleChange = { createTitle = it },
@@ -290,14 +300,17 @@ fun ViewScreen(
                         titleColor = TaskUtils.getTimeBlockTitleColor(newTimeBlock),
                     )
                 },
+                sheetTaskDate = createTargetDate,
+                onSheetTaskDateChange = { createTargetDate = it },
+                reminderTime = createReminderTime,
+                onReminderTimeChange = { createReminderTime = it },
                 onCreateTask = { title, description, timeBlock, meta ->
                     val trimmedTitle = title.trim()
                     if (trimmedTitle.isEmpty()) {
                         false
                     } else {
-                        val targetDate = quickCreateTaskDate ?: LocalDate.now()
-                        if (taskViewModel.wouldExceedDailyPendingLimit(targetDate, 1)) {
-                            weekCreateLimitDate = targetDate
+                        if (taskViewModel.wouldExceedDailyPendingLimit(createTargetDate, 1)) {
+                            weekCreateLimitDate = createTargetDate
                             showWeekCreateLimitDialog = true
                             false
                         } else {
@@ -311,7 +324,8 @@ fun ViewScreen(
                                 label = meta.label,
                                 emojiImage = null,
                                 localImageUri = null,
-                                taskDate = targetDate,
+                                taskDate = createTargetDate,
+                                reminderTime = createReminderTime,
                             ).toTask(id = nextTaskId)
                             taskViewModel.saveTasks(allTasks + newTask)
                             true

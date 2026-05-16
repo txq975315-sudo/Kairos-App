@@ -18,6 +18,9 @@
     <string name="task_content_desc_label_icon">Label icon</string>
     <string name="task_content_desc_attach_icon">Attach icon</string>
     <string name="task_content_desc_mic_icon">Mic icon</string>
+    <string name="task_content_desc_date_icon">Task date</string>
+    <string name="task_content_desc_reminder_icon">Reminder time</string>
+    <string name="task_sheet_pick_task_date">Choose task date</string>
     <string name="task_content_desc_completed">Completed</string>
     <string name="task_content_desc_back">Back</string>
 
@@ -272,6 +275,8 @@
     <string name="i18n_settings_stat_analysis">Statistic Analysis of Data</string>
     <string name="i18n_settings_privacy_management">Privacy Management</string>
     <string name="i18n_settings_problem_feedback">Problem Feedback</string>
+    <string name="i18n_feedback_survey_subtitle">You’re among the first Kairos users—your feedback matters. Suggestions welcome!</string>
+    <string name="i18n_no_browser_app">No browser app found to open this link</string>
     <string name="i18n_settings_sign_out">Sign out</string>
     <string name="i18n_insights_off_today">Insights off today</string>
     <string name="i18n_consecutive_days">Streak </string>
@@ -468,6 +473,11 @@
     <string name="i18n_notif_channel_reminder_desc">Reminds you to check today\'s tasks at the scheduled time</string>
     <string name="i18n_notif_channel_reflection_name">Daily reflection reminder</string>
     <string name="i18n_notif_channel_reflection_desc">Reminds you to write today\'s reflection</string>
+    <string name="i18n_notif_channel_task_reminder_name">Task time reminders</string>
+    <string name="i18n_notif_channel_task_reminder_desc">Alerts for individual tasks at a chosen time</string>
+    <string name="i18n_notif_task_reminder_body">Time to check this task</string>
+    <string name="i18n_task_reminder_dialog_title">Reminder time</string>
+    <string name="i18n_task_reminder_clear">Clear reminder</string>
     <string name="i18n_notif_reminder_title">Daily task reminder</string>
     <string name="i18n_notif_reminder_body">You still have tasks today — tap to view</string>
     <string name="i18n_notif_reflection_title">Daily reflection reminder</string>

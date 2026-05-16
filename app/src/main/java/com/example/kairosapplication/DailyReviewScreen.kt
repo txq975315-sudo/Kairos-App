@@ -1,5 +1,6 @@
 package com.example.kairosapplication
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,6 +57,7 @@ import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
 import com.example.taskmodel.store.TaskCreationBus
+import com.example.taskmodel.viewmodel.TaskViewModel
 import java.time.LocalDate
 
 @Composable
@@ -278,12 +280,31 @@ fun DailyReviewScreen(
             task = task,
             onDismiss = { editingTask.value = null },
             onSave = { updatedTask ->
-                val index = tasks.indexOfFirst { it.id == task.id }
-                if (index != -1) {
-                    tasks[index] = updatedTask.copy(id = task.id, taskDate = task.taskDate)
-                    onTaskUpdated(tasks[index])
+                if (TaskViewModel.wouldExceedDailyPendingLimitWhenMovingTask(
+                        tasks.toList(),
+                        task,
+                        updatedTask.taskDate,
+                    )
+                ) {
+                    Toast.makeText(
+                        context,
+                        LocalizedStrings.stringFor(
+                            lang,
+                            "task_daily_limit_message",
+                            context,
+                            TaskViewModel.DAILY_PENDING_LIMIT,
+                        ),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    false
+                } else {
+                    val index = tasks.indexOfFirst { it.id == task.id }
+                    if (index != -1) {
+                        tasks[index] = updatedTask.copy(id = task.id)
+                        onTaskUpdated(tasks[index])
+                    }
+                    true
                 }
-                editingTask.value = null
             }
         )
     }

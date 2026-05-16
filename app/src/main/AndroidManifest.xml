@@ -54,6 +54,14 @@
         </receiver>
 
         <receiver
+            android:name=".notification.TaskReminderReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.kairosapplication.ACTION_TASK_REMINDER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".notification.BootReceiver"
             android:exported="true">
             <intent-filter>

@@ -1,5 +1,7 @@
 ﻿package com.example.kairosapplication.ui.mine.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,6 +58,8 @@ import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.theme.BackgroundColor
 
 private val RowText = Color(0xFF1A1A1A)
+
+private const val FeedbackSurveyUrl = "https://wj.qq.com/s2/26694655/7143/"
 
 @Composable
 fun SettingsScreen(
@@ -204,8 +208,19 @@ fun SettingsScreen(
                 SettingsProtoRow(
                     icon = Icons.Outlined.Feedback,
                     title = LocalizedStrings.get("settings_problem_feedback"),
-                    subtitle = null,
-                    onClick = { toastSoon() }
+                    subtitle = LocalizedStrings.get("feedback_survey_subtitle"),
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(FeedbackSurveyUrl))
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            Toast.makeText(
+                                context,
+                                LocalizedStrings.stringFor(uiLanguage, "no_browser_app", context),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 )
                 SettingsProtoRow(
                     icon = Icons.AutoMirrored.Outlined.Logout,

@@ -12,9 +12,11 @@ data class CreateTaskParam(
     val taskDate: LocalDate = LocalDate.now(),
     val repeatRule: String = TaskConstants.REPEAT_RULE_NONE,
     val emojiImage: String? = null,
-    val localImageUri: String? = null
+    val localImageUri: String? = null,
+    val reminderTime: String? = null,
 ) {
     fun toTask(id: Int): Task {
+        val rt = reminderTime?.trim()?.ifBlank { null }
         return Task(
             id = id,
             title = title.trim(),
@@ -26,7 +28,8 @@ data class CreateTaskParam(
             repeatRule = repeatRule,
             isCompleted = false,
             emojiImage = emojiImage,
-            localImageUri = localImageUri
+            localImageUri = localImageUri,
+            reminderTime = rt,
         )
     }
 }

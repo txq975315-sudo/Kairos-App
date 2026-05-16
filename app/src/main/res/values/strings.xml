@@ -18,6 +18,9 @@
     <string name="task_content_desc_label_icon">标签</string>
     <string name="task_content_desc_attach_icon">附件</string>
     <string name="task_content_desc_mic_icon">麦克风</string>
+    <string name="task_content_desc_date_icon">任务日期</string>
+    <string name="task_content_desc_reminder_icon">提醒时间</string>
+    <string name="task_sheet_pick_task_date">选择任务日期</string>
     <string name="task_content_desc_completed">已完成</string>
     <string name="task_content_desc_back">返回</string>
 
@@ -274,6 +277,8 @@
     <string name="i18n_settings_stat_analysis">数据统计分析</string>
     <string name="i18n_settings_privacy_management">隐私管理</string>
     <string name="i18n_settings_problem_feedback">问题反馈</string>
+    <string name="i18n_feedback_survey_subtitle">您是第一批使用者，您的意见很宝贵！欢迎提建议</string>
+    <string name="i18n_no_browser_app">未找到可打开链接的浏览器</string>
     <string name="i18n_settings_sign_out">退出登录</string>
     <string name="i18n_insights_off_today">今日洞察已关闭</string>
     <string name="i18n_consecutive_days">连续记录  </string>
@@ -470,6 +475,11 @@
     <string name="i18n_notif_channel_reminder_desc">在设定时间提醒你查看今日待办</string>
     <string name="i18n_notif_channel_reflection_name">每日反思提醒</string>
     <string name="i18n_notif_channel_reflection_desc">提醒你记录今日反思</string>
+    <string name="i18n_notif_channel_task_reminder_name">任务时间提醒</string>
+    <string name="i18n_notif_channel_task_reminder_desc">在设定时间提醒某条待办</string>
+    <string name="i18n_notif_task_reminder_body">到点啦，看看这条待办</string>
+    <string name="i18n_task_reminder_dialog_title">提醒时间</string>
+    <string name="i18n_task_reminder_clear">清除提醒</string>
     <string name="i18n_notif_reminder_title">每日待办提醒</string>
     <string name="i18n_notif_reminder_body">今天还有任务待完成，点击查看</string>
     <string name="i18n_notif_reflection_title">每日反思提醒</string>

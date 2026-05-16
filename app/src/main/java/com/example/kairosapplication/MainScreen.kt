@@ -54,6 +54,7 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.findActivity
 import com.example.kairosapplication.notification.NotificationHelper
+import com.example.kairosapplication.notification.TaskReminderScheduler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -155,10 +156,22 @@ fun MainScreen(
     )
     val taskUiState by taskViewModel.uiState.collectAsState()
     val urgencyConfig by settingsViewModel.urgencyConfig.collectAsState()
+    var lastKnownTaskIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     // Keep TaskUtils static cache in sync with user-customised urgency config
     LaunchedEffect(urgencyConfig) {
         TaskUtils.setUrgencyConfig(urgencyConfig)
+    }
+
+    LaunchedEffect(taskUiState.tasks) {
+        val tasks = taskUiState.tasks
+        val appCtx = context.applicationContext
+        val currentIds = tasks.map { it.id }.toSet()
+        for (id in lastKnownTaskIds - currentIds) {
+            TaskReminderScheduler.cancelAlarm(appCtx, id)
+        }
+        lastKnownTaskIds = currentIds
+        TaskReminderScheduler.syncAlarms(appCtx, tasks)
     }
 
     LaunchedEffect(taskUiState.tasks, taskUiState.dailyQuoteEssayId) {
