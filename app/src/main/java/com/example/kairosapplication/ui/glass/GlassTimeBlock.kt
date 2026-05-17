@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -33,7 +35,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
@@ -41,10 +42,10 @@ import com.example.taskmodel.model.Task
 import java.time.LocalDate
 
 fun timeBlockIconTint(blockKey: String): Color = when (blockKey) {
-    TaskConstants.TIME_BLOCK_ANYTIME -> AppColors.AnytimeTitle.copy(alpha = 0.92f)
-    TaskConstants.TIME_BLOCK_MORNING -> AppColors.MorningTitle.copy(alpha = 0.92f)
-    TaskConstants.TIME_BLOCK_AFTERNOON -> AppColors.AfternoonTitle.copy(alpha = 0.92f)
-    TaskConstants.TIME_BLOCK_EVENING -> AppColors.EveningTitle.copy(alpha = 0.92f)
+    TaskConstants.TIME_BLOCK_ANYTIME -> GlassConstants.TimeBlockIconAnytime
+    TaskConstants.TIME_BLOCK_MORNING -> GlassConstants.TimeBlockIconMorning
+    TaskConstants.TIME_BLOCK_AFTERNOON -> GlassConstants.TimeBlockIconAfternoon
+    TaskConstants.TIME_BLOCK_EVENING -> GlassConstants.TimeBlockIconEvening
     else -> GlassConstants.TextSecondary
 }
 
@@ -61,9 +62,9 @@ fun GlassTimeBlock(
     onToggleComplete: (Task) -> Unit,
     onOpenDetail: (Task) -> Unit,
     onSwipeDelete: (Task) -> Unit,
-    onTaskDragEnd: (Task, Float) -> Unit,
-    onDragHandleY: (Int, Float) -> Unit,
-    onBlockBounds: (String, Rect) -> Unit,
+    onTaskDragEnd: (Task, Float) -> Unit = { _, _ -> },
+    onDragHandleY: (Int, Float) -> Unit = { _, _ -> },
+    onBlockBounds: (String, Rect) -> Unit = { _, _ -> },
     onCreateClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -83,7 +84,9 @@ fun GlassTimeBlock(
             icon = icon,
             iconTint = iconTint,
             expanded = expanded,
-            onClick = onToggle,
+            hasTasks = hasTasks,
+            onToggle = onToggle,
+            onCreateClick = onCreateClick,
         )
 
         AnimatedVisibility(
@@ -133,34 +136,79 @@ private fun GlassTimeBlockHeader(
     icon: ImageVector,
     iconTint: Color,
     expanded: Boolean,
-    onClick: () -> Unit,
+    hasTasks: Boolean,
+    onToggle: () -> Unit,
+    onCreateClick: () -> Unit,
 ) {
-  BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val maxPillWidth = maxWidth * GlassConstants.TimeBlockPillWidthFraction
-        GlassPillLabel(
-            text = title,
-            leadingIcon = icon,
-            iconTint = iconTint,
-            modifier = Modifier
-                .widthIn(max = maxPillWidth)
-                .clickable(onClick = onClick),
-            trailingContent = {
-                if (count > 0) {
-                    Text(
-                        text = "$count",
-                        color = GlassConstants.TextMuted,
-                        fontSize = 12.sp,
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BoxWithConstraints {
+            val maxPillWidth = maxWidth * GlassConstants.TimeBlockPillWidthFraction
+            GlassPillLabel(
+                text = title,
+                leadingIcon = icon,
+                iconTint = iconTint,
+                modifier = Modifier
+                    .widthIn(max = maxPillWidth)
+                    .clickable(onClick = onToggle),
+                trailingContent = {
+                    if (count > 0) {
+                        Text(
+                            text = "$count",
+                            color = GlassConstants.TextMuted,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = GlassConstants.TextMuted,
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = GlassConstants.TextMuted,
-                    modifier = Modifier.size(18.dp),
-                )
-            },
-        )
+                },
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        if (hasTasks) {
+            GlassTimeBlockAddTaskButton(
+                onClick = onCreateClick,
+                modifier = Modifier.padding(end = GlassConstants.CardPaddingHorizontal),
+            )
+        }
+    }
+}
+
+@Composable
+fun GlassTimeBlockAddTaskButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val cardText = LocalGlassTextColors.current
+
+    GlassSurface(
+        modifier = modifier
+            .size(GlassConstants.CompleteButtonSize)
+            .clickable(onClick = onClick),
+        shape = CircleShape,
+        fillAlpha = GlassConstants.PillFillAlpha,
+        wrapHazeToContent = true,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = LocalizedStrings.get("cd_add_task"),
+                tint = cardText.secondary,
+                modifier = Modifier.size(GlassConstants.CompletedCheckSize),
+            )
+        }
     }
 }
 

@@ -1,0 +1,37 @@
+package com.example.kairosapplication.ui.glass
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.example.kairosapplication.core.ui.constants.GlassBubbleRecipe
+import com.example.kairosapplication.core.ui.constants.GlassConstants
+import dev.chrisbanes.haze.HazeDefaults
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
+
+val LocalGlassHazeState = compositionLocalOf<HazeState?> { null }
+
+@Composable
+fun rememberGlassHazeState(): HazeState = remember { HazeState() }
+
+/** Wallpaper layer sampled by route-C bubbles (pair with [glassBubbleBackdrop]). */
+fun Modifier.glassHazeSource(state: HazeState): Modifier = haze(state)
+
+/**
+ * Route C: backdrop blur of [glassHazeSource] content (reference chat glass).
+ */
+@Composable
+fun Modifier.glassBubbleBackdrop(): Modifier {
+    if (GlassConstants.bubbleRecipe != GlassBubbleRecipe.C) return this
+    val state = LocalGlassHazeState.current ?: return this
+    val style = HazeDefaults.style(
+        backgroundColor = Color.Transparent,
+        tint = HazeDefaults.tint(Color.Black.copy(alpha = GlassConstants.GlassHazeTintAlpha)),
+        blurRadius = GlassConstants.GlassBackdropBlurRadius,
+        noiseFactor = GlassConstants.GlassHazeNoiseFactor,
+    )
+    return hazeChild(state = state, style = style)
+}

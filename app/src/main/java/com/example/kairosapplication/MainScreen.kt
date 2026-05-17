@@ -1,10 +1,14 @@
 package com.example.kairosapplication
 
+import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.ui.KairosAtmosphereBackground
+import com.example.kairosapplication.ui.KairosAtmosphereDimOverlay
+import com.example.kairosapplication.ui.KairosAtmosphereWallpaper
 import com.example.kairosapplication.ui.glass.GlassBottomNav
-import com.example.kairosapplication.ui.glass.GlassTextColors
-import com.example.kairosapplication.ui.glass.LocalGlassTextColors
+import com.example.kairosapplication.ui.glass.ProvideGlassAtmosphereUi
 import com.example.kairosapplication.ui.glass.glassMainNavTabs
+import com.example.kairosapplication.ui.glass.rememberGlassHazeState
+import com.example.kairosapplication.ui.glass.glassHazeSource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -270,13 +274,28 @@ fun MainScreen(
         }
     }
 
+    val glassHazeState = rememberGlassHazeState()
+
     Box(modifier = Modifier.fillMaxSize()) {
-        KairosAtmosphereBackground(Modifier.fillMaxSize())
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .glassHazeSource(glassHazeState),
+        ) {
+            if (GlassConstants.usesBackdropBlur) {
+                KairosAtmosphereWallpaper(Modifier.fillMaxSize())
+            } else {
+                KairosAtmosphereBackground(Modifier.fillMaxSize())
+            }
+        }
+        if (GlassConstants.usesBackdropBlur) {
+            KairosAtmosphereDimOverlay(Modifier.fillMaxSize())
+        }
         if (bootReady && !needsLanguageOnboarding) {
+            ProvideGlassAtmosphereUi(hazeState = glassHazeState) {
             CompositionLocalProvider(
                 LocalCurrentLanguage provides languageState,
                 LocalUrgencyConfig provides urgencyConfig,
-                LocalGlassTextColors provides GlassTextColors(),
             ) {
     if (overlay != null) {
         AnimatedContent(
@@ -366,6 +385,7 @@ fun MainScreen(
                     taskViewModel = taskViewModel,
                     openTopicTabWithPrimary = essayOpenTopicPrimary,
                     onOpenTopicTabConsumed = { essayOpenTopicPrimary = null },
+                    mainBottomBarInset = innerPadding.calculateBottomPadding(),
                     onOpenTopicManage = {
                         selectedTab = AppTab.Mine
                         showTopicManageHub = true
@@ -591,6 +611,7 @@ fun MainScreen(
                 )
             }
         }
+    }
     }
     }
         }

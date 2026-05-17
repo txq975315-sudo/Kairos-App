@@ -812,6 +812,8 @@ private fun DateSection(
 ) {
     val lang = LocalCurrentLanguage.current.value
     val locale = if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.US
+    val chrome = com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi.current.topChrome
+    val useLightText = !com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi.current.zones.topIsLight
     val dayOfWeek = remember(currentDate, locale) {
         currentDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale)
     }
@@ -830,7 +832,7 @@ private fun DateSection(
             onClick = onPrevious,
             direction = ArrowDirection.LEFT,
             size = 32.dp,
-            tint = AppColors.PrimaryText,
+            tint = chrome.primary,
             contentDescription = LocalizedStrings.get("cd_prev_day")
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -838,20 +840,28 @@ private fun DateSection(
                 text = dayOfWeek,
                 fontSize = 44.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.PrimaryText,
-                lineHeight = 48.sp
+                color = chrome.primary,
+                lineHeight = 48.sp,
+                style = com.example.kairosapplication.ui.glass.glassChromeTextStyle(
+                    base = androidx.compose.ui.text.TextStyle.Default,
+                    useLightText = useLightText,
+                ),
             )
             Text(
                 text = dateSubtitle,
                 fontSize = 16.sp,
-                color = AppColors.SecondaryText
+                color = chrome.secondary,
+                style = com.example.kairosapplication.ui.glass.glassChromeTextStyle(
+                    base = androidx.compose.ui.text.TextStyle.Default,
+                    useLightText = useLightText,
+                ),
             )
         }
         ArrowButton(
             onClick = onNext,
             direction = ArrowDirection.RIGHT,
             size = 32.dp,
-            tint = AppColors.PrimaryText,
+            tint = chrome.primary,
             contentDescription = LocalizedStrings.get("cd_next_day")
         )
     }

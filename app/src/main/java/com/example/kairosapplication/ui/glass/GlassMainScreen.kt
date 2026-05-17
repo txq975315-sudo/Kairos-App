@@ -1,42 +1,24 @@
 package com.example.kairosapplication.ui.glass
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.kairosapplication.MainWidgetIntentViewModel
-import com.example.kairosapplication.core.ui.LocalUrgencyConfig
-import com.example.kairosapplication.core.ui.constants.GlassConstants
-import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
-import com.example.taskmodel.model.Task
-import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.viewmodel.TaskViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
@@ -123,7 +105,6 @@ fun GlassTodayContent(
             totalCount = totalCount,
             onCreateClick = onCreateClick,
             onDailyReviewClick = onDailyReviewClick,
-            onQuoteClick = onQuoteClick,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -150,7 +131,6 @@ fun GlassTodayContent(
             blockKey = TaskConstants.TIME_BLOCK_ANYTIME,
             displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_ANYTIME),
             count = anytimeTasks.size,
-            backgroundColor = GlassConstants.TextMuted,
             icon = Icons.Default.Star,
             expanded = anytimeExpanded,
             onToggle = { anytimeExpanded = !anytimeExpanded },
@@ -168,7 +148,6 @@ fun GlassTodayContent(
             blockKey = TaskConstants.TIME_BLOCK_MORNING,
             displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_MORNING),
             count = morningTasks.size,
-            backgroundColor = GlassConstants.TextMuted,
             icon = androidx.compose.material.icons.Icons.Default.WbSunny,
             expanded = morningExpanded,
             onToggle = { morningExpanded = !morningExpanded },
@@ -186,7 +165,6 @@ fun GlassTodayContent(
             blockKey = TaskConstants.TIME_BLOCK_AFTERNOON,
             displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_AFTERNOON),
             count = afternoonTasks.size,
-            backgroundColor = GlassConstants.TextMuted,
             icon = Icons.Default.WbTwilight,
             expanded = afternoonExpanded,
             onToggle = { afternoonExpanded = !afternoonExpanded },
@@ -204,7 +182,6 @@ fun GlassTodayContent(
             blockKey = TaskConstants.TIME_BLOCK_EVENING,
             displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_EVENING),
             count = eveningTasks.size,
-            backgroundColor = GlassConstants.TextMuted,
             icon = Icons.Default.DarkMode,
             expanded = eveningExpanded,
             onToggle = { eveningExpanded = !eveningExpanded },

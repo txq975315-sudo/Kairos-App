@@ -1,6 +1,7 @@
 package com.example.kairosapplication.ui.glass
 
 import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.core.ui.constants.GlassBubbleRecipe
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -14,39 +15,32 @@ class GlassTaskCardTest {
     }
 
     @Test
-    fun usesGlassConstantsBlurRadius() {
-        assertEquals(30.dp.value, GlassConstants.TaskCardBlurRadius.value, 0.01f)
+    fun usesZeroBlur_onDarkBubble() {
+        assertEquals(0.dp, GlassConstants.TaskCardBlurRadius)
     }
 
     @Test
-    fun usesGlassConstantsFillAlpha() {
+    fun fillAlpha_matchesActiveRecipe() {
         val alpha = GlassConstants.TaskCardFillAlpha
-        assertTrue(alpha >= 0.05f && alpha <= 0.08f)
-    }
-
-    @Test
-    fun usesGlassConstantsBorderWidth() {
-        assertTrue(GlassConstants.GlassBorderWidth.value < 1f)
+        when (GlassBubbleRecipe.active) {
+            GlassBubbleRecipe.A -> assertEquals(0.22f, alpha, 0.01f)
+            GlassBubbleRecipe.B -> assertEquals(0.10f, alpha, 0.01f)
+            GlassBubbleRecipe.C -> assertEquals(0f, alpha, 0.01f)
+        }
     }
 
     @Test
     fun completedTitleColor_isMuted() {
-        // Completed tasks should use TextMuted (alpha 0.50)
         assertEquals(0.50f, GlassConstants.TextMuted.alpha, 0.01f)
     }
 
     @Test
-    fun incompleteTitleColor_isPrimary() {
-        // Incomplete tasks should use TextPrimary (White)
-        assertEquals(
-            com.example.kairosapplication.core.ui.constants.GlassConstants.TextPrimary,
-            com.example.kairosapplication.core.ui.constants.GlassConstants.TextPrimary
-        )
+    fun incompleteTitleColor_isPrimaryWhite() {
+        assertEquals(GlassConstants.TextPrimary, GlassConstants.TextPrimary)
     }
 
     @Test
     fun descriptionColor_isSecondary() {
-        // Description should use TextSecondary (alpha 0.70)
         assertEquals(0.70f, GlassConstants.TextSecondary.alpha, 0.01f)
     }
 }

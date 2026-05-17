@@ -29,7 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,6 +75,10 @@ fun GlassTaskCard(
     } else {
         GlassConstants.TextSecondary
     }
+
+    val routeBTextShadow = GlassConstants.useTaskCardTextShadow
+    fun taskTextStyle(base: TextStyle): TextStyle =
+        if (routeBTextShadow) glassChromeTextStyle(base, useLightText = true) else base
 
     val dragEnd = onDragVerticalEnd
     val dragModifier = if (dragEnd != null) {
@@ -134,8 +140,12 @@ fun GlassTaskCard(
                     Text(
                         text = task.title,
                         color = titleColor,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
+                        style = taskTextStyle(
+                            TextStyle(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
@@ -144,7 +154,7 @@ fun GlassTaskCard(
                         Text(
                             text = task.description,
                             color = descriptionColor,
-                            fontSize = 11.sp,
+                            style = taskTextStyle(TextStyle(fontSize = 11.sp)),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
@@ -168,6 +178,7 @@ fun GlassTaskCard(
             TaskCardSwipeStack(
                 taskId = task.id,
                 cardShape = shape,
+                cornerRadius = GlassConstants.CornerRadius,
                 onSwipeDelete = onSwipeDelete,
             ) { CardBody() }
         }

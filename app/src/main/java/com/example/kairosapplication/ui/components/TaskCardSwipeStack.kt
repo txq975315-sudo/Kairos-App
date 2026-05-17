@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -33,6 +34,7 @@ import kotlin.math.roundToInt
 fun TaskCardSwipeStack(
     taskId: Int,
     cardShape: RoundedCornerShape,
+    cornerRadius: Dp,
     onSwipeDelete: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -49,12 +51,12 @@ fun TaskCardSwipeStack(
             ),
         )
     }
-    val stripEndShape = remember(cardShape) {
+    val stripEndShape = remember(cornerRadius) {
         RoundedCornerShape(
             topStart = 0.dp,
             bottomStart = 0.dp,
-            topEnd = cardShape.topEnd,
-            bottomEnd = cardShape.bottomEnd,
+            topEnd = cornerRadius,
+            bottomEnd = cornerRadius,
         )
     }
 

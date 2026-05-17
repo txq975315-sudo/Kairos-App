@@ -32,6 +32,7 @@ import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.mine.settings.SettingsViewModel
 import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.viewmodel.TaskViewModel
+import com.example.kairosapplication.ui.glass.glassHazeSource
 
 /**
  * Glass UI entry point — switch between Glass and Classic UI.
@@ -100,16 +101,29 @@ fun GlassMainScreen(
     }
 
     var selectedTab by remember { mutableStateOf(GlassAppTab.Today) }
+    val glassHazeState = rememberGlassHazeState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Layer 0: Atmosphere background
-        com.example.kairosapplication.ui.KairosAtmosphereBackground(Modifier.fillMaxSize())
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .glassHazeSource(glassHazeState),
+        ) {
+            if (com.example.kairosapplication.core.ui.constants.GlassConstants.usesBackdropBlur) {
+                com.example.kairosapplication.ui.KairosAtmosphereWallpaper(Modifier.fillMaxSize())
+            } else {
+                com.example.kairosapplication.ui.KairosAtmosphereBackground(Modifier.fillMaxSize())
+            }
+        }
+        if (com.example.kairosapplication.core.ui.constants.GlassConstants.usesBackdropBlur) {
+            com.example.kairosapplication.ui.KairosAtmosphereDimOverlay(Modifier.fillMaxSize())
+        }
 
         if (bootReady && !needsLanguageOnboarding) {
+            ProvideGlassAtmosphereUi(hazeState = glassHazeState) {
             CompositionLocalProvider(
                 LocalCurrentLanguage provides languageState,
                 LocalUrgencyConfig provides urgencyConfig,
-                LocalGlassTextColors provides GlassTextColors(),
             ) {
                 Scaffold(
                     containerColor = Color.Transparent,
@@ -156,6 +170,7 @@ fun GlassMainScreen(
                         }
                     }
                 }
+            }
             }
         }
     }

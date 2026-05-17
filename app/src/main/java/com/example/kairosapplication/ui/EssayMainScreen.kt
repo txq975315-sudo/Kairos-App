@@ -25,8 +25,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
@@ -88,6 +90,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
@@ -182,6 +185,7 @@ fun EssayMainScreen(
     openTopicTabWithPrimary: String? = null,
     onOpenTopicTabConsumed: () -> Unit = {},
     onOpenTopicManage: () -> Unit = {},
+    mainBottomBarInset: Dp = 0.dp,
 ) {
     var selectedTab by remember { mutableStateOf(EssayTab.TIMELINE) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -391,6 +395,7 @@ fun EssayMainScreen(
         }
         Scaffold(
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            contentWindowInsets = WindowInsets.statusBars,
             topBar = {
                 val shadowElevation = 4.dp
                 val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
@@ -721,6 +726,7 @@ fun EssayMainScreen(
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = { onNavigateToEditor(null) },
+                    modifier = Modifier.padding(bottom = mainBottomBarInset),
                     containerColor = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS),
                     contentColor = Color.White,
                     shape = CircleShape
@@ -734,10 +740,16 @@ fun EssayMainScreen(
                 }
             },
         ) { padding ->
+            val layoutDirection = LocalLayoutDirection.current
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(
+                        top = padding.calculateTopPadding(),
+                        start = padding.calculateStartPadding(layoutDirection),
+                        end = padding.calculateEndPadding(layoutDirection),
+                        bottom = padding.calculateBottomPadding(),
+                    )
             ) {
                 // Tab switching bar (moved from topBar to content area for visual separation)
                 Row(

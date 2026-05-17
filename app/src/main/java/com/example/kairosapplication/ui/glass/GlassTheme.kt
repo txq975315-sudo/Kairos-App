@@ -4,18 +4,24 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 
-/**
- * Text color palette for Glass UI.
- * All colors are white-based to work on dark backgrounds.
- */
+/** Text palette for a surface type. */
 data class GlassTextColors(
     val primary: Color = GlassConstants.TextPrimary,
     val secondary: Color = GlassConstants.TextSecondary,
     val muted: Color = GlassConstants.TextMuted,
-)
+) {
+    companion object {
+        fun onDarkBubble(): GlassTextColors = GlassTextColors()
 
-/**
- * CompositionLocal for providing Glass text colors down the tree.
- * Mirrors the pattern of [com.example.kairosapplication.core.ui.LocalUrgencyConfig].
- */
-val LocalGlassTextColors = compositionLocalOf { GlassTextColors() }
+        fun onDarkBackground(): GlassTextColors = GlassTextColors()
+
+        fun onLightBackground(): GlassTextColors = GlassTextColors(
+            primary = GlassConstants.ChromeOnLightPrimary,
+            secondary = GlassConstants.ChromeOnLightSecondary,
+            muted = GlassConstants.ChromeOnLightMuted,
+        )
+    }
+}
+
+/** Task-card text colors (fixed white system). */
+val LocalGlassTextColors = compositionLocalOf { GlassTextColors.onDarkBubble() }

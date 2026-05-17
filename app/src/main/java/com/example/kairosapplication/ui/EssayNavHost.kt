@@ -3,6 +3,8 @@ package com.example.kairosapplication.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -28,6 +30,8 @@ fun EssayNavHost(
     openTopicTabWithPrimary: String? = null,
     onOpenTopicTabConsumed: () -> Unit = {},
     onOpenTopicManage: () -> Unit = {},
+    /** Main shell [GlassBottomNav] height — avoids double bottom inset on essay_main. */
+    mainBottomBarInset: Dp = 0.dp,
 ) {
     val onNavigateToInbox = { navController.navigate("essay_inbox") }
     val onNavigateToSearch = { navController.navigate("essay_search") }
@@ -61,6 +65,7 @@ fun EssayNavHost(
                 openTopicTabWithPrimary = openTopicTabWithPrimary,
                 onOpenTopicTabConsumed = onOpenTopicTabConsumed,
                 onOpenTopicManage = onOpenTopicManage,
+                mainBottomBarInset = mainBottomBarInset,
             )
         }
         composable("essay_trash") {
