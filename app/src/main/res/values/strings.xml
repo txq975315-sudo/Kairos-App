@@ -64,6 +64,9 @@
     <string name="i18n_privacy_settings">隐私设置</string>
     <string name="i18n_other_settings">其他</string>
     <string name="i18n_experimental">实验功能</string>
+    <string name="i18n_glass_ui_title">玻璃界面（测试）</string>
+    <string name="i18n_glass_ui_subtitle">实验性高级界面，含睡莲氛围与玻璃质感底栏</string>
+    <string name="i18n_glass_tab_coming_soon">更多页面即将推出</string>
     <string name="i18n_daily_reminder">每日提醒</string>
     <string name="i18n_daily_reminder_time">提醒时间</string>
     <string name="i18n_daily_reflection">每日反思提醒</string>

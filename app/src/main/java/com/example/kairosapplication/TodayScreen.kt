@@ -280,11 +280,11 @@ fun TodayScreen(
         Column(modifier = Modifier.fillMaxSize()) {
         // Fixed header (does not scroll with task list)
         Spacer(Modifier.height(AppSpacing.SectionSmall))
-        TopBar(
-            completed = completedCount,
-            total = totalCount,
+        com.example.kairosapplication.ui.glass.GlassTopBar(
+            completedCount = completedCount,
+            totalCount = totalCount,
             onCreateClick = onCreateClick,
-            onDailyReviewClick = onDailyReviewClick
+            onDailyReviewClick = onDailyReviewClick,
         )
         Spacer(Modifier.height(6.dp))
         DateSection(
@@ -293,9 +293,9 @@ fun TodayScreen(
             onNext = { currentDate = currentDate.plusDays(1) }
         )
         Spacer(Modifier.height(10.dp))
-        QuoteSection(
+        com.example.kairosapplication.ui.glass.GlassQuoteSection(
+            quote = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default")),
             onClick = onQuoteClick,
-            quoteText = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default"))
         )
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
@@ -314,31 +314,28 @@ fun TodayScreen(
             verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
         ) {
 
-            TimeBlock(
+            com.example.kairosapplication.ui.glass.GlassTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_ANYTIME,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_ANYTIME),
                 count = anytimeTasks.size,
-                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_ANYTIME),
                 icon = Icons.Default.AccessTime,
                 expanded = anytimeExpanded,
                 onToggle = { anytimeExpanded = !anytimeExpanded },
                 tasks = anytimeTasks,
                 viewDate = currentDate,
                 onToggleComplete = { task -> onTaskCompleteToggle(task) },
-                // Edit path: card tap sets editingTask to open the bottom sheet.
                 onOpenDetail = { clickedTask -> editingTask = clickedTask },
                 onSwipeDelete = handleSwipeDelete,
                 onTaskDragEnd = handleTaskDragEnd,
                 onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
                 onBlockBounds = { label, rect -> blockBounds[label] = rect },
-                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME) }
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME) },
             )
 
-            TimeBlock(
+            com.example.kairosapplication.ui.glass.GlassTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_MORNING,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_MORNING),
                 count = morningTasks.size,
-                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_MORNING),
                 icon = Icons.Default.WbTwilight,
                 expanded = morningExpanded,
                 onToggle = { morningExpanded = !morningExpanded },
@@ -350,14 +347,13 @@ fun TodayScreen(
                 onTaskDragEnd = handleTaskDragEnd,
                 onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
                 onBlockBounds = { label, rect -> blockBounds[label] = rect },
-                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_MORNING) }
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_MORNING) },
             )
 
-            TimeBlock(
+            com.example.kairosapplication.ui.glass.GlassTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_AFTERNOON,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_AFTERNOON),
                 count = afternoonTasks.size,
-                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_AFTERNOON),
                 icon = Icons.Default.WbSunny,
                 expanded = afternoonExpanded,
                 onToggle = { afternoonExpanded = !afternoonExpanded },
@@ -369,14 +365,13 @@ fun TodayScreen(
                 onTaskDragEnd = handleTaskDragEnd,
                 onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
                 onBlockBounds = { label, rect -> blockBounds[label] = rect },
-                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_AFTERNOON) }
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_AFTERNOON) },
             )
 
-            TimeBlock(
+            com.example.kairosapplication.ui.glass.GlassTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_EVENING,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_EVENING),
                 count = eveningTasks.size,
-                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_EVENING),
                 icon = Icons.Default.DarkMode,
                 expanded = eveningExpanded,
                 onToggle = { eveningExpanded = !eveningExpanded },
@@ -388,7 +383,7 @@ fun TodayScreen(
                 onTaskDragEnd = handleTaskDragEnd,
                 onDragHandleY = { id, y -> dragHandleCenterY[id] = y },
                 onBlockBounds = { label, rect -> blockBounds[label] = rect },
-                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_EVENING) }
+                onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_EVENING) },
             )
 
             Spacer(Modifier.height(AppSpacing.SectionXLarge))

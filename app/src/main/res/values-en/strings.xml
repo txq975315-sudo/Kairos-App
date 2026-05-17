@@ -62,6 +62,9 @@
     <string name="i18n_privacy_settings">Privacy</string>
     <string name="i18n_other_settings">Other</string>
     <string name="i18n_experimental">Experimental</string>
+    <string name="i18n_glass_ui_title">Glass UI (Beta)</string>
+    <string name="i18n_glass_ui_subtitle">Experimental premium interface with water-lily atmosphere and glass navigation</string>
+    <string name="i18n_glass_tab_coming_soon">More screens coming soon</string>
     <string name="i18n_daily_reminder">Daily Reminder</string>
     <string name="i18n_daily_reminder_time">Reminder Time</string>
     <string name="i18n_daily_reflection">Daily Reflection</string>

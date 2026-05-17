@@ -20,6 +20,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerLayoutType
@@ -112,6 +114,51 @@ fun SettingsSwitchRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(label, color = SettingsTitleC, fontSize = 15.sp)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = SettingsSwitchBlue,
+                checkedTrackColor = SettingsSwitchBlue.copy(alpha = 0.5f),
+                uncheckedThumbColor = SettingsSwitchThumbOff,
+                uncheckedTrackColor = SettingsSwitchThumbOff.copy(alpha = 0.35f)
+            )
+        )
+    }
+}
+
+@Composable
+fun SettingsSwitchRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp, horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = SettingsTitleC,
+                modifier = Modifier.padding(end = 16.dp)
+            )
+            Column {
+                Text(title, color = SettingsTitleC, fontSize = 15.sp)
+                if (subtitle != null) {
+                    Text(subtitle, color = SettingsSubC, fontSize = 12.sp)
+                }
+            }
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,

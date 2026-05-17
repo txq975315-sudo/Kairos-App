@@ -2,11 +2,13 @@ package com.example.kairosapplication.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.constants.GlassConstants
 
 /** Page chrome background; same as [AppColors.ScreenBackground]. */
 val BackgroundColor = AppColors.ScreenBackground
-val PrimaryTextColor = AppColors.PrimaryText
-val SecondaryTextColor = AppColors.SecondaryText
+/** Chrome on atmosphere background (unified glass UI). */
+val PrimaryTextColor = GlassConstants.TextPrimary
+val SecondaryTextColor = GlassConstants.TextSecondary
 
 val AnytimeBackground = AppColors.AnytimeBackground
 val MorningBackground = AppColors.MorningBackground

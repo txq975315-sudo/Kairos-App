@@ -1,5 +1,10 @@
 package com.example.kairosapplication
 
+import com.example.kairosapplication.ui.KairosAtmosphereBackground
+import com.example.kairosapplication.ui.glass.GlassBottomNav
+import com.example.kairosapplication.ui.glass.GlassTextColors
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
+import com.example.kairosapplication.ui.glass.glassMainNavTabs
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -270,7 +275,8 @@ fun MainScreen(
         if (bootReady && !needsLanguageOnboarding) {
             CompositionLocalProvider(
                 LocalCurrentLanguage provides languageState,
-                LocalUrgencyConfig provides urgencyConfig
+                LocalUrgencyConfig provides urgencyConfig,
+                LocalGlassTextColors provides GlassTextColors(),
             ) {
     if (overlay != null) {
         AnimatedContent(
@@ -303,9 +309,10 @@ fun MainScreen(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                MainAppBottomBar(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
+                GlassBottomNav(
+                    selectedIndex = selectedTab.ordinal,
+                    onTabSelected = { selectedTab = AppTab.entries[it] },
+                    tabs = glassMainNavTabs(),
                 )
             }
         }
@@ -328,7 +335,7 @@ fun MainScreen(
                             taskViewModel = taskViewModel,
                             widgetEditTaskId = pendingWidgetEditTaskId,
                             onConsumedWidgetEditIntent = { pendingWidgetEditTaskId = null },
-                            widgetCreateSheetNonce = widgetCreateSheetNonce
+                            widgetCreateSheetNonce = widgetCreateSheetNonce,
                         )
                     }
                     composable("create") {
@@ -605,157 +612,6 @@ fun MainScreen(
                     }
                 },
             )
-        }
-    }
-}
-
-/**
- * Full-bleed atmosphere art + **layered translucency only** (no RenderEffect blur):
- * white scatter + sage mist gradient so the painting stays soft and “unreadable” at a glance.
- */
-@Composable
-private fun KairosAtmosphereBackground(modifier: Modifier = Modifier) {
-    Box(modifier = modifier) {
-        Image(
-            painter = painterResource(R.drawable.kairos_atmosphere_bg),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color.White.copy(alpha = 0.14f)),
-        )
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0f to Color.White.copy(alpha = 0.10f),
-                            0.36f to Color(0xFFE6EBE6).copy(alpha = 0.34f),
-                            0.68f to Color(0xFFDFE6DF).copy(alpha = 0.42f),
-                            1f to Color(0xFFD8E0D8).copy(alpha = 0.48f),
-                        ),
-                    ),
-                ),
-        )
-    }
-}
-
-/**
- * Main bottom nav as a **floating frosted island** (neutral veil gradient + hairline rim).
- * Icons and labels stay sharp: never apply [Modifier.blur] to a layer that also draws tab content —
- * blur would composite the entire subtree (including text/icons) into a blurred texture.
- */
-@Composable
-private fun MainAppBottomBar(
-    selectedTab: AppTab,
-    onTabSelected: (AppTab) -> Unit,
-) {
-    val pillShape = RoundedCornerShape(AppShapes.ProminentRadius)
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 14.dp, vertical = 7.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(
-                    elevation = 12.dp,
-                    shape = pillShape,
-                    ambientColor = Color.Black.copy(alpha = 0.07f),
-                    spotColor = Color.Black.copy(alpha = 0.10f),
-                    clip = false,
-                )
-                .clip(pillShape)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0f to AppColors.BottomBarGlassVeilTop,
-                            0.42f to AppColors.BottomBarGlassVeilTop.copy(alpha = 0.88f),
-                            1f to AppColors.BottomBarGlassVeilBottom,
-                        ),
-                    ),
-                    shape = pillShape,
-                )
-                .border(width = 1.dp, color = AppColors.BottomBarGlassStroke, shape = pillShape),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(AppColors.BottomBarGlassRim),
-            )
-            HorizontalDivider(
-                thickness = 0.5.dp,
-                color = Color.White.copy(alpha = 0.22f),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0f to Color.Black.copy(alpha = 0.03f),
-                                1f to Color.Transparent,
-                            ),
-                        ),
-                    ),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                AppTab.entries.forEach { tab ->
-                    val selected = selectedTab == tab
-                    val labelText = mainNavLabel(tab)
-                    val interaction = remember(tab) { MutableInteractionSource() }
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable(
-                                interactionSource = interaction,
-                                indication = null,
-                            ) { onTabSelected(tab) }
-                            .padding(top = 0.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
-                                .background(
-                                    if (selected) AppColors.BottomBarSelectedContainer
-                                    else Color.Transparent,
-                                )
-                                .padding(horizontal = 16.dp, vertical = 5.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = tab.icon,
-                                    contentDescription = labelText,
-                                    modifier = Modifier.size(22.dp),
-                                    tint = if (selected) PrimaryTextColor else SecondaryTextColor,
-                                )
-                                Text(
-                                    text = labelText,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (selected) PrimaryTextColor else SecondaryTextColor,
-                                    modifier = Modifier.padding(top = 3.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

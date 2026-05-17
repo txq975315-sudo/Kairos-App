@@ -67,7 +67,6 @@ class DataStoreManager(context: Context) {
     private val keyDailyReminderTime = stringPreferencesKey(KEY_SETTINGS_DAILY_REMINDER_TIME)
     private val keyDailyReflection = booleanPreferencesKey(KEY_SETTINGS_DAILY_REFLECTION)
     private val keyDailyReflectionTime = stringPreferencesKey(KEY_SETTINGS_DAILY_REFLECTION_TIME)
-
     val profileFlow: Flow<LocalProfile> = dataStore.data.map { prefs ->
         decodeProfile(prefs[KEY_PROFILE_JSON])
     }
