@@ -85,7 +85,7 @@ fun glassMainNavTabs(): List<GlassBottomNavTab> = listOf(
 )
 
 /**
- * Unified bottom dock: one background slab (top hairline only) + fixed-size glass chip on selection.
+ * Unified bottom dock: frosted plate (route C) + top hairline + fixed-size glass chip on selection.
  */
 @Composable
 fun GlassBottomNav(
@@ -97,48 +97,54 @@ fun GlassBottomNav(
     val chrome = LocalGlassAtmosphereUi.current.bottomChrome
     val flatFrost = GlassConstants.usesBackdropBlur
     val topLineColor = Color.White.copy(alpha = GlassConstants.BottomNavTopBorderAlpha)
-    val barFill = Color.Black.copy(alpha = GlassConstants.BottomNavFillAlpha)
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (!flatFrost) {
-                    Modifier.shadow(
-                        elevation = GlassConstants.GlassShadowElevation,
-                        shape = RectangleShape,
-                        ambientColor = Color.Black.copy(alpha = GlassConstants.ShadowAmbientAlpha),
-                        spotColor = Color.Black.copy(alpha = GlassConstants.ShadowSpotAlpha),
-                    )
-                } else {
-                    Modifier
-                },
-            )
-            .background(barFill),
-    ) {
-        Box(
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(GlassConstants.GlassBorderWidth)
-                .background(topLineColor),
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(GlassConstants.BottomNavTabSlotHeight)
-                .padding(horizontal = GlassConstants.BottomNavPaddingHorizontal),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
+                .then(
+                    if (flatFrost) {
+                        Modifier.glassBottomNavDock()
+                    } else {
+                        Modifier
+                            .shadow(
+                                elevation = GlassConstants.GlassShadowElevation,
+                                shape = RectangleShape,
+                                ambientColor = Color.Black.copy(alpha = GlassConstants.ShadowAmbientAlpha),
+                                spotColor = Color.Black.copy(alpha = GlassConstants.ShadowSpotAlpha),
+                            )
+                            .glassBottomNavDock()
+                    },
+                ),
         ) {
-            tabs.forEachIndexed { index, tab ->
-                GlassNavItem(
-                    tab = tab,
-                    selected = index == selectedIndex,
-                    chrome = chrome,
-                    onClick = { onTabSelected(index) },
-                    modifier = Modifier.weight(1f),
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(GlassConstants.GlassBorderWidth)
+                    .background(topLineColor),
+            )
+
+            if (flatFrost) {
+                Spacer(Modifier.height(GlassConstants.BottomNavDockTopExtension))
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(GlassConstants.BottomNavTabSlotHeight)
+                    .padding(horizontal = GlassConstants.BottomNavPaddingHorizontal),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                tabs.forEachIndexed { index, tab ->
+                    GlassNavItem(
+                        tab = tab,
+                        selected = index == selectedIndex,
+                        chrome = chrome,
+                        onClick = { onTabSelected(index) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
 

@@ -47,9 +47,11 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.PublishedNoteActionDialogsHost
 import com.example.kairosapplication.ui.components.NoteCard
+import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.components.NoteCardVariant
 import com.example.kairosapplication.ui.components.NoteTimelineIntegrated
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
@@ -73,12 +75,12 @@ fun ProjectTimelineScreen(
     embedded: Boolean = false,
     integratedNotes: Boolean = false,
     accentColor: Color = Color(0xFF5C6BC0),
-    contentPrimary: Color = PrimaryTextColor,
-    contentSecondary: Color = SecondaryTextColor,
-    lightForeground: Boolean = false,
     /** When set (e.g. Essay tab), used for note action row; otherwise falls back to publish-only actions. */
     notePublishedActions: ((Note) -> PublishedNoteCardActions)? = null,
 ) {
+    val scrollText = LocalGlassTextColors.current
+    val contentPrimary = scrollText.primary
+    val contentSecondary = scrollText.secondary
     val uiState by taskViewModel.uiState.collectAsState()
     val projectName = uiState.noteProjects.find { it.id == projectId }?.name ?: "Project"
     val projectsById = remember(uiState.noteProjects) {
@@ -277,7 +279,6 @@ fun ProjectTimelineScreen(
                                                         }
                                                 },
                                                 publishedActions = resolvePublishedActions(note),
-                                                lightForeground = lightForeground
                                             )
                                         } else {
                                             ProjectTimelineGutterRow {
@@ -318,7 +319,6 @@ fun ProjectTimelineScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BackgroundColor)
                     .padding(bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -396,9 +396,9 @@ private fun ProjectTimelineGutterRow(
         ) {
             Box(
                 modifier = Modifier
-                    .width(2.dp)
+                    .width(1.dp)
                     .fillMaxHeight()
-                    .background(AppColors.TimelineLine)
+                    .background(NoteCardConstants.TimelineConnectorColor)
             )
         }
         Box(modifier = Modifier.weight(1f)) {

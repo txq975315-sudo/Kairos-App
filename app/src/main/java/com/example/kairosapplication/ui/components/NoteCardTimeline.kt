@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+
+import com.example.kairosapplication.ui.glass.GlassNoteCardShell
+import com.example.kairosapplication.ui.glass.GlassTextColors
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,6 +63,9 @@ fun NoteCardTimeline(
     timelineCompactThreeLines: Boolean = false,
     /** Optional custom card background color with opacity applied. */
     cardBackgroundOverride: Color? = null,
+    showTimeConnectorAbove: Boolean = false,
+    showTimeConnectorBelow: Boolean = false,
+    externalTimeRail: Boolean = false,
 ) {
     val zone = ZoneId.systemDefault()
     val timeStr = remember(note.createdAt) {
@@ -91,122 +97,130 @@ fun NoteCardTimeline(
         expandable && !expanded -> 3
         else -> Int.MAX_VALUE
     }
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable {
-                if (expandable) onToggleExpand() else onNoteClick(note.id)
-            },
-        verticalAlignment = Alignment.Top
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .width(40.dp)
-                .fillMaxHeight()
+    val cardText = LocalGlassTextColors.current
+
+    if (externalTimeRail) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .clickable {
+                    if (expandable) onToggleExpand() else onNoteClick(note.id)
+                },
         ) {
-            Text(
-                text = timeStr,
-                fontSize = 12.sp,
-                color = AppColors.HintText
-            )
-            Spacer(Modifier.height(4.dp))
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .weight(1f)
-                    .background(AppColors.TimelineLine)
+            NoteCardTimelineShell(
+                shellModifier = Modifier.fillMaxWidth(),
+                note = note,
+                categoryEmoji = categoryEmoji,
+                categoryLabel = categoryLabel,
+                secondaryLine = secondaryLine,
+                headlineTopic = headlineTopic,
+                tagsPreview = tagsPreview,
+                projectFirstName = projectFirstName,
+                projectCount = projectCount,
+                bodyMaxLines = bodyMaxLines,
+                timelineCompactThreeLines = timelineCompactThreeLines,
+                expanded = expanded,
+                expandable = expandable,
+                cardText = cardText,
+                onNoteClick = onNoteClick,
+                publishedActions = publishedActions,
             )
         }
-        Spacer(Modifier.width(12.dp))
-        val cardShape = RoundedCornerShape(AppShapes.CardRadius)
-        val glassBrush = Brush.verticalGradient(
-            colorStops = arrayOf(
-                0f to AppColors.TaskCardGlassTop,
-                0.42f to AppColors.TaskCardGlassMid,
-                1f to AppColors.TaskCardGlassBottom,
-            ),
-        )
-        val innerGlowBrush = Brush.verticalGradient(
-            colorStops = arrayOf(
-                0f to AppColors.TaskCardGlassInnerGlow,
-                0.3f to Color.Transparent,
-                0.7f to Color.Transparent,
-                1f to AppColors.TaskCardGlassInnerGlow.copy(alpha = 0.2f),
-            ),
-        )
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .shadow(
-                    elevation = AppColors.TaskCardShadowElevation,
-                    shape = cardShape,
-                    ambientColor = AppColors.TaskCardShadowColor,
-                    spotColor = Color(0xFF1A2850).copy(alpha = 0.15f),
-                )
-                .clip(cardShape)
-                .border(
-                    width = 1.1.dp,
-                    color = AppColors.TaskCardGlassHairline,
-                    shape = cardShape
-                ),
-            shape = cardShape,
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    } else {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .clickable {
+                    if (expandable) onToggleExpand() else onNoteClick(note.id)
+                },
+            verticalAlignment = Alignment.Top,
         ) {
-            Box {
-                // Layer 1: Glass gradient base
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .clip(cardShape)
-                        .background(glassBrush)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .width(40.dp)
+                    .fillMaxHeight(),
+            ) {
+                if (showTimeConnectorAbove) {
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .weight(1f)
+                            .background(NoteCardConstants.TimelineConnectorColor),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+                Text(
+                    text = timeStr,
+                    fontSize = 12.sp,
+                    color = cardText.muted,
                 )
-                // Layer 2: Gray mist overlay (simulated blur)
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .clip(cardShape)
-                        .blur(AppColors.TaskCardBlurRadius)
-                        .background(AppColors.TaskCardGrayMist)
-                )
-                // Layer 3: Inner glow
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .clip(cardShape)
-                        .blur(AppColors.TaskCardBlurRadius)
-                        .background(innerGlowBrush)
-                )
-                // Layer 4: Top veil (extra glass sheen)
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .clip(cardShape)
-                        .background(AppColors.GlassFill.copy(alpha = 0.07f))
-                )
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            start = AppSpacing.CardHorizontal,
-                            end = AppSpacing.CardHorizontal,
-                            top = AppSpacing.CardVertical,
-                            bottom = AppSpacing.CardVertical
-                        )
-                ) {
+                if (showTimeConnectorBelow) {
+                    Spacer(Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .weight(1f)
+                            .background(NoteCardConstants.TimelineConnectorColor),
+                    )
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            NoteCardTimelineShell(
+                shellModifier = Modifier.weight(1f),
+                note = note,
+                categoryEmoji = categoryEmoji,
+                categoryLabel = categoryLabel,
+                secondaryLine = secondaryLine,
+                headlineTopic = headlineTopic,
+                tagsPreview = tagsPreview,
+                projectFirstName = projectFirstName,
+                projectCount = projectCount,
+                bodyMaxLines = bodyMaxLines,
+                timelineCompactThreeLines = timelineCompactThreeLines,
+                expanded = expanded,
+                expandable = expandable,
+                cardText = cardText,
+                onNoteClick = onNoteClick,
+                publishedActions = publishedActions,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NoteCardTimelineShell(
+    shellModifier: Modifier,
+    note: Note,
+    categoryEmoji: String,
+    categoryLabel: String,
+    secondaryLine: String,
+    headlineTopic: String,
+    tagsPreview: String,
+    projectFirstName: String?,
+    projectCount: Int,
+    bodyMaxLines: Int,
+    timelineCompactThreeLines: Boolean,
+    expanded: Boolean,
+    expandable: Boolean,
+    cardText: GlassTextColors,
+    onNoteClick: (Long) -> Unit,
+    publishedActions: PublishedNoteCardActions?,
+) {
+    GlassNoteCardShell(modifier = shellModifier) {
                 if (timelineCompactThreeLines && !expanded) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        TimelineCardCategoryEmoji(emoji = categoryEmoji, accent = categoryColor)
+                        NoteCategoryIconTile(emoji = categoryEmoji, fontSizeSp = 18)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = headlineTopic,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.PrimaryText,
+                                color = cardText.primary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -215,7 +229,7 @@ fun NoteCardTimeline(
                                 text = note.behaviorSummary.ifBlank { "—" },
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.PrimaryText,
+                                color = cardText.primary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -223,7 +237,7 @@ fun NoteCardTimeline(
                             Text(
                                 text = note.body.ifBlank { " " },
                                 fontSize = 13.sp,
-                                color = AppColors.SecondaryText,
+                                color = cardText.secondary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 lineHeight = 15.sp
@@ -235,13 +249,13 @@ fun NoteCardTimeline(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        TimelineCardCategoryEmoji(emoji = categoryEmoji, accent = categoryColor)
+                        NoteCategoryIconTile(emoji = categoryEmoji, fontSizeSp = 18)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = categoryLabel,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.PrimaryText,
+                                color = cardText.primary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -250,7 +264,7 @@ fun NoteCardTimeline(
                                     text = secondaryLine,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = AppColors.SecondaryText,
+                                    color = cardText.secondary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -286,8 +300,8 @@ fun NoteCardTimeline(
                             review = parsedReview,
                             expanded = expanded || !expandable,
                             collapsedMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE,
-                            textColor = AppColors.HintText,
-                            timestampColor = AppColors.HintText,
+                            textColor = cardText.muted,
+                            timestampColor = cardText.muted,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -300,12 +314,12 @@ fun NoteCardTimeline(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            MoodOrEmoji(note.moodIcon, tint = AppColors.SecondaryText)
+                            MoodOrEmoji(note.moodIcon, tint = cardText.secondary)
                             if (tagsPreview.isNotBlank()) {
                                 Text(
                                     text = tagsPreview,
                                     fontSize = 12.sp,
-                                    color = AppColors.HintText,
+                                    color = cardText.muted,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false)
@@ -342,29 +356,10 @@ fun NoteCardTimeline(
                             onClick = { onNoteClick(note.id) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
+                            Text(LocalizedStrings.get("note_card_edit"), color = cardText.primary)
                         }
                     }
                 }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TimelineCardCategoryEmoji(
-    emoji: String,
-    accent: Color,
-) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
-            .background(accent.copy(alpha = 0.14f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = emoji, fontSize = 18.sp)
     }
 }
 

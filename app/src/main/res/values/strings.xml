@@ -58,6 +58,11 @@
     <string name="i18n_settings">设置</string>
     <string name="i18n_notification_settings">通知设置</string>
     <string name="i18n_theme_settings">主题设置</string>
+    <string name="i18n_atmosphere_background_settings">背景</string>
+    <string name="i18n_atmosphere_background_section">背景</string>
+    <string name="i18n_atmosphere_background_row">背景壁纸</string>
+    <string name="i18n_change_atmosphere_background">更换背景图</string>
+    <string name="i18n_restore_default_atmosphere_background">恢复默认背景</string>
     <string name="i18n_mood_settings">心情与反思</string>
     <string name="i18n_widget_settings">小组件设置</string>
     <string name="i18n_language_settings">语言设置</string>
@@ -76,6 +81,9 @@
     <string name="i18n_light_mode">浅色模式</string>
     <string name="i18n_dark_mode_option">深色模式</string>
     <string name="i18n_theme_color">主题色彩</string>
+    <string name="i18n_ui_theme">界面风格</string>
+    <string name="i18n_ui_theme_glass">玻璃（Glass）</string>
+    <string name="i18n_ui_theme_classic">经典（Classic）</string>
     <string name="i18n_vitality_blue">活力蓝</string>
     <string name="i18n_forest_green">森林绿</string>
     <string name="i18n_soft_pink">柔粉</string>

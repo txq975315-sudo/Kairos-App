@@ -31,6 +31,7 @@ import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.taskmodel.model.Note
 import java.time.LocalDate
 import java.time.Month
@@ -47,9 +48,6 @@ fun TopicNotesYearMonthTimeline(
     notes: List<Note>,
     integratedLayout: Boolean,
     accentColor: Color,
-    lightForeground: Boolean,
-    headerPrimary: Color,
-    headerSecondary: Color,
     projectsById: Map<Long, String>,
     expandedNoteId: Long?,
     onToggleExpand: (Long) -> Unit,
@@ -57,6 +55,7 @@ fun TopicNotesYearMonthTimeline(
     publishedNoteActions: (Note) -> PublishedNoteCardActions,
     modifier: Modifier = Modifier,
 ) {
+    val scrollText = LocalGlassTextColors.current
     val sorted = remember(notes) {
         notes.sortedWith(
             compareByDescending<Note> { it.recordedDate }
@@ -96,7 +95,7 @@ fun TopicNotesYearMonthTimeline(
                 Text(
                     text = LocalizedStrings.get("essay_topic_empty_notes"),
                     fontSize = 14.sp,
-                    color = headerSecondary,
+                    color = scrollText.secondary,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
@@ -115,8 +114,8 @@ fun TopicNotesYearMonthTimeline(
                             expandedYears =
                                 if (year in expandedYears) expandedYears - year else expandedYears + year
                         },
-                        titleColor = headerPrimary,
-                        iconTint = headerSecondary
+                        titleColor = scrollText.primary,
+                        iconTint = scrollText.secondary
                     )
                 }
                 if (yearExpanded) {
@@ -142,8 +141,8 @@ fun TopicNotesYearMonthTimeline(
                                             expandedMonths + monthKey
                                         }
                                 },
-                                titleColor = headerPrimary,
-                                iconTint = headerSecondary,
+                                titleColor = scrollText.primary,
+                                iconTint = scrollText.secondary,
                                 locale = topicLocale
                             )
                         }
@@ -157,46 +156,29 @@ fun TopicNotesYearMonthTimeline(
                                 .entries
                                 .sortedByDescending { it.key }
                             dateGroups.forEach { (date, dayNotes) ->
+                                val sortedDayNotes = dayNotes.sortedByDescending { it.createdAt }
                                 item(key = "td_${year}_${month}_$date") {
-                                    TopicTimelineDateRow(
-                                        date = date,
-                                        titleColor = headerPrimary,
-                                        locale = topicLocale,
-                                        useChineseDates = topicLang == LocalizationManager.Language.ZH
-                                    )
-                                }
-                                items(
-                                    items = dayNotes.sortedByDescending { it.createdAt },
-                                    key = { it.id }
-                                ) { note ->
                                     if (integratedLayout) {
-                                        NoteTimelineIntegrated(
-                                            note = note,
+                                        TimelineIntegratedDayBlock(
+                                            date = date,
+                                            notes = sortedDayNotes,
                                             accentColor = accentColor,
-                                            onNoteClick = onOpenNoteEditor,
+                                            onOpenNoteEditor = onOpenNoteEditor,
+                                            expandedNoteId = expandedNoteId,
+                                            onToggleExpand = onToggleExpand,
                                             projectsById = projectsById,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(bottom = 12.dp),
-                                            expandable = true,
-                                            expanded = note.id == expandedNoteId,
-                                            onToggleExpand = { onToggleExpand(note.id) },
-                                            publishedActions = publishedNoteActions(note),
-                                            lightForeground = lightForeground
+                                            publishedNoteActions = publishedNoteActions,
                                         )
                                     } else {
-                                        NoteCard(
-                                            note = note,
-                                            variant = NoteCardVariant.TIMELINE,
-                                            onNoteClick = onOpenNoteEditor,
+                                        TimelineCardDayBlock(
+                                            date = date,
+                                            notes = sortedDayNotes,
+                                            showYearOnHeader = false,
+                                            onOpenNoteEditor = onOpenNoteEditor,
+                                            expandedNoteId = expandedNoteId,
+                                            onToggleExpand = onToggleExpand,
                                             projectsById = projectsById,
-                                            expandable = true,
-                                            expanded = note.id == expandedNoteId,
-                                            onToggleExpand = { onToggleExpand(note.id) },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(bottom = AppSpacing.BlockGap),
-                                            publishedActions = publishedNoteActions(note)
+                                            publishedNoteActions = publishedNoteActions,
                                         )
                                     }
                                 }

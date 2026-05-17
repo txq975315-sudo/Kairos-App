@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
 import androidx.compose.material.icons.filled.Spa
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteSecondaryCategories
 
@@ -92,6 +93,15 @@ object NoteCardConstants {
 
     fun categoryEmoji(key: String): String =
         PRIMARY_CATEGORY_EMOJI[key] ?: "📝"
+
+    /** Shared emoji tile wash — project-card style, slightly more transparent. */
+    private const val CategoryIconTileAlpha = 0.45f
+
+    fun categoryIconTileBackground(): Color =
+        AppColors.MorningBackground.copy(alpha = CategoryIconTileAlpha)
+
+    /** Thin rail between left-side note times (card timeline). */
+    val TimelineConnectorColor = Color.White.copy(alpha = 0.32f)
 
     fun categoryIcon(key: String): ImageVector = when (key) {
         NotePrimaryCategory.FREESTYLE -> Icons.Filled.AutoStories

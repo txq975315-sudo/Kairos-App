@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.kairosapplication.data.DataExporter
 import com.example.kairosapplication.data.DataImporter
 import com.example.kairosapplication.data.DataStoreManager
+import com.example.kairosapplication.core.ui.AppUiTheme
 import com.example.kairosapplication.model.ExportData
 import com.example.taskmodel.repository.NoteRepository
 import com.example.taskmodel.repository.TaskRepository
@@ -59,6 +60,9 @@ class SettingsViewModel(
     val themeColor: StateFlow<String> = dataStoreManager.getThemeColor()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "blue")
 
+    val uiTheme: StateFlow<String> = dataStoreManager.getUiTheme()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppUiTheme.STORAGE_GLASS)
+
     val language: StateFlow<String> = dataStoreManager.getLanguage()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "zh")
 
@@ -84,6 +88,17 @@ class SettingsViewModel(
 
     fun setThemeColor(color: String) {
         viewModelScope.launch { dataStoreManager.setThemeColor(color) }
+    }
+
+    fun setUiTheme(theme: String) {
+        viewModelScope.launch { dataStoreManager.setUiTheme(theme) }
+    }
+
+    val atmosphereWallpaperUri: StateFlow<String?> = dataStoreManager.getAtmosphereWallpaperUri()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setAtmosphereWallpaperUri(uri: String?) {
+        viewModelScope.launch { dataStoreManager.setAtmosphereWallpaperUri(uri) }
     }
 
     fun setLanguage(language: String) {

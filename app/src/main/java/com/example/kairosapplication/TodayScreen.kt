@@ -1,5 +1,6 @@
 package com.example.kairosapplication
 
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.ui.components.*
 import android.content.Intent
 import android.net.Uri
@@ -199,6 +200,7 @@ fun TodayScreen(
     var createSheetTaskDate by remember { mutableStateOf(LocalDate.now()) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
     var detailTask by remember { mutableStateOf<Task?>(null) }
+    val appUiTheme = LocalAppUiTheme.current
 
     LaunchedEffect(widgetEditTaskId, allTasks) {
         val id = widgetEditTaskId ?: return@LaunchedEffect
@@ -217,11 +219,7 @@ fun TodayScreen(
         createLabel = null
         createReminderTime = null
         createSheetTaskDate = currentDate
-        createSheetConfig = CreateSheetConfig(
-            timeBlock = timeBlock,
-            backgroundColor = TaskUtils.getTimeBlockColor(timeBlock),
-            titleColor = TaskUtils.getTimeBlockTitleColor(timeBlock)
-        )
+        createSheetConfig = CreateTaskSheetThemes.forUiTheme(appUiTheme, timeBlock)
     }
 
     LaunchedEffect(widgetCreateSheetNonce) {
@@ -457,11 +455,7 @@ fun TodayScreen(
                 createLabel = meta.label
             },
             onTimeBlockChange = { newTimeBlock ->
-                createSheetConfig = createSheetConfig?.copy(
-                    timeBlock = newTimeBlock,
-                    backgroundColor = TaskUtils.getTimeBlockColor(newTimeBlock),
-                    titleColor = TaskUtils.getTimeBlockTitleColor(newTimeBlock)
-                )
+                createSheetConfig = CreateTaskSheetThemes.forUiTheme(appUiTheme, newTimeBlock)
             },
             sheetTaskDate = createSheetTaskDate,
             onSheetTaskDateChange = { createSheetTaskDate = it },

@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.kairosapplication.core.ui.AppUiTheme
 import com.example.kairosapplication.widget.data.WidgetConfig
 import com.example.kairosapplication.widget.data.WidgetSize
 import com.example.kairosapplication.widget.data.decodeWidgetConfig
@@ -55,8 +56,10 @@ class DataStoreManager(context: Context) {
 
     private val keyDarkMode = stringPreferencesKey(KEY_SETTINGS_DARK_MODE)
     private val keyThemeColor = stringPreferencesKey(KEY_SETTINGS_THEME_COLOR)
+    private val keyUiTheme = stringPreferencesKey(KEY_SETTINGS_UI_THEME)
     private val keyEssayTimelineLayout = stringPreferencesKey("essay_timeline_layout")
     private val keyEssayIntegratedWallpaperUri = stringPreferencesKey("essay_integrated_wallpaper_uri")
+    private val keyAtmosphereWallpaperUri = stringPreferencesKey("atmosphere_wallpaper_uri")
     private val keyEssayCardBgType = stringPreferencesKey("essay_card_bg_type")
     private val keyEssayCardBgColor = stringPreferencesKey("essay_card_bg_color")
     private val keyEssayCardBgImageUri = stringPreferencesKey("essay_card_bg_image_uri")
@@ -157,6 +160,16 @@ class DataStoreManager(context: Context) {
         normalizeThemeColor(prefs[keyThemeColor])
     }
 
+    fun getUiTheme(): Flow<String> = dataStore.data.map { prefs ->
+        normalizeUiTheme(prefs[keyUiTheme])
+    }
+
+    suspend fun setUiTheme(theme: String) {
+        dataStore.edit { prefs ->
+            prefs[keyUiTheme] = normalizeUiThemeForStore(theme)
+        }
+    }
+
     /** `"card"` (default) or `"integrated"` (pure / no card chrome). */
     fun getEssayTimelineLayout(): Flow<String> = dataStore.data.map { prefs ->
         if (prefs[keyEssayTimelineLayout] == "integrated") "integrated" else "card"
@@ -179,6 +192,21 @@ class DataStoreManager(context: Context) {
                 prefs.remove(keyEssayIntegratedWallpaperUri)
             } else {
                 prefs[keyEssayIntegratedWallpaperUri] = uri
+            }
+        }
+    }
+
+    /** Content URI for app-wide Glass atmosphere wallpaper; null = built-in default. */
+    fun getAtmosphereWallpaperUri(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[keyAtmosphereWallpaperUri]?.takeIf { it.isNotBlank() }
+    }
+
+    suspend fun setAtmosphereWallpaperUri(uri: String?) {
+        dataStore.edit { prefs ->
+            if (uri.isNullOrBlank()) {
+                prefs.remove(keyAtmosphereWallpaperUri)
+            } else {
+                prefs[keyAtmosphereWallpaperUri] = uri
             }
         }
     }
@@ -437,6 +465,7 @@ class DataStoreManager(context: Context) {
     companion object {
         const val KEY_SETTINGS_DARK_MODE = "settings_dark_mode"
         const val KEY_SETTINGS_THEME_COLOR = "settings_theme_color"
+        const val KEY_SETTINGS_UI_THEME = "settings_ui_theme"
         const val KEY_SETTINGS_LANGUAGE = "settings_language"
         const val KEY_SETTINGS_DAILY_REMINDER = "settings_daily_reminder"
         const val KEY_SETTINGS_DAILY_REMINDER_TIME = "settings_daily_reminder_time"
@@ -520,6 +549,12 @@ class DataStoreManager(context: Context) {
             "green", "pink", "orange", "blue" -> color
             else -> "blue"
         }
+
+    private fun normalizeUiTheme(raw: String?): String =
+        if (raw == AppUiTheme.STORAGE_CLASSIC) AppUiTheme.STORAGE_CLASSIC else AppUiTheme.STORAGE_GLASS
+
+    private fun normalizeUiThemeForStore(theme: String): String =
+        if (theme == AppUiTheme.STORAGE_CLASSIC) AppUiTheme.STORAGE_CLASSIC else AppUiTheme.STORAGE_GLASS
 
     private fun normalizeLanguage(raw: String?): String {
         if (raw.isNullOrBlank()) return "zh"

@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppUiTheme
 import com.example.kairosapplication.i18n.LocalizedStrings
 
 @Composable
@@ -29,6 +30,7 @@ fun ThemeSettingsScreen(
 ) {
     val dark by viewModel.darkMode.collectAsState()
     val theme by viewModel.themeColor.collectAsState()
+    val uiTheme by viewModel.uiTheme.collectAsState()
 
     SettingsL2Scaffold(
         title = LocalizedStrings.get("theme_settings"),
@@ -43,6 +45,25 @@ fun ThemeSettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Spacer(Modifier.height(8.dp))
+            SettingsGroupCard(title = LocalizedStrings.get("ui_theme")) {
+                listOf(AppUiTheme.STORAGE_GLASS, AppUiTheme.STORAGE_CLASSIC).forEach { key ->
+                    val label = when (key) {
+                        AppUiTheme.STORAGE_CLASSIC -> LocalizedStrings.get("ui_theme_classic")
+                        else -> LocalizedStrings.get("ui_theme_glass")
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setUiTheme(key) }
+                            .padding(vertical = 6.dp),
+                    ) {
+                        RadioButton(selected = uiTheme == key, onClick = { viewModel.setUiTheme(key) })
+                        Text(label, fontSize = 15.sp, color = SettingsTitleC)
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
             SettingsGroupCard(title = LocalizedStrings.get("dark_mode")) {
                 listOf("system", "light", "dark").forEach { key ->
                     val label = when (key) {

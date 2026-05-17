@@ -19,8 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import com.example.kairosapplication.ui.glass.GlassNoteCardShell
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,9 +56,11 @@ import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.topic.TopicDisplayStrings
-import com.example.kairosapplication.ui.theme.BackgroundColor
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
+import androidx.compose.ui.text.TextStyle
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
 import com.example.taskmodel.model.Note
@@ -107,7 +109,7 @@ fun InboxListScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundColor,
+        containerColor = Color.Transparent,
         topBar = {
             InboxTopBar(
                 inboxCount = inboxNotes.size,
@@ -211,6 +213,8 @@ private fun InboxTopBar(
     onClearAll: () -> Unit
 ) {
     val ctx = LocalContext.current
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val useLightChrome = !LocalGlassAtmosphereUi.current.zones.topIsLight
     TopAppBar(
         title = {
             Column {
@@ -218,12 +222,14 @@ private fun InboxTopBar(
                     text = LocalizedStrings.get("inbox_title"),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
-                    color = PrimaryTextColor
+                    color = chrome.primary,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
                 )
                 Text(
                     text = LocalizedStrings.get("inbox_subtitle_unorganized", inboxCount),
                     fontSize = 12.sp,
-                    color = SecondaryTextColor
+                    color = chrome.secondary,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
                 )
             }
         },
@@ -288,7 +294,7 @@ private fun InboxTopBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
     )
 }
 
@@ -302,21 +308,13 @@ private fun InboxNoteCard(
     val ctx = LocalContext.current
     var showCategoryPicker by remember { mutableStateOf(false) }
 
-    Card(
+    val cardText = LocalGlassTextColors.current
+    GlassNoteCardShell(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        onClick = onClick,
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onClick)
-            ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
             val deadline = note.deadline
             val today = LocalDate.now()
             val daysLeft = deadline?.let { ChronoUnit.DAYS.between(today, it).toInt() }
@@ -360,7 +358,7 @@ private fun InboxNoteCard(
                 text = note.behaviorSummary.ifBlank { "—" },
                 fontSize = 14.sp,
                 fontWeight = if (note.needsManualClassification) FontWeight.Bold else FontWeight.Medium,
-                color = PrimaryTextColor,
+                color = cardText.primary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )

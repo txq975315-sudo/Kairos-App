@@ -10,16 +10,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -81,6 +83,15 @@ import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.constants.GlassConstants
+import com.example.kairosapplication.ui.glass.GlassSurface
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.glassBottomNavDock
+import com.example.kairosapplication.ui.glass.quoteDividerColor
+import com.example.kairosapplication.ui.glass.GlassTextColors
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
@@ -95,6 +106,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CreateScreen(
     onBack: () -> Unit,
@@ -275,46 +287,63 @@ fun CreateScreen(
         }
     }
 
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val useLightChrome = !LocalGlassAtmosphereUi.current.zones.topIsLight
+    val cardText = LocalGlassTextColors.current
+    val atmosphere = LocalGlassAtmosphereUi.current
+
+    val dockedTool = activeTool
+    val dockBarHeight = 72.dp
+    val toolPanelMaxHeight = 220.dp
+    val scrollBottomInset = if (dockedTool != null) dockBarHeight + toolPanelMaxHeight else dockBarHeight
+    val dockShape = RoundedCornerShape(
+        topStart = GlassConstants.CornerRadius,
+        topEnd = GlassConstants.CornerRadius,
+        bottomStart = 0.dp,
+        bottomEnd = 0.dp,
+    )
+
     CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.ScreenBackground)
-            .statusBarsPadding()
-            .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
+            .background(Color.Transparent)
+            .statusBarsPadding(),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.GlassFill)
-                .padding(horizontal = 20.dp)
-                .padding(top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CommonBackButton(
-                onClick = onBack,
-                contentDescription = taskTexts.contentDescBack,
-            )
-            Text(
-                text = stringResource(R.string.task_create_screen_title),
-                fontSize = AppScreenHeader.titleSp,
-                fontWeight = AppScreenHeader.titleWeight,
-                color = AppScreenHeader.titleColor,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppSpacing.PageHorizontal)
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CommonBackButton(
+                    onClick = onBack,
+                    contentDescription = taskTexts.contentDescBack,
+                )
+                Text(
+                    text = stringResource(R.string.task_create_screen_title),
+                    fontSize = AppScreenHeader.titleSp,
+                    fontWeight = AppScreenHeader.titleWeight,
+                    color = chrome.primary,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
 
-        // Keyboard shrinks viewport; top bar fixed, middle scrolls.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(createScreenScrollState)
+                    .padding(bottom = scrollBottomInset),
+            ) {
         Column(
             modifier = Modifier
-                .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(createScreenScrollState)
-        ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = AppSpacing.PageHorizontal),
         ) {
         CalendarSection(
             currentMonth = currentMonth,
@@ -391,30 +420,39 @@ fun CreateScreen(
         }
         Text(
             text = draftSummaryText,
-            color = Color(0xFF757575),
+            color = cardText.secondary,
             fontSize = 12.sp,
-            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
         )
         if (dateSelectionMode == null) {
             Text(
                 text = repeatSummary,
-                color = Color(0xFF616161),
+                color = cardText.muted,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 
         }
+            }
         }
 
-        val dockedTool = activeTool
+        val dockBottomInset = if (WindowInsets.isImeVisible) {
+            Modifier.imePadding()
+        } else {
+            Modifier.navigationBarsPadding()
+        }
         Column(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(if (dockedTool != null) AppColors.GlassFill else AppColors.ScreenBackground)
+                .wrapContentHeight()
+                .then(dockBottomInset)
+                .clip(dockShape)
+                .glassBottomNavDock(),
         ) {
             if (dockedTool != null) {
-                HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+                HorizontalDivider(color = atmosphere.quoteDividerColor(), thickness = 1.dp)
                 CreateToolPanel(
                     activeTool = dockedTool,
                     dateSelectionMode = dateSelectionMode,
@@ -520,12 +558,13 @@ fun CreateScreen(
                     onUrgencySelected = { selectedUrgency = it },
                     onLabelSelected = { selectedLabel = it },
                     onStickerSelected = { selectedSticker = it },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+                HorizontalDivider(color = atmosphere.quoteDividerColor(), thickness = 1.dp)
             }
             ActionIconsRow(
             taskTexts = taskTexts,
+            cardText = cardText,
             hasReminder = !reminderTime.isNullOrBlank(),
             onReminderClick = {
                 keyboardController?.hide()
@@ -534,7 +573,13 @@ fun CreateScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 0.dp),
+                .heightIn(min = 52.dp)
+                .padding(
+                    start = AppSpacing.PageHorizontal,
+                    end = AppSpacing.PageHorizontal,
+                    top = 10.dp,
+                    bottom = 10.dp,
+                ),
             selectedUrgency = selectedUrgency,
             onTimeClick = {
                 activeTool = if (activeTool == CreateTool.TIME) null else CreateTool.TIME
@@ -561,8 +606,8 @@ fun CreateScreen(
                     Toast.makeText(context, taskTexts.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
                 }
             },
-            onSubmit = submitCreateTask
-        )
+            onSubmit = submitCreateTask,
+            )
         }
     }
 
@@ -611,67 +656,72 @@ private fun CalendarSection(
     val monthNextDesc = remember(lang, ctx) {
         LocalizedStrings.stringFor(lang, "calendar_month_next", ctx)
     }
+    val cardText = LocalGlassTextColors.current
+    val shape = RoundedCornerShape(GlassConstants.CornerRadius)
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(AppShapes.CardRadius))
-            .background(AppColors.GlassFill)
-            .padding(14.dp)
+    GlassSurface(
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
+        fillAlpha = GlassConstants.TimeBlockFillAlpha,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            ArrowButton(
-                onClick = onPreviousMonth,
-                direction = ArrowDirection.LEFT,
-                size = 28.dp,
-                tint = Color(0xFF1A1A1A),
-                contentDescription = monthPrevDesc
-            )
-            Text(
-                text = monthLabel,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1A1A)
-            )
-            ArrowButton(
-                onClick = onNextMonth,
-                direction = ArrowDirection.RIGHT,
-                size = 28.dp,
-                tint = Color(0xFF1A1A1A),
-                contentDescription = monthNextDesc
-            )
-        }
-
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-            weekTitles.forEach { title ->
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                ArrowButton(
+                    onClick = onPreviousMonth,
+                    direction = ArrowDirection.LEFT,
+                    size = 28.dp,
+                    tint = cardText.primary,
+                    contentDescription = monthPrevDesc,
+                )
                 Text(
-                    text = title,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    fontSize = 12.sp,
-                    color = Color(0xFF757575),
-                    fontWeight = FontWeight.Medium
+                    text = monthLabel,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = cardText.primary,
+                )
+                ArrowButton(
+                    onClick = onNextMonth,
+                    direction = ArrowDirection.RIGHT,
+                    size = 28.dp,
+                    tint = cardText.primary,
+                    contentDescription = monthNextDesc,
                 )
             }
-        }
 
-        Column(modifier = Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            monthDays.chunked(7).forEach { week ->
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    week.forEach { day ->
-                        DayCell(
-                            day = day,
-                            selectedDate = selectedDate,
-                            selectedDates = selectedDates,
-                            rangeStartDate = rangeStartDate,
-                            rangeEndDate = rangeEndDate,
-                            dateSelectionMode = dateSelectionMode,
-                            onDateSelected = onDateSelected
-                        )
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                weekTitles.forEach { title ->
+                    Text(
+                        text = title,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        fontSize = 12.sp,
+                        color = cardText.secondary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                monthDays.chunked(7).forEach { week ->
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        week.forEach { day ->
+                            DayCell(
+                                day = day,
+                                selectedDate = selectedDate,
+                                selectedDates = selectedDates,
+                                rangeStartDate = rangeStartDate,
+                                rangeEndDate = rangeEndDate,
+                                dateSelectionMode = dateSelectionMode,
+                                onDateSelected = onDateSelected,
+                            )
+                        }
                     }
                 }
             }
@@ -700,8 +750,9 @@ private fun RowScope.DayCell(
         DateSelectionMode.RANGE -> isRangeHit || (day == rangeStartDate) || (day == rangeEndDate)
         null -> false
     }
-    val backgroundColor = if (isSelected) Color(0xFF1A1A1A) else Color.Transparent
-    val textColor = if (isSelected) Color.White else Color(0xFF1A1A1A)
+    val cardText = LocalGlassTextColors.current
+    val backgroundColor = if (isSelected) cardText.primary else Color.Transparent
+    val textColor = if (isSelected) Color(0xFF1A1A1A) else cardText.primary
 
     Box(
         modifier = Modifier
@@ -739,39 +790,46 @@ private fun InputField(
     keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
     keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
+    val cardText = LocalGlassTextColors.current
+    val shape = RoundedCornerShape(GlassConstants.CornerRadius)
     val fieldModifier = if (focusRequester == null) {
         modifier
     } else {
         modifier.focusRequester(focusRequester)
     }
 
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = fieldModifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(AppShapes.InsetContentRadius))
-            .background(AppColors.GlassFill)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
-        textStyle = TextStyle(fontSize = 16.sp, color = Color(0xFF1A1A1A)),
-        decorationBox = { inner ->
-            if (value.isEmpty()) {
-                Text(
-                    text = placeholder,
-                    color = Color(0xFF9E9E9E),
-                    fontSize = 16.sp
-                )
-            }
-            inner()
-        }
-    )
+    GlassSurface(
+        modifier = fieldModifier.fillMaxWidth(),
+        shape = shape,
+        fillAlpha = GlassConstants.TaskCardFillAlpha,
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            textStyle = TextStyle(fontSize = 16.sp, color = cardText.primary),
+            decorationBox = { inner ->
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        color = cardText.muted,
+                        fontSize = 16.sp,
+                    )
+                }
+                inner()
+            },
+        )
+    }
 }
 
 @Composable
 private fun ActionIconsRow(
     taskTexts: TaskTextProvider,
+    cardText: GlassTextColors,
     modifier: Modifier = Modifier,
     hasReminder: Boolean,
     onReminderClick: () -> Unit,
@@ -797,45 +855,59 @@ private fun ActionIconsRow(
             Icon(
                 imageVector = Icons.Default.AccessTime,
                 contentDescription = taskTexts.contentDescTimeIcon,
-                tint = Color(0xFF757575),
-                modifier = Modifier.clickable { onTimeClick() }
+                tint = cardText.secondary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onTimeClick() },
             )
             Icon(
                 imageVector = Icons.Default.Flag,
                 contentDescription = taskTexts.contentDescFlagIcon,
                 tint = Color(parseHexToArgb(urgencyColorConfig.colorForLevel(selectedUrgency))),
-                modifier = Modifier.clickable { onUrgencyClick() }
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onUrgencyClick() },
             )
             Icon(
                 imageVector = Icons.Default.Label,
                 contentDescription = taskTexts.contentDescLabelIcon,
-                tint = Color(0xFF757575),
-                modifier = Modifier.clickable { onLabelClick() }
+                tint = cardText.secondary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onLabelClick() },
             )
             Icon(
                 imageVector = Icons.Default.AttachFile,
                 contentDescription = taskTexts.contentDescAttachIcon,
-                tint = Color(0xFF757575),
-                modifier = Modifier.clickable { onStickerClick() }
+                tint = cardText.secondary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onStickerClick() },
             )
             Icon(
                 imageVector = Icons.Default.Notifications,
                 contentDescription = taskTexts.contentDescReminderIcon,
-                tint = if (hasReminder) Color(0xFF1976D2) else Color(0xFF757575),
-                modifier = Modifier.clickable { onReminderClick() }
+                tint = if (hasReminder) Color(0xFF90CAF9) else cardText.secondary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onReminderClick() },
             )
             Icon(
                 imageVector = Icons.Default.Mic,
                 contentDescription = taskTexts.contentDescMicIcon,
-                tint = Color(0xFF757575),
-                modifier = Modifier.clickable { onVoiceClick() }
+                tint = cardText.secondary,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onVoiceClick() },
             )
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.Send,
             contentDescription = taskTexts.contentDescAddTask,
-            tint = Color(0xFF1A1A1A),
-            modifier = Modifier.clickable { onSubmit() }
+            tint = cardText.primary,
+            modifier = Modifier
+                .size(28.dp)
+                .clickable { onSubmit() },
         )
     }
 }
@@ -869,6 +941,7 @@ private fun CreateToolPanel(
 ) {
     val panelCtx = LocalContext.current
     val panelLang = LocalCurrentLanguage.current.value
+    val cardText = LocalGlassTextColors.current
     val panelDateFormatter = remember(panelLang) {
         val loc = when (panelLang) {
             LocalizationManager.Language.ZH -> Locale.forLanguageTag("zh-Hans-CN")
@@ -908,7 +981,7 @@ private fun CreateToolPanel(
                     Text(
                         text = LocalizedStrings.stringFor(panelLang, "task_create_section_date_mode", panelCtx),
                         fontSize = 13.sp,
-                        color = Color(0xFF757575),
+                        color = cardText.secondary,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SelectionChip(
@@ -932,19 +1005,19 @@ private fun CreateToolPanel(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(1.dp)
-                            .background(Color(0xFFE0E0E0))
+                            .background(cardText.muted.copy(alpha = 0.35f)),
                     )
 
                     Text(
                         text = selectedDatesLine,
                         fontSize = 12.sp,
-                        color = Color(0xFF9E9E9E)
+                        color = cardText.muted,
                     )
 
                     Text(
                         text = LocalizedStrings.stringFor(panelLang, "task_create_repeat_range", panelCtx),
                         fontSize = 13.sp,
-                        color = Color(0xFF757575),
+                        color = cardText.secondary,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         SelectionChip(
@@ -1124,16 +1197,19 @@ private fun OptionPill(
     selected: Boolean,
     leadingEmoji: String? = null,
     colorDot: Color? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
+    val cardText = LocalGlassTextColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(AppShapes.EmbedRadius))
-            .background(if (selected) Color(0xFFEFEFEF) else Color.Transparent)
+            .background(
+                if (selected) cardText.primary.copy(alpha = 0.18f) else Color.Transparent,
+            )
             .clickable { onClick() }
             .padding(start = 10.dp, end = 10.dp, top = 1.dp, bottom = 1.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leadingEmoji != null) {
             Text(
@@ -1151,7 +1227,7 @@ private fun OptionPill(
             )
             Box(modifier = Modifier.size(8.dp))
         }
-        Text(text = text, fontSize = 14.sp, color = Color(0xFF1A1A1A))
+        Text(text = text, fontSize = 14.sp, color = cardText.primary)
     }
 }
 
@@ -1160,17 +1236,18 @@ private fun SelectionChip(
     text: String,
     selected: Boolean,
     enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
+    val cardText = LocalGlassTextColors.current
     val backgroundColor = when {
-        !enabled -> Color(0xFFEEEEEE)
-        selected -> Color(0xFF1A1A1A)
-        else -> Color(0xFFF0F0F0)
+        !enabled -> cardText.muted.copy(alpha = 0.2f)
+        selected -> cardText.primary
+        else -> cardText.muted.copy(alpha = 0.15f)
     }
     val textColor = when {
-        !enabled -> Color(0xFFB0B0B0)
-        selected -> Color.White
-        else -> Color(0xFF4A4A4A)
+        !enabled -> cardText.muted
+        selected -> Color(0xFF1A1A1A)
+        else -> cardText.secondary
     }
     Box(
         modifier = Modifier

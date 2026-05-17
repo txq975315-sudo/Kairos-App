@@ -3,6 +3,7 @@ package com.example.kairosapplication.ui.glass
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -20,19 +21,35 @@ object AtmosphereLuminance {
         }
         val bitmap = BitmapFactory.decodeResource(context.resources, resId, options) ?: return GlassAtmosphereZones.default()
         return try {
-            val topEnd = (bitmap.height * GlassConstants.AtmosphereTopZoneFraction).toInt().coerceAtLeast(1)
-            val bottomStart = (bitmap.height * GlassConstants.AtmosphereBottomZoneStartFraction)
-                .toInt()
-                .coerceIn(0, bitmap.height - 1)
-            val topLum = averageLuminance(bitmap, yStart = 0, yEnd = topEnd)
-            val bottomLum = averageLuminance(bitmap, yStart = bottomStart, yEnd = bitmap.height)
-            GlassAtmosphereZones(
-                topIsLight = topLum >= GlassConstants.AtmosphereLightZoneThreshold,
-                bottomIsLight = bottomLum >= GlassConstants.AtmosphereLightZoneThreshold,
-            )
+            zonesFromBitmap(bitmap)
         } finally {
             bitmap.recycle()
         }
+    }
+
+    fun sampleZonesFromUri(context: Context, uriString: String): GlassAtmosphereZones {
+        val options = BitmapFactory.Options().apply { inSampleSize = 8 }
+        val bitmap = context.contentResolver.openInputStream(Uri.parse(uriString))?.use { stream ->
+            BitmapFactory.decodeStream(stream, null, options)
+        } ?: return GlassAtmosphereZones.default()
+        return try {
+            zonesFromBitmap(bitmap)
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    private fun zonesFromBitmap(bitmap: Bitmap): GlassAtmosphereZones {
+        val topEnd = (bitmap.height * GlassConstants.AtmosphereTopZoneFraction).toInt().coerceAtLeast(1)
+        val bottomStart = (bitmap.height * GlassConstants.AtmosphereBottomZoneStartFraction)
+            .toInt()
+            .coerceIn(0, bitmap.height - 1)
+        val topLum = averageLuminance(bitmap, yStart = 0, yEnd = topEnd)
+        val bottomLum = averageLuminance(bitmap, yStart = bottomStart, yEnd = bitmap.height)
+        return GlassAtmosphereZones(
+            topIsLight = topLum >= GlassConstants.AtmosphereLightZoneThreshold,
+            bottomIsLight = bottomLum >= GlassConstants.AtmosphereLightZoneThreshold,
+        )
     }
 
     internal fun averageLuminance(bitmap: Bitmap, yStart: Int, yEnd: Int): Float {

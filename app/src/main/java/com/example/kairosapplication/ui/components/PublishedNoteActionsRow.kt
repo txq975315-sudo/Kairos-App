@@ -47,7 +47,7 @@ internal fun PublishedNoteActionsRow(
     modifier: Modifier = Modifier,
     showDividerAbove: Boolean = true,
     horizontalContentPadding: Dp = 8.dp,
-    lightForeground: Boolean = false,
+    lightForeground: Boolean = true,
 ) {
     val blue = if (lightForeground) PublishedActionBlueOnDark else PublishedActionBlue
     val red = if (lightForeground) PublishedActionRedOnDark else PublishedActionRed

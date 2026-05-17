@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -84,16 +85,15 @@ import com.example.taskmodel.model.Task
 import com.example.taskmodel.util.TaskUtils
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
+import com.example.kairosapplication.core.ui.constants.GlassConstants
+import com.example.kairosapplication.ui.glass.GlassSurface
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
+import com.example.kairosapplication.ui.glass.glassBubbleBackdrop
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-
-internal data class CreateSheetConfig(
-    val timeBlock: String,
-    val backgroundColor: Color,
-    val titleColor: Color
-)
 
 internal data class CreateTaskMeta(
     val urgency: Int,
@@ -143,12 +143,9 @@ fun CreateTaskBottomSheet(
             )
         )
     }
-    val config = remember(draftTask.timeBlock) {
-        CreateSheetConfig(
-            timeBlock = draftTask.timeBlock,
-            backgroundColor = TaskUtils.getTimeBlockColor(draftTask.timeBlock),
-            titleColor = TaskUtils.getTimeBlockTitleColor(draftTask.timeBlock)
-        )
+    val appUiTheme = LocalAppUiTheme.current
+    val config = remember(draftTask.timeBlock, appUiTheme) {
+        CreateTaskSheetThemes.forUiTheme(appUiTheme, draftTask.timeBlock)
     }
 
     CreateTaskBottomSheet(
@@ -304,6 +301,14 @@ internal fun CreateTaskBottomSheet(
         keyboardController?.show()
     }
 
+    val sheetShape = RoundedCornerShape(
+        topStart = AppShapes.SheetTopRadius,
+        topEnd = AppShapes.SheetTopRadius,
+        bottomStart = 0.dp,
+        bottomEnd = 0.dp,
+    )
+    val palette = rememberCreateTaskSheetPalette(config)
+
     ModalBottomSheet(
         onDismissRequest = {
             keyboardController?.hide()
@@ -311,28 +316,32 @@ internal fun CreateTaskBottomSheet(
             onDismiss()
         },
         sheetState = sheetState,
-        containerColor = config.backgroundColor,
+        containerColor = when (config.theme) {
+            CreateTaskSheetVisualTheme.Classic -> config.backgroundColor
+            CreateTaskSheetVisualTheme.Glass -> Color.Transparent
+        },
         contentColor = Color.Black,
         dragHandle = null,
-        shape = RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius, bottomStart = 0.dp, bottomEnd = 0.dp)
+        shape = sheetShape,
     ) {
         // Bottom sheet window may not inherit composition locals; re-attach app language for i18n.
         CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
         val sheetLang = LocalCurrentLanguage.current.value
-        Column(
+        CreateTaskSheetChrome(
+            config = config,
+            shape = sheetShape,
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .imePadding(),
         ) {
             Text(
                 text = LocalizedStrings.timeBlockLabel(config.timeBlock),
                 modifier = Modifier.fillMaxWidth(),
-                color = config.titleColor,
+                color = palette.titleAccent,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -342,8 +351,8 @@ internal fun CreateTaskBottomSheet(
                 onValueChange = onTitleChange,
                 textStyle = TextStyle(
                     fontSize = 22.sp,
-                    color = AppColors.SecondaryText,
-                    fontWeight = FontWeight.Normal
+                    color = palette.body,
+                    fontWeight = FontWeight.Normal,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -355,7 +364,7 @@ internal fun CreateTaskBottomSheet(
                         Text(
                             text = taskText.titlePlaceholder,
                             fontSize = 22.sp,
-                            color = AppColors.SecondaryText.copy(alpha = 0.7f)
+                            color = palette.hint,
                         )
                     }
                     innerTextField()
@@ -369,7 +378,7 @@ internal fun CreateTaskBottomSheet(
                 onValueChange = onDescriptionChange,
                 textStyle = TextStyle(
                     fontSize = 15.sp,
-                    color = AppColors.SecondaryText
+                    color = palette.body,
                 ),
                 modifier = Modifier.fillMaxWidth(),
                 decorationBox = { innerTextField ->
@@ -377,7 +386,7 @@ internal fun CreateTaskBottomSheet(
                         Text(
                             text = taskText.descriptionPlaceholder,
                             fontSize = 15.sp,
-                            color = AppColors.HintText
+                            color = palette.hint,
                         )
                     }
                     innerTextField()
@@ -398,14 +407,14 @@ internal fun CreateTaskBottomSheet(
                     Icon(
                         imageVector = Icons.Default.AccessTime,
                         contentDescription = taskText.contentDescTimeIcon,
-                        tint = if (hasSelectedTime) TaskUtils.getTimeBlockTitleColor(config.timeBlock) else AppColors.IconNeutral,
+                        tint = if (hasSelectedTime) palette.iconActive else palette.iconIdle,
                         modifier = Modifier.clickable { showIconSheet(IconSheetType.TIME) }
                     )
                     if (onSheetTaskDateChange != null) {
                         Icon(
                             imageVector = Icons.Outlined.CalendarMonth,
                             contentDescription = taskText.contentDescDateIcon,
-                            tint = if (hasSelectedTaskDate) config.titleColor else AppColors.IconNeutral,
+                            tint = if (hasSelectedTaskDate) palette.iconActive else palette.iconIdle,
                             modifier = Modifier.clickable {
                                 keyboardController?.hide()
                                 iconSheetType = null
@@ -417,7 +426,11 @@ internal fun CreateTaskBottomSheet(
                         Icon(
                             imageVector = Icons.Outlined.Flag,
                             contentDescription = taskText.contentDescFlagIcon,
-                            tint = if (hasSelectedUrgency) Color(parseHexToArgb(urgencyColorConfig.colorForLevel(meta.urgency))) else AppColors.IconNeutral,
+                            tint = if (hasSelectedUrgency) {
+                                Color(parseHexToArgb(urgencyColorConfig.colorForLevel(meta.urgency)))
+                            } else {
+                                palette.iconIdle
+                            },
                             modifier = Modifier.clickable { showIconSheet(IconSheetType.URGENCY) }
                         )
                         Spacer(Modifier.width(4.dp))
@@ -432,7 +445,7 @@ internal fun CreateTaskBottomSheet(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.Label,
                             contentDescription = taskText.contentDescLabelIcon,
-                            tint = AppColors.IconNeutral,
+                            tint = palette.iconIdle,
                             modifier = Modifier.clickable { showIconSheet(IconSheetType.LABEL) }
                         )
                         if (!meta.label.isNullOrBlank()) {
@@ -445,14 +458,14 @@ internal fun CreateTaskBottomSheet(
                                     withHashPrefixForNonNone = true,
                                 ),
                                 fontSize = 12.sp,
-                                color = config.titleColor,
+                                color = palette.titleAccent,
                             )
                         }
                     }
                     Icon(
                         imageVector = Icons.Outlined.Notifications,
                         contentDescription = taskText.contentDescReminderIcon,
-                        tint = if (!reminderTime.isNullOrBlank()) config.titleColor else AppColors.IconNeutral,
+                        tint = if (!reminderTime.isNullOrBlank()) palette.iconActive else palette.iconIdle,
                         modifier = Modifier.clickable {
                             keyboardController?.hide()
                             iconSheetType = null
@@ -463,7 +476,7 @@ internal fun CreateTaskBottomSheet(
                         Icon(
                             imageVector = Icons.Default.Mic,
                             contentDescription = taskText.contentDescMicIcon,
-                            tint = AppColors.IconNeutral,
+                            tint = palette.iconIdle,
                             modifier = Modifier.clickable {
                                 isRecording = true
                                 val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
@@ -490,7 +503,7 @@ internal fun CreateTaskBottomSheet(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = taskText.contentDescAddTask,
-                        tint = Color(0xFF1A1A1A),
+                        tint = palette.send,
                         modifier = Modifier
                             .size(26.dp)
                             .clickable { attemptSubmit() },
@@ -531,14 +544,10 @@ internal fun CreateTaskBottomSheet(
             }
 
             iconSheetType?.let { type ->
-                // Icon strip replaces keyboard without resizing the sheet
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(iconSheetPanelHeight)
-                        .clip(RoundedCornerShape(topStart = AppShapes.SheetTopRadius, topEnd = AppShapes.SheetTopRadius))
-                        .background(config.backgroundColor)
-                        .padding(top = 8.dp)
+                CreateTaskIconPanel(
+                    config = config,
+                    palette = palette,
+                    height = iconSheetPanelHeight,
                 ) {
                     when (type) {
                         IconSheetType.TIME -> {
@@ -546,18 +555,19 @@ internal fun CreateTaskBottomSheet(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .fillMaxHeight()
-                                    .verticalScroll(rememberScrollState())
+                                    .verticalScroll(rememberScrollState()),
                             ) {
                                 TaskConstants.TIME_BLOCKS.forEach { option ->
                                     OptionRow(
                                         text = LocalizedStrings.timeBlockLabel(option),
                                         leadingIcon = taskText.timeBlockIcons[option] ?: "•",
                                         selected = config.timeBlock == option,
+                                        palette = palette,
                                         onClick = {
                                             hasSelectedTime = true
                                             onTimeBlockChange(option)
                                             closeIconSheetAndRestoreKeyboard()
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -591,9 +601,15 @@ internal fun CreateTaskBottomSheet(
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
-                                            text = urgencyConfig.labelForLevel(entry.key).ifBlank { LocalizedStrings.get("task_urgency_${entry.key}") },
+                                            text = urgencyConfig.labelForLevel(entry.key).ifBlank {
+                                                LocalizedStrings.get("task_urgency_${entry.key}")
+                                            },
                                             fontSize = 15.sp,
-                                            color = if (meta.urgency == entry.key) AppColors.PrimaryText else AppColors.SecondaryText
+                                            color = if (meta.urgency == entry.key) {
+                                                palette.optionSelected
+                                            } else {
+                                                palette.optionIdle
+                                            },
                                         )
                                     }
                                 }
@@ -617,6 +633,7 @@ internal fun CreateTaskBottomSheet(
                                         leadingIcon = TaskConstants.LABEL_ICONS[option] ?: taskText.labelFallbackIcon,
                                         selected = (option != TaskConstants.LABEL_NONE && option == meta.label) ||
                                             (option == TaskConstants.LABEL_NONE && meta.label == null),
+                                        palette = palette,
                                         onClick = {
                                             when (option) {
                                                 TaskConstants.LABEL_NONE -> {
@@ -645,13 +662,17 @@ internal fun CreateTaskBottomSheet(
                                         BasicTextField(
                                             value = customLabelInput,
                                             onValueChange = { customLabelInput = it },
-                                            textStyle = TextStyle(fontSize = 15.sp, color = AppColors.PrimaryText),
+                                            textStyle = TextStyle(fontSize = 15.sp, color = palette.body),
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(horizontal = 20.dp, vertical = 8.dp),
                                             decorationBox = { inner ->
                                                 if (customLabelInput.isBlank()) {
-                                                    Text(taskText.customLabelPlaceholder, fontSize = 15.sp, color = AppColors.SecondaryText)
+                                                    Text(
+                                                        taskText.customLabelPlaceholder,
+                                                        fontSize = 15.sp,
+                                                        color = palette.hint,
+                                                    )
                                                 }
                                                 inner()
                                             }
@@ -722,14 +743,142 @@ internal fun CreateTaskBottomSheet(
     }
 }
 
+private data class CreateTaskSheetPalette(
+    val titleAccent: Color,
+    val body: Color,
+    val hint: Color,
+    val iconActive: Color,
+    val iconIdle: Color,
+    val send: Color,
+    val optionSelected: Color,
+    val optionIdle: Color,
+)
+
+@Composable
+private fun rememberCreateTaskSheetPalette(config: CreateSheetConfig): CreateTaskSheetPalette {
+    val cardText = LocalGlassTextColors.current
+    return remember(config.theme, config.timeBlock, cardText) {
+        when (config.theme) {
+            CreateTaskSheetVisualTheme.Classic -> CreateTaskSheetPalette(
+                titleAccent = config.titleColor,
+                body = AppColors.SecondaryText,
+                hint = AppColors.SecondaryText.copy(alpha = 0.7f),
+                iconActive = config.titleColor,
+                iconIdle = AppColors.IconNeutral,
+                send = Color(0xFF1A1A1A),
+                optionSelected = AppColors.PrimaryText,
+                optionIdle = AppColors.SecondaryText,
+            )
+            CreateTaskSheetVisualTheme.Glass -> CreateTaskSheetPalette(
+                titleAccent = config.titleColor,
+                body = cardText.primary,
+                hint = cardText.muted,
+                iconActive = config.titleColor,
+                iconIdle = cardText.secondary,
+                send = cardText.primary,
+                optionSelected = cardText.primary,
+                optionIdle = cardText.secondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CreateTaskSheetChrome(
+    config: CreateSheetConfig,
+    shape: RoundedCornerShape,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    when (config.theme) {
+        CreateTaskSheetVisualTheme.Classic -> {
+            Column(
+                modifier = modifier
+                    .background(config.backgroundColor)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                content = content,
+            )
+        }
+        CreateTaskSheetVisualTheme.Glass -> {
+            Column(
+                modifier = modifier
+                    .clip(shape)
+                    .glassBubbleBackdrop()
+                    .background(config.backgroundColor),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(config.titleColor.copy(alpha = 0.75f)),
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    content = content,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateTaskIconPanel(
+    config: CreateSheetConfig,
+    palette: CreateTaskSheetPalette,
+    height: androidx.compose.ui.unit.Dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val panelShape = RoundedCornerShape(
+        topStart = AppShapes.SheetTopRadius,
+        topEnd = AppShapes.SheetTopRadius,
+    )
+    when (config.theme) {
+        CreateTaskSheetVisualTheme.Classic -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height)
+                    .clip(panelShape)
+                    .background(CreateTaskSheetThemes.iconPanelTint(config))
+                    .padding(top = 8.dp),
+                content = content,
+            )
+        }
+        CreateTaskSheetVisualTheme.Glass -> {
+            GlassSurface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height),
+                shape = panelShape,
+                fillAlpha = GlassConstants.TimeBlockFillAlpha,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(CreateTaskSheetThemes.iconPanelTint(config)),
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    content = content,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun OptionRow(
     text: String,
     leadingIcon: String? = null,
     selected: Boolean,
-    onClick: () -> Unit
+    palette: CreateTaskSheetPalette,
+    onClick: () -> Unit,
 ) {
-    val textColor = if (selected) AppColors.PrimaryText else AppColors.SecondaryText
+    val textColor = if (selected) palette.optionSelected else palette.optionIdle
     Row(
         modifier = Modifier
             .fillMaxWidth()

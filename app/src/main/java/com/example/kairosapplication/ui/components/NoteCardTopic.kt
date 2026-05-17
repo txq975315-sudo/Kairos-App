@@ -1,14 +1,10 @@
 package com.example.kairosapplication.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,8 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,20 +19,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.glass.GlassNoteCardShell
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
-import com.example.kairosapplication.core.ui.AppSpacing
 import com.example.taskmodel.model.Note
 import java.time.Instant
 import java.time.ZoneId
@@ -74,89 +66,17 @@ fun NoteCardTopic(
         expandable && !expanded -> 2
         else -> Int.MAX_VALUE
     }
-    val cardShape = RoundedCornerShape(AppShapes.CardRadius)
-    
-    // Glass effect brushes (aligned with TaskCard)
-    val taskCardGlassBrush = Brush.verticalGradient(
-        colorStops = arrayOf(
-            0f to AppColors.TaskCardGlassTop,
-            0.42f to AppColors.TaskCardGlassMid,
-            1f to AppColors.TaskCardGlassBottom,
-        ),
-    )
-    val taskCardInnerGlowBrush = Brush.verticalGradient(
-        colorStops = arrayOf(
-            0f to AppColors.TaskCardGlassInnerGlow,
-            0.3f to Color.Transparent,
-            0.7f to Color.Transparent,
-            1f to AppColors.TaskCardGlassInnerGlow.copy(alpha = 0.2f),
-        ),
-    )
-    
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = AppColors.TaskCardShadowElevation,
-                shape = cardShape,
-                ambientColor = AppColors.TaskCardShadowColor,
-                spotColor = Color(0xFF1A2850).copy(alpha = 0.15f),
-            )
-            .clip(cardShape)
-            .border(
-                width = 1.1.dp,
-                color = AppColors.TaskCardGlassHairline,
-                shape = cardShape
-            )
-            .clickable {
-                if (expandable) onToggleExpand() else onNoteClick(note.id)
-            },
-        shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    val cardText = LocalGlassTextColors.current
+
+    GlassNoteCardShell(
+        modifier = modifier.fillMaxWidth(),
+        onClick = { if (expandable) onToggleExpand() else onNoteClick(note.id) },
     ) {
-        Box {
-            // Layer 1: Glass gradient base
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .background(taskCardGlassBrush)
-            )
-            // Layer 2: Gray mist overlay
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .blur(AppColors.TaskCardBlurRadius)
-                    .background(AppColors.TaskCardGrayMist)
-            )
-            // Layer 3: Inner glow
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .blur(AppColors.TaskCardBlurRadius)
-                    .background(taskCardInnerGlowBrush)
-            )
-            // Layer 4: Top veil
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .background(AppColors.GlassFill.copy(alpha = 0.07f))
-            )
-            // Content
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
-            ) {
             if (!peekOnlySummaryBody) {
                 Text(
                     text = topicLabelLine,
                     fontSize = 12.sp,
-                    color = AppColors.HintText,
+                    color = cardText.muted,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -169,7 +89,7 @@ fun NoteCardTopic(
                     text = note.behaviorSummary,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = AppColors.PrimaryText,
+                    color = cardText.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -187,7 +107,7 @@ fun NoteCardTopic(
             Text(
                 text = topicMainBody.ifBlank { " " },
                 fontSize = 14.sp,
-                color = AppColors.SecondaryText,
+                color = cardText.secondary,
                 maxLines = bodyMaxLines,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 20.sp
@@ -202,8 +122,8 @@ fun NoteCardTopic(
                     review = topicParsedReview,
                     expanded = expanded || !expandable,
                     collapsedMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE,
-                    textColor = AppColors.HintText,
-                    timestampColor = AppColors.HintText,
+                    textColor = cardText.muted,
+                    timestampColor = cardText.muted,
                 )
             }
             if (!peekOnlySummaryBody) {
@@ -222,10 +142,10 @@ fun NoteCardTopic(
                                 Text(
                                     text = tag,
                                     fontSize = 12.sp,
-                                    color = AppColors.HintText,
+                                    color = cardText.muted,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
-                                        .background(AppColors.BottomBarSelectedContainer)
+                                        .background(GlassConstants.TextPrimary.copy(alpha = 0.12f))
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
@@ -253,11 +173,9 @@ fun NoteCardTopic(
                             onClick = { onNoteClick(note.id) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
+                            Text(LocalizedStrings.get("note_card_edit"), color = cardText.primary)
                         }
                     }
                 }
-            } // Column close
-        } // Box close
     }
 }

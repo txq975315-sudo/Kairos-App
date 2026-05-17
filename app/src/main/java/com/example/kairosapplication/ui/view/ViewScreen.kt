@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.kairosapplication.ui.components.CreateSheetConfig
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.ui.components.CreateTaskSheetThemes
 import com.example.kairosapplication.ui.components.CreateTaskBottomSheet
 import com.example.kairosapplication.ui.components.CreateTaskMeta
 import com.example.kairosapplication.ui.view.month.MonthSwitcher
@@ -76,6 +78,7 @@ fun ViewScreen(
     var createLabel by remember { mutableStateOf<String?>(null) }
     var createReminderTime by remember { mutableStateOf<String?>(null) }
     var showWeekCreateLimitDialog by remember { mutableStateOf(false) }
+    val appUiTheme = LocalAppUiTheme.current
     var weekCreateLimitDate by remember { mutableStateOf<LocalDate?>(null) }
     var lastTaskToggleUptimeMs by remember { mutableLongStateOf(0L) }
     var createTargetDate by remember { mutableStateOf(LocalDate.now()) }
@@ -201,10 +204,9 @@ fun ViewScreen(
                             createUrgency = TaskConstants.URGENCY_LOW
                             createLabel = null
                             createReminderTime = null
-                            createSheetConfig = CreateSheetConfig(
-                                timeBlock = TaskConstants.TIME_BLOCK_ANYTIME,
-                                backgroundColor = TaskUtils.getTimeBlockColor(TaskConstants.TIME_BLOCK_ANYTIME),
-                                titleColor = TaskUtils.getTimeBlockTitleColor(TaskConstants.TIME_BLOCK_ANYTIME),
+                            createSheetConfig = CreateTaskSheetThemes.forUiTheme(
+                                appUiTheme,
+                                TaskConstants.TIME_BLOCK_ANYTIME,
                             )
                         },
                         expandedNoteId = expandedNoteId,
@@ -294,11 +296,7 @@ fun ViewScreen(
                     createLabel = meta.label
                 },
                 onTimeBlockChange = { newTimeBlock ->
-                    createSheetConfig = createSheetConfig?.copy(
-                        timeBlock = newTimeBlock,
-                        backgroundColor = TaskUtils.getTimeBlockColor(newTimeBlock),
-                        titleColor = TaskUtils.getTimeBlockTitleColor(newTimeBlock),
-                    )
+                    createSheetConfig = CreateTaskSheetThemes.forUiTheme(appUiTheme, newTimeBlock)
                 },
                 sheetTaskDate = createTargetDate,
                 onSheetTaskDateChange = { createTargetDate = it },

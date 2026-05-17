@@ -94,6 +94,7 @@ fun GlassMainScreen(
 
     val taskUiState by taskViewModel.uiState.collectAsState()
     val urgencyConfig by settingsViewModel.urgencyConfig.collectAsState()
+    val atmosphereWallpaperUri by settingsViewModel.atmosphereWallpaperUri.collectAsState()
 
     // Keep TaskUtils static cache in sync
     LaunchedEffect(urgencyConfig) {
@@ -110,9 +111,15 @@ fun GlassMainScreen(
                 .glassHazeSource(glassHazeState),
         ) {
             if (com.example.kairosapplication.core.ui.constants.GlassConstants.usesBackdropBlur) {
-                com.example.kairosapplication.ui.KairosAtmosphereWallpaper(Modifier.fillMaxSize())
+                com.example.kairosapplication.ui.KairosAtmosphereWallpaper(
+                    Modifier.fillMaxSize(),
+                    wallpaperUri = atmosphereWallpaperUri,
+                )
             } else {
-                com.example.kairosapplication.ui.KairosAtmosphereBackground(Modifier.fillMaxSize())
+                com.example.kairosapplication.ui.KairosAtmosphereBackground(
+                    Modifier.fillMaxSize(),
+                    wallpaperUri = atmosphereWallpaperUri,
+                )
             }
         }
         if (com.example.kairosapplication.core.ui.constants.GlassConstants.usesBackdropBlur) {
@@ -120,7 +127,10 @@ fun GlassMainScreen(
         }
 
         if (bootReady && !needsLanguageOnboarding) {
-            ProvideGlassAtmosphereUi(hazeState = glassHazeState) {
+            ProvideGlassAtmosphereUi(
+                hazeState = glassHazeState,
+                wallpaperUri = atmosphereWallpaperUri,
+            ) {
             CompositionLocalProvider(
                 LocalCurrentLanguage provides languageState,
                 LocalUrgencyConfig provides urgencyConfig,

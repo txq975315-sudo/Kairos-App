@@ -12,6 +12,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.dp
+import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 
 /**
@@ -29,6 +33,24 @@ fun GlassSurface(
     wrapHazeToContent: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+        val classicBorder = Color(0xFFE8EAEF)
+        Box(
+            modifier = modifier
+                .shadow(
+                    elevation = 2.dp,
+                    shape = shape,
+                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                    spotColor = Color.Black.copy(alpha = 0.08f),
+                )
+                .clip(shape)
+                .background(AppColors.SurfaceWhite, shape)
+                .border(0.5.dp, classicBorder, shape),
+            content = content,
+        )
+        return
+    }
+
     val borderColor = Color.White.copy(alpha = GlassConstants.GlassBorderAlpha)
     val flatFrost = GlassConstants.usesBackdropBlur
     val sizedModifier = if (flatFrost && wrapHazeToContent) {

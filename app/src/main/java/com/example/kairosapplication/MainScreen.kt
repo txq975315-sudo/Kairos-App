@@ -5,7 +5,8 @@ import com.example.kairosapplication.ui.KairosAtmosphereBackground
 import com.example.kairosapplication.ui.KairosAtmosphereDimOverlay
 import com.example.kairosapplication.ui.KairosAtmosphereWallpaper
 import com.example.kairosapplication.ui.glass.GlassBottomNav
-import com.example.kairosapplication.ui.glass.ProvideGlassAtmosphereUi
+import com.example.kairosapplication.ui.ClassicBottomNav
+import com.example.kairosapplication.ui.glass.ProvideAppUiTheme
 import com.example.kairosapplication.ui.glass.glassMainNavTabs
 import com.example.kairosapplication.ui.glass.rememberGlassHazeState
 import com.example.kairosapplication.ui.glass.glassHazeSource
@@ -97,6 +98,7 @@ import com.example.kairosapplication.ui.mine.settings.NotificationSettingsScreen
 import com.example.kairosapplication.ui.mine.settings.PrivacySettingsScreen
 import com.example.kairosapplication.ui.mine.settings.SettingsScreen
 import com.example.kairosapplication.ui.mine.settings.SettingsViewModel
+import com.example.kairosapplication.ui.mine.settings.AtmosphereBackgroundSettingsScreen
 import com.example.kairosapplication.ui.mine.settings.ThemeSettingsScreen
 import com.example.kairosapplication.ui.mine.settings.UrgencySettingsScreen
 import com.example.kairosapplication.ui.mine.settings.WidgetSettingsScreen
@@ -110,6 +112,8 @@ import com.example.kairosapplication.widget.WidgetClickHandler
 import com.example.kairosapplication.widget.WidgetManager
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.ui.theme.BackgroundColor
 import com.example.kairosapplication.ui.theme.PrimaryTextColor
 import com.example.kairosapplication.ui.theme.SecondaryTextColor
 import com.example.taskmodel.viewmodel.TaskViewModel
@@ -165,6 +169,10 @@ fun MainScreen(
     )
     val taskUiState by taskViewModel.uiState.collectAsState()
     val urgencyConfig by settingsViewModel.urgencyConfig.collectAsState()
+    val atmosphereWallpaperUri by settingsViewModel.atmosphereWallpaperUri.collectAsState()
+    val uiThemeKey by settingsViewModel.uiTheme.collectAsState()
+    val appUiTheme = remember(uiThemeKey) { AppUiTheme.fromStorageKey(uiThemeKey) }
+    val useGlassShell = appUiTheme == AppUiTheme.Glass
     var lastKnownTaskIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     // Keep TaskUtils static cache in sync with user-customised urgency config
@@ -227,6 +235,7 @@ fun MainScreen(
     var showImportScreen by remember { mutableStateOf(false) }
     var showNotificationSettings by remember { mutableStateOf(false) }
     var showThemeSettings by remember { mutableStateOf(false) }
+    var showAtmosphereBackgroundSettings by remember { mutableStateOf(false) }
     var showMoodSettings by remember { mutableStateOf(false) }
     var showWidgetSettings by remember { mutableStateOf(false) }
     var showLanguageSettings by remember { mutableStateOf(false) }
@@ -243,11 +252,15 @@ fun MainScreen(
     val essayRoute = essayNavBackStackEntry?.destination?.route
     val hideBottomBar =
         (selectedTab == AppTab.Today && currentRoute == "create") ||
-            (selectedTab == AppTab.Essay && essayRoute != null && essayRoute != "essay_main") ||
+            (selectedTab == AppTab.Essay &&
+                essayRoute != null &&
+                essayRoute != "essay_main" &&
+                essayRoute != "essay_search") ||
             (selectedTab == AppTab.Mine &&
                 (showTopicManageHub || showMineAllRecords || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
-                    showImportScreen || showNotificationSettings || showThemeSettings || showMoodSettings ||
-                    showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings || showQuoteSettings || showUrgencySettings))
+                    showImportScreen || showNotificationSettings || showThemeSettings || showAtmosphereBackgroundSettings ||
+                    showMoodSettings || showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings ||
+                    showQuoteSettings || showUrgencySettings))
     var showCreatePendingLimitDialog by remember { mutableStateOf(false) }
     var createLimitTargetDate by remember { mutableStateOf<LocalDate?>(null) }
     var essayOpenTopicPrimary by remember { mutableStateOf<String?>(null) }
@@ -264,6 +277,7 @@ fun MainScreen(
             showImportScreen = false
             showNotificationSettings = false
             showThemeSettings = false
+            showAtmosphereBackgroundSettings = false
             showMoodSettings = false
             showWidgetSettings = false
             showLanguageSettings = false
@@ -277,22 +291,40 @@ fun MainScreen(
     val glassHazeState = rememberGlassHazeState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .glassHazeSource(glassHazeState),
-        ) {
-            if (GlassConstants.usesBackdropBlur) {
-                KairosAtmosphereWallpaper(Modifier.fillMaxSize())
-            } else {
-                KairosAtmosphereBackground(Modifier.fillMaxSize())
+        if (useGlassShell) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .glassHazeSource(glassHazeState),
+            ) {
+                if (GlassConstants.usesBackdropBlur) {
+                    KairosAtmosphereWallpaper(
+                        Modifier.fillMaxSize(),
+                        wallpaperUri = atmosphereWallpaperUri,
+                    )
+                } else {
+                    KairosAtmosphereBackground(
+                        Modifier.fillMaxSize(),
+                        wallpaperUri = atmosphereWallpaperUri,
+                    )
+                }
             }
-        }
-        if (GlassConstants.usesBackdropBlur) {
-            KairosAtmosphereDimOverlay(Modifier.fillMaxSize())
+            if (GlassConstants.usesBackdropBlur) {
+                KairosAtmosphereDimOverlay(Modifier.fillMaxSize())
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(BackgroundColor),
+            )
         }
         if (bootReady && !needsLanguageOnboarding) {
-            ProvideGlassAtmosphereUi(hazeState = glassHazeState) {
+            ProvideAppUiTheme(
+                theme = appUiTheme,
+                hazeState = if (useGlassShell) glassHazeState else null,
+                wallpaperUri = if (useGlassShell) atmosphereWallpaperUri else null,
+            ) {
             CompositionLocalProvider(
                 LocalCurrentLanguage provides languageState,
                 LocalUrgencyConfig provides urgencyConfig,
@@ -328,11 +360,19 @@ fun MainScreen(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                GlassBottomNav(
-                    selectedIndex = selectedTab.ordinal,
-                    onTabSelected = { selectedTab = AppTab.entries[it] },
-                    tabs = glassMainNavTabs(),
-                )
+                if (useGlassShell) {
+                    GlassBottomNav(
+                        selectedIndex = selectedTab.ordinal,
+                        onTabSelected = { selectedTab = AppTab.entries[it] },
+                        tabs = glassMainNavTabs(),
+                    )
+                } else {
+                    ClassicBottomNav(
+                        selectedIndex = selectedTab.ordinal,
+                        onTabSelected = { selectedTab = AppTab.entries[it] },
+                        tabs = glassMainNavTabs(),
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -465,6 +505,13 @@ fun MainScreen(
                             showSettingsScreen = true
                         }
                     )
+                    showAtmosphereBackgroundSettings -> AtmosphereBackgroundSettingsScreen(
+                        viewModel = settingsViewModel,
+                        onBack = {
+                            showAtmosphereBackgroundSettings = false
+                            showSettingsScreen = true
+                        },
+                    )
                     showMoodSettings -> MoodSettingsScreen(
                         onBack = {
                             showMoodSettings = false
@@ -526,6 +573,10 @@ fun MainScreen(
                         onNavigateToTheme = {
                             showSettingsScreen = false
                             showThemeSettings = true
+                        },
+                        onNavigateToAtmosphereBackground = {
+                            showSettingsScreen = false
+                            showAtmosphereBackgroundSettings = true
                         },
                         onNavigateToMood = {
                             showSettingsScreen = false

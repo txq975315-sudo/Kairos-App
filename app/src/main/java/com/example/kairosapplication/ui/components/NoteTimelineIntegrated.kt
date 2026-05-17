@@ -33,28 +33,19 @@ import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
 import com.example.kairosapplication.ui.topic.rememberTopicSecondaryLabel
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.taskmodel.model.Note
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val IntegratedSummaryColor = Color(0xFF000000)
-private val IntegratedBodyColor = Color(0xFF333333)
-private val TopicCapsuleBg = Color(0xFFF0F0F0)
+private val SecondarySummaryGap = 1.dp
 
 /** Vertical inset so the rail sits ~10–15dp from adjacent note times (see day list spacing). */
 private val RailLineEndInset = 12.dp
-
-/** Push the rail below the time row to avoid overlap. */
 private val RailLineBelowTimeShift = 6.dp
-
-/** Extends drawable rail length while keeping total vertical margin budget. */
 private val RailLineLengthExtra = 6.dp
-
-/** Shorten rail from the top; bottom anchor unchanged. */
 private val RailLineTopCut = 4.dp
-
-private val SecondarySummaryGap = 1.dp
 
 /**
  * Pure timeline: line 1 = time + optional secondary + topic capsule; optional summary row;
@@ -71,8 +62,8 @@ fun NoteTimelineIntegrated(
     expanded: Boolean = false,
     onToggleExpand: () -> Unit = {},
     publishedActions: PublishedNoteCardActions? = null,
-    /** Dark wallpaper: use light summary/body/capsule and action colors. */
-    lightForeground: Boolean = false,
+    /** When true, time rail is rendered by [TimelineIntegratedDayBlock]. */
+    externalTimeRail: Boolean = false,
 ) {
     val zone = ZoneId.systemDefault()
     val timeStr = remember(note.createdAt) {
@@ -101,14 +92,16 @@ fun NoteTimelineIntegrated(
     }
     val bodyMaxLines = if (expandable && !expanded) 4 else Int.MAX_VALUE
 
-    val summaryColor = if (lightForeground) Color(0xE6FFFFFF) else IntegratedSummaryColor
-    val bodyColor = if (lightForeground) Color(0xCCFFFFFF) else IntegratedBodyColor
-    val capsuleLabelColor = if (lightForeground) Color(0xFFF5F5F5) else IntegratedBodyColor
-    val capsuleBg = if (lightForeground) Color(0x33FFFFFF) else TopicCapsuleBg
-    val metaTagColor = if (lightForeground) Color(0xB3FFFFFF) else AppColors.HintText
+    val cardText = LocalGlassTextColors.current
+    val summaryColor = cardText.primary
+    val bodyColor = cardText.secondary
+    val capsuleLabelColor = cardText.primary
+    val capsuleBg = Color.White.copy(alpha = 0.2f)
+    val metaTagColor = cardText.muted
 
-    val railWidth = 40.dp
-    val railToTextGap = 8.dp
+    val railWidth = if (externalTimeRail) 0.dp else 40.dp
+    val railToTextGap = if (externalTimeRail) 0.dp else 8.dp
+    val contentInset = railWidth + railToTextGap
     val railBottomInset =
         RailLineEndInset - RailLineBelowTimeShift - RailLineLengthExtra
 
@@ -122,36 +115,44 @@ fun NoteTimelineIntegrated(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .drawBehind {
-                    val topPx = (RailLineEndInset + RailLineBelowTimeShift + RailLineTopCut).toPx()
-                    val bottomPx = railBottomInset.coerceAtLeast(0.dp).toPx()
-                    val cx = railWidth.toPx() / 2f
-                    val lineW = 2.dp.toPx()
-                    drawRect(
-                        color = AppColors.TimelineLine,
-                        topLeft = Offset(cx - lineW / 2f, topPx),
-                        size = Size(lineW, (size.height - topPx - bottomPx).coerceAtLeast(0f))
-                    )
-                }
+                .then(
+                    if (externalTimeRail) {
+                        Modifier
+                    } else {
+                        Modifier.drawBehind {
+                            val topPx = (RailLineEndInset + RailLineBelowTimeShift + RailLineTopCut).toPx()
+                            val bottomPx = railBottomInset.coerceAtLeast(0.dp).toPx()
+                            val cx = 40.dp.toPx() / 2f
+                            val lineW = 1.dp.toPx()
+                            drawRect(
+                                color = NoteCardConstants.TimelineConnectorColor,
+                                topLeft = Offset(cx - lineW / 2f, topPx),
+                                size = Size(lineW, (size.height - topPx - bottomPx).coerceAtLeast(0f))
+                            )
+                        }
+                    }
+                )
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier.width(railWidth),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = timeStr,
-                        modifier = Modifier.fillMaxWidth(),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = accentColor,
-                        textAlign = TextAlign.Center
-                    )
+                if (!externalTimeRail) {
+                    Box(
+                        modifier = Modifier.width(40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = timeStr,
+                            modifier = Modifier.fillMaxWidth(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = accentColor,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    Spacer(Modifier.width(railToTextGap))
                 }
-                Spacer(Modifier.width(railToTextGap))
                 if (hasSecondary) {
                     Text(
                         text = secondaryText,
@@ -203,7 +204,7 @@ fun NoteTimelineIntegrated(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = railWidth + railToTextGap)
+                        .padding(start = contentInset)
                 )
             }
             Spacer(
@@ -218,7 +219,7 @@ fun NoteTimelineIntegrated(
             val (mainBody, parsedReview) = NoteCardConstants.splitReviewFromBody(note.body)
             Text(
                 text = mainBody.ifBlank { " " },
-                modifier = Modifier.padding(start = railWidth + railToTextGap),
+                modifier = Modifier.padding(start = contentInset),
                 fontSize = 14.sp,
                 color = bodyColor,
                 maxLines = bodyMaxLines,
@@ -230,20 +231,20 @@ fun NoteTimelineIntegrated(
                 NoteImageRow(
                     imageUris = note.imageUris,
                     maxImages = 4,
-                    modifier = Modifier.padding(start = railWidth + railToTextGap)
+                    modifier = Modifier.padding(start = contentInset)
                 )
             }
             if (parsedReview != null) {
                 Spacer(Modifier.height(8.dp))
-                val commentTint = if (lightForeground) Color(0x99FFFFFF) else AppColors.HintText
-                val timeTint = if (lightForeground) Color(0xB3FFFFFF) else AppColors.HintText
+                val commentTint = cardText.muted
+                val timeTint = cardText.muted
                 NoteReviewSection(
                     review = parsedReview,
                     expanded = expanded || !expandable,
                     collapsedMaxLines = if (expandable && !expanded) 2 else Int.MAX_VALUE,
                     textColor = commentTint,
                     timestampColor = timeTint,
-                    modifier = Modifier.padding(start = railWidth + railToTextGap),
+                    modifier = Modifier.padding(start = contentInset),
                 )
             }
             if (tagsLine != null || projectGuillemet != null) {
@@ -251,7 +252,7 @@ fun NoteTimelineIntegrated(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = railWidth + railToTextGap),
+                        .padding(start = contentInset),
                     verticalAlignment = Alignment.Bottom
                 ) {
                     if (tagsLine != null) {
@@ -280,21 +281,20 @@ fun NoteTimelineIntegrated(
             if (expandable && expanded) {
                 Spacer(Modifier.height(10.dp))
                 if (publishedActions != null) {
-                    PublishedNoteActionsRow(
-                        actions = publishedActions,
-                        hasProjects = note.projectIds.isNotEmpty(),
-                        horizontalContentPadding = 8.dp,
-                        lightForeground = lightForeground
-                    )
-                } else {
-                    TextButton(
-                        onClick = { onNoteClick(note.id) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            "Edit",
-                            color = if (lightForeground) Color.White else AppColors.PrimaryText
+                        PublishedNoteActionsRow(
+                            actions = publishedActions,
+                            hasProjects = note.projectIds.isNotEmpty(),
+                            horizontalContentPadding = 8.dp,
                         )
+                    } else {
+                        TextButton(
+                            onClick = { onNoteClick(note.id) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Edit",
+                                color = cardText.primary,
+                            )
                     }
                 }
             }

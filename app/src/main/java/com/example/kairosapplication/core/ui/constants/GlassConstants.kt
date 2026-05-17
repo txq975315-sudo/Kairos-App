@@ -211,5 +211,7 @@ object GlassConstants {
     val BottomNavSelectedChipWidth = 68.dp
     val BottomNavSelectedChipHeight = 52.dp
     val BottomNavTabSlotHeight = 56.dp
+    /** Frost dock extends above the hairline so the selected chip highlight reads clearly. */
+    val BottomNavDockTopExtension = 10.dp
     val BottomNavTopBorderAlpha = 0.22f
 }

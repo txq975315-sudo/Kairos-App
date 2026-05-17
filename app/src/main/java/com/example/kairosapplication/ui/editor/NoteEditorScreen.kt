@@ -23,12 +23,13 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -96,6 +97,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.glassBottomNavDock
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.components.NoteCardConstants
@@ -251,7 +255,7 @@ private fun canSaveDraft(primary: String, summary: String, secondary: String): B
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NoteEditorScreen(
     noteId: Long?,
@@ -479,7 +483,7 @@ fun NoteEditorScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(AppColors.ScreenBackground)
+                .background(Color.Transparent)
                 .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -538,7 +542,7 @@ fun NoteEditorScreen(
     val draftEnabled = canSaveDraft(primaryCategory, behaviorSummary, secondaryCategory)
 
     Scaffold(
-        containerColor = AppColors.ScreenBackground,
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             EditorTopBar(
@@ -575,9 +579,13 @@ fun NoteEditorScreen(
         }
     ) { padding ->
         val layoutDirection = LocalLayoutDirection.current
-        // Scaffold bottom padding already follows system bars; adding imePadding stacks gaps.
-        // Consume navigationBars ∪ ime once so the toolbar sits flush above the keyboard.
-        Column(
+        val editorDockHeight = 56.dp
+        val toolbarBottomInset = if (WindowInsets.isImeVisible) {
+            Modifier.imePadding()
+        } else {
+            Modifier.navigationBarsPadding()
+        }
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
@@ -585,16 +593,15 @@ fun NoteEditorScreen(
                         top = padding.calculateTopPadding(),
                         start = padding.calculateStartPadding(layoutDirection),
                         end = padding.calculateEndPadding(layoutDirection),
-                        bottom = 0.dp
-                    )
-                )
-                .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
+                    ),
+                ),
         ) {
             Column(
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxSize()
+                    .padding(bottom = editorDockHeight)
                     .verticalScroll(scrollState)
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
             ) {
                 HorizontalDivider(color = DividerLight, thickness = 1.dp)
 
@@ -721,12 +728,15 @@ fun NoteEditorScreen(
 
             }
 
-            HorizontalDivider(color = DividerLight, thickness = 1.dp)
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = AppColors.ScreenBackground,
-                shadowElevation = 0.dp
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .then(toolbarBottomInset)
+                    .glassBottomNavDock(),
             ) {
+                HorizontalDivider(color = DividerLight.copy(alpha = 0.45f), thickness = 1.dp)
                 EditorBottomToolBar(
                     mood = moodIcon,
                     onMoodSelected = { m -> moodIcon = if (moodIcon == m) null else m },
@@ -757,7 +767,7 @@ fun NoteEditorScreen(
                         sceneTags = next
                         keyboardController?.hide()
                         focusManager.clearFocus(true)
-                    }
+                    },
                 )
             }
         }
@@ -771,46 +781,51 @@ private fun EditorTopBar(
     onSaveDraft: () -> Unit,
     onPost: () -> Unit,
     draftEnabled: Boolean,
-    postEnabled: Boolean
+    postEnabled: Boolean,
 ) {
-    Surface(color = AppColors.SurfaceWhite, shadowElevation = 0.dp) {
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val useLightChrome = !LocalGlassAtmosphereUi.current.zones.topIsLight
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        CommonBackButton(
+            onClick = onBackClick,
+            contentDescription = LocalizedStrings.get("essay_editor_cd_back"),
+        )
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            CommonBackButton(
-                onClick = onBackClick,
-                contentDescription = LocalizedStrings.get("essay_editor_cd_back"),
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            TextButton(
+                onClick = onSaveDraft,
+                enabled = draftEnabled,
+                modifier = Modifier.padding(0.dp),
             ) {
-                TextButton(
-                    onClick = onSaveDraft,
-                    enabled = draftEnabled,
-                    modifier = Modifier.padding(0.dp)
-                ) {
-                    Text(LocalizedStrings.get("essay_editor_save_draft"), fontSize = 13.sp, color = AppColors.SecondaryText)
-                }
-                Button(
-                    onClick = onPost,
-                    enabled = postEnabled,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = XiaohongshuPostRed,
-                        disabledContainerColor = XiaohongshuPostRedDisabled,
-                        contentColor = Color.White,
-                        disabledContentColor = Color.White.copy(alpha = 0.7f)
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(AppShapes.CardRadius)
-                ) {
-                    Text(LocalizedStrings.get("essay_editor_post"), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                }
+                Text(
+                    LocalizedStrings.get("essay_editor_save_draft"),
+                    fontSize = 13.sp,
+                    color = chrome.secondary,
+                    style = glassChromeTextStyle(androidx.compose.ui.text.TextStyle.Default, useLightChrome),
+                )
+            }
+            Button(
+                onClick = onPost,
+                enabled = postEnabled,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = XiaohongshuPostRed,
+                    disabledContainerColor = XiaohongshuPostRedDisabled,
+                    contentColor = Color.White,
+                    disabledContentColor = Color.White.copy(alpha = 0.7f),
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(AppShapes.CardRadius),
+            ) {
+                Text(LocalizedStrings.get("essay_editor_post"), fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
         }
     }

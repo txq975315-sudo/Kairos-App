@@ -1,7 +1,6 @@
 package com.example.kairosapplication
 
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,18 +18,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,11 +35,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
-import com.example.kairosapplication.core.ui.AppColors
-import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppReviewLayout
 import com.example.kairosapplication.core.ui.AppScreenHeader
+import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.constants.GlassConstants
+import com.example.kairosapplication.ui.glass.GlassQuoteSection
+import com.example.kairosapplication.ui.glass.GlassSurface
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -140,34 +138,37 @@ fun DailyReviewScreen(
     val completedTasks = tasks.filter { it.taskDate == yesterday && it.isCompleted }
     val selectedTasks = tasks.filter { selectedTaskIds.contains(it.id) }
     val selectedOverdueTasks = overdueTasks.filter { selectedTaskIds.contains(it.id) }
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val useLightChrome = !LocalGlassAtmosphereUi.current.zones.topIsLight
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.ScreenBackground)
+            .background(Color.Transparent)
             .statusBarsPadding()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = AppSpacing.PageHorizontal)
     ) {
+        Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(AppColors.SurfaceWhite)
-                .padding(top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             CommonBackButton(onClick = onBack)
             Text(
                 text = LocalizedStrings.get("daily_review_title"),
                 fontSize = AppScreenHeader.titleSp,
                 fontWeight = AppScreenHeader.titleWeight,
-                color = AppScreenHeader.titleColor,
-                modifier = Modifier.padding(start = 8.dp)
+                color = chrome.primary,
+                style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
+                modifier = Modifier.padding(start = 8.dp),
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        QuoteSnapshot(text = LocalizedStrings.get("daily_review_quote"))
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(AppSpacing.SectionMedium))
+        GlassQuoteSection(quote = LocalizedStrings.get("daily_review_quote"))
+        Spacer(modifier = Modifier.height(AppSpacing.SectionMedium))
 
         Column(
             modifier = Modifier
@@ -178,9 +179,7 @@ fun DailyReviewScreen(
             ReviewSection(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 title = LocalizedStrings.get("daily_review_overdue", overdueTasks.size),
-                titleColor = Color(0xFFE53935),
-                backgroundColor = Color(0x40E53935),
-                borderColor = Color.Transparent,
+                titleColor = Color(0xFFFF6B6B),
                 tasks = overdueTasks,
                 selectedIds = selectedTaskIds,
                 allSelected = overdueTasks.isNotEmpty() && overdueTasks.all { selectedTaskIds.contains(it.id) },
@@ -193,9 +192,7 @@ fun DailyReviewScreen(
             ReviewSection(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 title = LocalizedStrings.get("daily_review_completed", completedTasks.size),
-                titleColor = Color(0xFF1A1A1A),
-                backgroundColor = Color(0x404A74FF),
-                borderColor = Color(0x664A74FF),
+                titleColor = GlassConstants.TextPrimary,
                 tasks = completedTasks,
                 selectedIds = selectedTaskIds,
                 allSelected = completedTasks.isNotEmpty() && completedTasks.all { selectedTaskIds.contains(it.id) },
@@ -214,35 +211,28 @@ fun DailyReviewScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(bottom = if (isDialogMode) 30.dp else 36.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Button(
+            ReviewGlassActionButton(
+                text = LocalizedStrings.get("daily_review_copy_today"),
+                enabled = selectedTasks.isNotEmpty(),
                 onClick = {
                     val copiedTasks = selectedTasks.map { task ->
                         task.copy(
                             id = nextTaskId.intValue++,
                             taskDate = today,
-                            isCompleted = false
+                            isCompleted = false,
                         )
                     }
                     onTasksCreated(copiedTasks)
                     selectedTaskIds.clear()
                 },
-                modifier = Modifier.weight(1f),
-                enabled = selectedTasks.isNotEmpty(),
-                shape = RoundedCornerShape(AppShapes.InsetContentRadius),
-                border = BorderStroke(1.dp, Color(0xFF1A1A1A)),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.GlassFill,
-                    contentColor = Color(0xFF1A1A1A),
-                    disabledContainerColor = Color(0xFFEDEDED),
-                    disabledContentColor = Color(0xFF9E9E9E)
-                )
-            ) {
-                Text(LocalizedStrings.get("daily_review_copy_today"), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            }
-
-            Button(
+                modifier = Modifier.weight(1f, fill = false),
+                accent = false,
+            )
+            ReviewGlassActionButton(
+                text = LocalizedStrings.get("daily_review_move_today"),
+                enabled = selectedOverdueTasks.isNotEmpty(),
                 onClick = {
                     val movedToToday = mutableListOf<Task>()
                     for (i in tasks.indices) {
@@ -250,7 +240,7 @@ fun DailyReviewScreen(
                         if (task.id in selectedTaskIds && task.taskDate == yesterday && !task.isCompleted) {
                             val movedTask = task.copy(
                                 taskDate = today,
-                                isCompleted = false
+                                isCompleted = false,
                             )
                             tasks[i] = movedTask
                             movedToToday.add(movedTask)
@@ -260,18 +250,9 @@ fun DailyReviewScreen(
                     onTasksCreated(movedToToday)
                     selectedTaskIds.clear()
                 },
-                modifier = Modifier.weight(1f),
-                enabled = selectedOverdueTasks.isNotEmpty(),
-                shape = RoundedCornerShape(AppShapes.InsetContentRadius),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8A7CF8),
-                    contentColor = Color.White,
-                    disabledContainerColor = Color(0xFFD5D0FF),
-                    disabledContentColor = Color(0xFFF5F3FF)
-                )
-            ) {
-                Text(LocalizedStrings.get("daily_review_move_today"), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            }
+                modifier = Modifier.weight(1f, fill = false),
+                accent = true,
+            )
         }
     }
 
@@ -311,30 +292,41 @@ fun DailyReviewScreen(
 }
 
 @Composable
-private fun QuoteSnapshot(text: String) {
-    Column(
-        modifier = Modifier
+private fun ReviewGlassActionButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Boolean,
+) {
+    val cardText = LocalGlassTextColors.current
+    val shape = RoundedCornerShape(GlassConstants.CornerRadius)
+    GlassSurface(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 2.dp)
+            .wrapContentHeight()
+            .clickable(enabled = enabled, onClick = onClick),
+        shape = shape,
+        fillAlpha = if (accent) GlassConstants.BottomNavSelectedFillAlpha else GlassConstants.PillFillAlpha,
+        wrapHazeToContent = true,
     ) {
-        HorizontalDivider(color = Color(0xFFE3E3E3), thickness = 1.dp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 14.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.FormatQuote,
-                contentDescription = null,
-                tint = Color(0xFF6B6B6B),
-                modifier = Modifier.size(16.dp)
+            Text(
+                text = text,
+                fontSize = 14.sp,
+                fontWeight = if (accent) FontWeight.Bold else FontWeight.SemiBold,
+                color = when {
+                    !enabled -> cardText.muted
+                    accent -> Color(0xFFE8E4FF)
+                    else -> cardText.primary
+                },
             )
-            Spacer(modifier = Modifier.size(6.dp))
-            Text(text = text, fontSize = 14.sp, color = Color(0xFF5F687A))
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        HorizontalDivider(color = Color(0xFFE3E3E3), thickness = 1.dp)
     }
 }
 
@@ -343,69 +335,69 @@ private fun ReviewSection(
     modifier: Modifier = Modifier,
     title: String,
     titleColor: Color,
-    backgroundColor: Color,
-    borderColor: Color,
     tasks: List<Task>,
     selectedIds: Collection<Int>,
     allSelected: Boolean,
     onSelectAll: () -> Unit,
     selectable: Boolean,
     onToggle: (Int) -> Unit,
-    onEdit: (Task) -> Unit
+    onEdit: (Task) -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
-            .border(1.dp, borderColor, RoundedCornerShape(AppShapes.BottomBarSelectedRadius))
-            .background(backgroundColor)
-            .padding(10.dp)
+    val shape = RoundedCornerShape(GlassConstants.CornerRadius)
+    val cardText = LocalGlassTextColors.current
+    val selectAccent = Color(0xFF8A7CF8)
+
+    GlassSurface(
+        modifier = modifier.fillMaxWidth().fillMaxHeight(),
+        shape = shape,
+        fillAlpha = GlassConstants.TimeBlockFillAlpha,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = title,
-                color = titleColor,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .clickable(enabled = tasks.isNotEmpty(), onClick = onSelectAll)
-                    .border(
-                        width = 2.dp,
-                        color = if (allSelected) Color(0xFF8A7CF8) else Color(0xFF1A1A1A),
-                        shape = CircleShape
-                    )
-                    .background(
-                        if (allSelected) Color(0xFF8A7CF8).copy(alpha = 0.2f) else Color.Transparent,
-                        CircleShape
-                    )
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .heightIn(min = AppReviewLayout.minTaskListViewport)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            tasks.forEach { task ->
-                DailyTaskCard(
-                    task = task,
-                    selected = selectedIds.contains(task.id),
-                    selectable = selectable,
-                    onToggle = { onToggle(task.id) },
-                    onEdit = { onEdit(task) }
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = title,
+                    color = titleColor,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
                 )
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .clickable(enabled = tasks.isNotEmpty(), onClick = onSelectAll)
+                        .border(
+                            width = 2.dp,
+                            color = if (allSelected) selectAccent else cardText.secondary,
+                            shape = CircleShape,
+                        )
+                        .background(
+                            if (allSelected) selectAccent.copy(alpha = 0.2f) else Color.Transparent,
+                            CircleShape,
+                        ),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .heightIn(min = AppReviewLayout.minTaskListViewport)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tasks.forEach { task ->
+                    DailyTaskCard(
+                        task = task,
+                        selected = selectedIds.contains(task.id),
+                        selectable = selectable,
+                        onToggle = { onToggle(task.id) },
+                        onEdit = { onEdit(task) },
+                    )
+                }
             }
         }
     }
@@ -417,26 +409,29 @@ private fun DailyTaskCard(
     selected: Boolean,
     selectable: Boolean,
     onToggle: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
 ) {
-    Card(
+    val cardText = LocalGlassTextColors.current
+    val selectAccent = Color(0xFF8A7CF8)
+    val shape = RoundedCornerShape(GlassConstants.CornerRadius)
+
+    GlassSurface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onEdit),
-        shape = RoundedCornerShape(AppShapes.InsetContentRadius),
-        colors = CardDefaults.cardColors(containerColor = AppColors.GlassFill),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+        shape = shape,
+        fillAlpha = GlassConstants.TaskCardFillAlpha,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = task.title,
-                color = if (task.isCompleted) AppColors.HintText else Color(0xFF000000),
+                color = if (task.isCompleted) cardText.muted else cardText.primary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
@@ -448,13 +443,17 @@ private fun DailyTaskCard(
                     .clickable(enabled = selectable, onClick = onToggle)
                     .border(
                         width = 2.dp,
-                        color = if (!selectable) Color(0xFFB0B0B0) else if (selected) Color(0xFF8A7CF8) else Color(0xFF1A1A1A),
-                        shape = CircleShape
+                        color = when {
+                            !selectable -> cardText.muted
+                            selected -> selectAccent
+                            else -> cardText.secondary
+                        },
+                        shape = CircleShape,
                     )
                     .background(
-                        if (selectable && selected) Color(0xFF8A7CF8).copy(alpha = 0.2f) else Color.Transparent,
-                        CircleShape
-                    )
+                        if (selectable && selected) selectAccent.copy(alpha = 0.2f) else Color.Transparent,
+                        CircleShape,
+                    ),
             )
         }
     }

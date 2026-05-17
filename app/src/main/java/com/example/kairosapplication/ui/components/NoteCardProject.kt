@@ -1,7 +1,6 @@
 package com.example.kairosapplication.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,8 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+
+import com.example.kairosapplication.core.ui.constants.GlassConstants
+import com.example.kairosapplication.ui.glass.GlassNoteCardShell
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,10 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,107 +81,27 @@ fun NoteCardProject(
     }
     val bodyMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE
 
-    val cardShape = RoundedCornerShape(AppShapes.CardRadius)
-    val glassBrush = Brush.verticalGradient(
-        colorStops = arrayOf(
-            0f to AppColors.TaskCardGlassTop,
-            0.42f to AppColors.TaskCardGlassMid,
-            1f to AppColors.TaskCardGlassBottom,
-        ),
-    )
-    val innerGlowBrush = Brush.verticalGradient(
-        colorStops = arrayOf(
-            0f to AppColors.TaskCardGlassInnerGlow,
-            0.3f to Color.Transparent,
-            0.7f to Color.Transparent,
-            1f to AppColors.TaskCardGlassInnerGlow.copy(alpha = 0.2f),
-        ),
-    )
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = AppColors.TaskCardShadowElevation,
-                shape = cardShape,
-                ambientColor = AppColors.TaskCardShadowColor,
-                spotColor = Color(0xFF1A2850).copy(alpha = 0.15f),
-            )
-            .clip(cardShape)
-            .border(
-                width = 1.1.dp,
-                color = AppColors.TaskCardGlassHairline,
-                shape = cardShape
-            )
-            .clickable {
-                if (expandable) onToggleExpand() else onNoteClick(note.id)
-            },
-        shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    val cardText = LocalGlassTextColors.current
+    GlassNoteCardShell(
+        modifier = modifier.fillMaxWidth(),
+        onClick = { if (expandable) onToggleExpand() else onNoteClick(note.id) },
     ) {
-        Box {
-            // Layer 1: Glass gradient base
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .background(glassBrush)
-            )
-            // Layer 2: Gray mist overlay (simulated blur)
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .blur(AppColors.TaskCardBlurRadius)
-                    .background(AppColors.TaskCardGrayMist)
-            )
-            // Layer 3: Inner glow
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .blur(AppColors.TaskCardBlurRadius)
-                    .background(innerGlowBrush)
-            )
-            // Layer 4: Top veil (extra glass sheen)
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .clip(cardShape)
-                    .background(AppColors.GlassFill.copy(alpha = 0.07f))
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(AppSpacing.CardHorizontal, AppSpacing.CardVertical)
-            ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(AppShapes.EmbedRadius))
-                        .background(AppColors.MorningBackground.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = emoji,
-                        fontSize = 20.sp
-                    )
-                }
+                NoteCategoryIconTile(emoji = emoji, fontSizeSp = 20)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = categoryLabel,
                         fontSize = 12.sp,
-                        color = AppColors.HintText
+                        color = cardText.muted
                     )
                     Text(
                         text = headline,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppColors.PrimaryText,
+                        color = cardText.primary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -194,7 +112,7 @@ fun NoteCardProject(
             Text(
                 text = projectMainBody.ifBlank { " " },
                 fontSize = 14.sp,
-                color = AppColors.SecondaryText,
+                color = cardText.secondary,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 20.sp
@@ -209,8 +127,8 @@ fun NoteCardProject(
                     review = projectParsedReview,
                     expanded = expanded || !expandable,
                     collapsedMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE,
-                    textColor = AppColors.HintText,
-                    timestampColor = AppColors.HintText,
+                    textColor = cardText.muted,
+                    timestampColor = cardText.muted,
                 )
             }
             if (note.sceneTags.isNotEmpty()) {
@@ -223,7 +141,7 @@ fun NoteCardProject(
                         Text(
                             text = tag,
                             fontSize = 12.sp,
-                            color = AppColors.SecondaryText,
+                            color = cardText.secondary,
                             modifier = Modifier
                                 .background(
                                     AppColors.EveningBackground.copy(alpha = 0.35f),
@@ -258,11 +176,9 @@ fun NoteCardProject(
                         onClick = { onNoteClick(note.id) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(LocalizedStrings.get("note_card_edit"), color = AppColors.PrimaryText)
+                        Text(LocalizedStrings.get("note_card_edit"), color = cardText.primary)
                     }
                 }
             }
-            }
-        }
     }
 }

@@ -49,6 +49,10 @@ fun NoteCard(
     timelineCompactThreeLines: Boolean = false,
     /** Optional custom card background color for timeline variant. */
     cardBackgroundOverride: Color? = null,
+    showTimeConnectorAbove: Boolean = false,
+    showTimeConnectorBelow: Boolean = false,
+    /** When true, left time rail is rendered by a parent [TimelineCardDayBlock]. */
+    externalTimeRail: Boolean = false,
 ) {
     when (variant) {
         NoteCardVariant.TIMELINE -> NoteCardTimeline(
@@ -62,6 +66,9 @@ fun NoteCard(
             publishedActions = publishedActions,
             timelineCompactThreeLines = timelineCompactThreeLines,
             cardBackgroundOverride = cardBackgroundOverride,
+            showTimeConnectorAbove = showTimeConnectorAbove,
+            showTimeConnectorBelow = showTimeConnectorBelow,
+            externalTimeRail = externalTimeRail,
         )
         NoteCardVariant.TOPIC -> NoteCardTopic(
             note = note,

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Brightness6
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Cached
 import androidx.compose.material.icons.outlined.Feedback
 import androidx.compose.material.icons.outlined.FormatQuote
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kairosapplication.core.ui.AppUiTheme
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
@@ -71,6 +73,7 @@ fun SettingsScreen(
     onNavigateToImport: () -> Unit,
     onNavigateToNotification: () -> Unit,
     onNavigateToTheme: () -> Unit,
+    onNavigateToAtmosphereBackground: () -> Unit,
     onNavigateToMood: () -> Unit,
     onNavigateToWidget: () -> Unit,
     onNavigateToLanguage: () -> Unit,
@@ -88,6 +91,7 @@ fun SettingsScreen(
     val reflectionTime by viewModel.dailyReflectionTime.collectAsState()
     val dark by viewModel.darkMode.collectAsState()
     val theme by viewModel.themeColor.collectAsState()
+    val uiTheme by viewModel.uiTheme.collectAsState()
     val languageCode by viewModel.language.collectAsState()
 
     fun toastSoon() {
@@ -149,8 +153,14 @@ fun SettingsScreen(
                 SettingsProtoRow(
                     icon = Icons.Outlined.Brightness6,
                     title = LocalizedStrings.get("theme_settings"),
-                    subtitle = "${themeSummary(dark)} · ${colorSummary(theme)}",
+                    subtitle = "${uiThemeSummary(uiTheme)} · ${themeSummary(dark)} · ${colorSummary(theme)}",
                     onClick = onNavigateToTheme
+                )
+                SettingsProtoRow(
+                    icon = Icons.Outlined.Image,
+                    title = LocalizedStrings.get("atmosphere_background_row"),
+                    subtitle = null,
+                    onClick = onNavigateToAtmosphereBackground
                 )
                 SettingsProtoRow(
                     icon = Icons.Outlined.Widgets,
@@ -299,6 +309,12 @@ private fun SettingsProtoRow(
             color = Color(0xFFE8E8E8)
         )
     }
+}
+
+@Composable
+private fun uiThemeSummary(key: String): String = when (key) {
+    AppUiTheme.STORAGE_CLASSIC -> LocalizedStrings.get("ui_theme_classic")
+    else -> LocalizedStrings.get("ui_theme_glass")
 }
 
 @Composable

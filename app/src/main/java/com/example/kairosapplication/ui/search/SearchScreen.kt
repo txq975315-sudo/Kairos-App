@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -33,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,6 +55,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -71,6 +73,11 @@ import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.ui.components.NoteCardVariant
 import com.example.kairosapplication.ui.components.NoteCommentBottomSheet
 import com.example.kairosapplication.ui.components.PublishedNoteCardActions
+import com.example.kairosapplication.core.ui.constants.GlassConstants
+import com.example.kairosapplication.ui.glass.GlassSurface
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
+import com.example.kairosapplication.ui.glass.quoteDividerColor
 import com.example.kairosapplication.ui.components.appendReviewCommentToNote
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteStatus
@@ -102,13 +109,7 @@ private val categoryFilterOrder = listOf(
 
 private val moodOptions = listOf("😊", "😃", "😄", "😆", "😐", "😢", "😡", "🤔", "😌", "❤️")
 
-private val SearchFieldPurple = NoteCardConstants.categorySecondaryColor(NotePrimaryCategory.SELF_AWARENESS)
-
-/** Filter / list dividers (aligned with app theme) */
-private val SearchRowDividerColor = AppColors.Divider
-
-/** Recent chip: hairline border, alpha 0.1 on primary text */
-private val RecentChipBorderColor = AppColors.PrimaryText.copy(alpha = 0.1f)
+private val SearchInsetDividerHorizontal = 20.dp
 
 private const val CategoryAllKey = "__ALL__"
 private const val MoodAnyKey = "__ANY__"
@@ -121,8 +122,13 @@ fun SearchScreen(
     taskViewModel: TaskViewModel,
     onBackClick: () -> Unit,
     onNoteClick: (Long) -> Unit,
-    onNavigateToNewNote: () -> Unit
+    onNavigateToNewNote: () -> Unit,
+    mainBottomBarInset: Dp = 0.dp,
 ) {
+    val atmosphere = LocalGlassAtmosphereUi.current
+    val chrome = atmosphere.topChrome
+    val useLightChrome = !atmosphere.zones.topIsLight
+    val dividerColor = atmosphere.quoteDividerColor()
     val uiState by taskViewModel.uiState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -263,12 +269,12 @@ fun SearchScreen(
         onNoteDeleted = { nid -> if (expandedNoteId == nid) expandedNoteId = null }
     )
 
-    Scaffold(containerColor = AppColors.ScreenBackground) { padding ->
+    Scaffold(containerColor = Color.Transparent) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(AppColors.ScreenBackground)
+                .padding(bottom = mainBottomBarInset),
         ) {
             SearchBar(
                 query = searchQuery,
@@ -280,10 +286,11 @@ fun SearchScreen(
                     if (t.isNotEmpty()) {
                         scope.launch { addRecentSearch(context, t) }
                     }
-                }
+                },
+                chromePrimary = chrome.primary,
+                chromeSecondary = chrome.secondary,
+                useLightChrome = useLightChrome,
             )
-
-            HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
 
             if (recentSearches.isNotEmpty()) {
                 RecentSearchChipsSection(
@@ -294,48 +301,57 @@ fun SearchScreen(
                     },
                     onDeleteSearch = { term ->
                         scope.launch { removeRecentSearch(context, term) }
-                    }
+                    },
+                    chipTextColor = chrome.secondary,
                 )
-                HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
             }
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 16.dp),
+            ) {
                 item {
-                    HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
-                    FilterRow(
-                        label = LocalizedStrings.get("search_filter_category"),
-                        value = selectedCategory?.let { TopicDisplayStrings.primaryLabel(it, lang, context) }
-                            ?: LocalizedStrings.get("search_filter_all"),
-                        onClick = { showCategoryDialog = true }
-                    )
-                    HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
-                }
-
-                item {
-                    FilterRow(
-                        label = LocalizedStrings.get("search_filter_date_range"),
-                        value = dateRangeDisplayLabel(selectedDateRange, lang, context),
-                        onClick = { showDateRangeDialog = true }
-                    )
-                    HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
-                }
-
-                item {
-                    FilterRow(
-                        label = LocalizedStrings.get("search_filter_has_images"),
-                        value = imageFilterDisplayLabel(selectedImageFilter, lang, context),
-                        onClick = { showHasImagesDialog = true }
-                    )
-                    HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
-                }
-
-                item {
-                    FilterRow(
-                        label = LocalizedStrings.get("search_filter_mood"),
-                        value = selectedMood ?: LocalizedStrings.get("search_filter_any"),
-                        onClick = { showMoodDialog = true }
-                    )
-                    HorizontalDivider(color = SearchRowDividerColor, thickness = 1.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = AppSpacing.PageHorizontal, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        FilterRow(
+                            label = LocalizedStrings.get("search_filter_category"),
+                            value = selectedCategory?.let { TopicDisplayStrings.primaryLabel(it, lang, context) }
+                                ?: LocalizedStrings.get("search_filter_all"),
+                            onClick = { showCategoryDialog = true },
+                            labelColor = chrome.primary,
+                            valueColor = chrome.secondary,
+                        )
+                        SearchInsetDivider(dividerColor)
+                        FilterRow(
+                            label = LocalizedStrings.get("search_filter_date_range"),
+                            value = dateRangeDisplayLabel(selectedDateRange, lang, context),
+                            onClick = { showDateRangeDialog = true },
+                            labelColor = chrome.primary,
+                            valueColor = chrome.secondary,
+                        )
+                        SearchInsetDivider(dividerColor)
+                        FilterRow(
+                            label = LocalizedStrings.get("search_filter_has_images"),
+                            value = imageFilterDisplayLabel(selectedImageFilter, lang, context),
+                            onClick = { showHasImagesDialog = true },
+                            labelColor = chrome.primary,
+                            valueColor = chrome.secondary,
+                        )
+                        SearchInsetDivider(dividerColor)
+                        FilterRow(
+                            label = LocalizedStrings.get("search_filter_mood"),
+                            value = selectedMood ?: LocalizedStrings.get("search_filter_any"),
+                            onClick = { showMoodDialog = true },
+                            labelColor = chrome.primary,
+                            valueColor = chrome.secondary,
+                        )
+                    }
                 }
 
                 item {
@@ -343,7 +359,8 @@ fun SearchScreen(
                         text = LocalizedStrings.get("search_results", filteredNotes.size),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppColors.PrimaryText,
+                        color = chrome.primary,
+                        style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(AppSpacing.PageHorizontal, 12.dp)
@@ -417,11 +434,7 @@ fun SearchScreen(
                                     null
                                 }
                             )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = AppSpacing.PageHorizontal),
-                                color = SearchRowDividerColor,
-                                thickness = 1.dp
-                            )
+                            SearchInsetDivider(dividerColor)
                         }
                     }
                 }
@@ -430,56 +443,102 @@ fun SearchScreen(
     }
 
     if (showCategoryDialog) {
-        KeyLabelFilterDialog(
+        GlassFilterDialog(
             title = LocalizedStrings.get("search_filter_category"),
-            options = categoryDialogOptions,
-            selectedKey = selectedCategory ?: CategoryAllKey,
-            onSelect = { key ->
-                selectedCategory = if (key == CategoryAllKey) null else key
-                showCategoryDialog = false
-            },
-            onDismiss = { showCategoryDialog = false }
-        )
+            onDismiss = { showCategoryDialog = false },
+            chromePrimary = chrome.primary,
+            useLightChrome = useLightChrome,
+        ) {
+            categoryDialogOptions.forEach { (key, label) ->
+                val selected = (selectedCategory ?: CategoryAllKey) == key
+                GlassFilterOptionRow(
+                    label = label,
+                    selected = selected,
+                    onClick = {
+                        selectedCategory = if (key == CategoryAllKey) null else key
+                        showCategoryDialog = false
+                    },
+                    chromePrimary = chrome.primary,
+                    useLightChrome = useLightChrome,
+                )
+            }
+        }
     }
 
     if (showDateRangeDialog) {
-        EnumFilterDialog(
+        GlassFilterDialog(
             title = LocalizedStrings.get("search_filter_date_range"),
-            options = dateDialogOptions,
-            selected = selectedDateRange,
-            onSelect = {
-                selectedDateRange = it
-                showDateRangeDialog = false
-            },
-            onDismiss = { showDateRangeDialog = false }
-        )
+            onDismiss = { showDateRangeDialog = false },
+            chromePrimary = chrome.primary,
+            useLightChrome = useLightChrome,
+        ) {
+            dateDialogOptions.forEach { (value, label) ->
+                GlassFilterOptionRow(
+                    label = label,
+                    selected = selectedDateRange == value,
+                    onClick = {
+                        selectedDateRange = value
+                        showDateRangeDialog = false
+                    },
+                    chromePrimary = chrome.primary,
+                    useLightChrome = useLightChrome,
+                )
+            }
+        }
     }
 
     if (showHasImagesDialog) {
-        EnumFilterDialog(
+        GlassFilterDialog(
             title = LocalizedStrings.get("search_filter_has_images"),
-            options = imageDialogOptions,
-            selected = selectedImageFilter,
-            onSelect = {
-                selectedImageFilter = it
-                showHasImagesDialog = false
-            },
-            onDismiss = { showHasImagesDialog = false }
-        )
+            onDismiss = { showHasImagesDialog = false },
+            chromePrimary = chrome.primary,
+            useLightChrome = useLightChrome,
+        ) {
+            imageDialogOptions.forEach { (value, label) ->
+                GlassFilterOptionRow(
+                    label = label,
+                    selected = selectedImageFilter == value,
+                    onClick = {
+                        selectedImageFilter = value
+                        showHasImagesDialog = false
+                    },
+                    chromePrimary = chrome.primary,
+                    useLightChrome = useLightChrome,
+                )
+            }
+        }
     }
 
     if (showMoodDialog) {
-        KeyLabelFilterDialog(
+        GlassFilterDialog(
             title = LocalizedStrings.get("search_filter_mood"),
-            options = moodDialogOptions,
-            selectedKey = selectedMood ?: MoodAnyKey,
-            onSelect = { key ->
-                selectedMood = if (key == MoodAnyKey) null else key
-                showMoodDialog = false
-            },
-            onDismiss = { showMoodDialog = false }
-        )
+            onDismiss = { showMoodDialog = false },
+            chromePrimary = chrome.primary,
+            useLightChrome = useLightChrome,
+        ) {
+            moodDialogOptions.forEach { (key, label) ->
+                GlassFilterOptionRow(
+                    label = label,
+                    selected = (selectedMood ?: MoodAnyKey) == key,
+                    onClick = {
+                        selectedMood = if (key == MoodAnyKey) null else key
+                        showMoodDialog = false
+                    },
+                    chromePrimary = chrome.primary,
+                    useLightChrome = useLightChrome,
+                )
+            }
+        }
     }
+}
+
+@Composable
+private fun SearchInsetDivider(color: Color) {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = SearchInsetDividerHorizontal),
+        color = color,
+        thickness = 0.5.dp,
+    )
 }
 
 @Composable
@@ -488,47 +547,52 @@ private fun SearchBar(
     onQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
     onClear: () -> Unit,
-    onSearchSubmit: () -> Unit
+    onSearchSubmit: () -> Unit,
+    chromePrimary: Color,
+    chromeSecondary: Color,
+    useLightChrome: Boolean,
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
-    val fieldText = Color.White
+    val fieldShape = RoundedCornerShape(AppShapes.ProminentRadius)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(AppColors.SurfaceWhite)
-            .padding(12.dp),
+            .statusBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         CommonBackButton(onClick = onBackClick)
-        Box(
+        GlassSurface(
             modifier = Modifier
                 .weight(1f)
-                .clip(RoundedCornerShape(AppShapes.ProminentRadius))
-                .background(SearchFieldPurple)
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .height(44.dp),
+            shape = fieldShape,
+            fillAlpha = GlassConstants.PillFillAlpha,
+            wrapHazeToContent = false,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 BasicTextField(
                     value = query,
                     onValueChange = onQueryChange,
                     modifier = Modifier.weight(1f),
-                    textStyle = TextStyle(
-                        fontSize = 16.sp,
-                        color = fieldText
+                    textStyle = glassChromeTextStyle(
+                        TextStyle(fontSize = 16.sp, color = chromePrimary),
+                        useLightChrome,
                     ),
-                    cursorBrush = SolidColor(fieldText),
+                    cursorBrush = SolidColor(chromePrimary),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
                         onSearch = {
                             onSearchSubmit()
                             keyboard?.hide()
-                        }
+                        },
                     ),
                     decorationBox = { inner ->
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -536,29 +600,86 @@ private fun SearchBar(
                                 Text(
                                     text = LocalizedStrings.get("search_placeholder"),
                                     fontSize = 16.sp,
-                                    color = fieldText.copy(alpha = 0.8f),
-                                    modifier = Modifier.align(Alignment.CenterStart)
+                                    color = chromeSecondary,
+                                    modifier = Modifier.align(Alignment.CenterStart),
                                 )
                             }
                             inner()
                         }
-                    }
+                    },
                 )
                 if (query.isNotEmpty()) {
                     IconButton(
                         onClick = onClear,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = LocalizedStrings.get("search_cd_clear"),
-                            tint = fieldText.copy(alpha = 0.8f),
-                            modifier = Modifier.size(18.dp)
+                            tint = chromeSecondary,
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GlassFilterDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    chromePrimary: Color,
+    useLightChrome: Boolean,
+    content: @Composable () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        GlassSurface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp),
+            shape = RoundedCornerShape(AppShapes.CardRadius),
+            fillAlpha = GlassConstants.TaskCardFillAlpha,
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Text(
+                    text = title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
+                    color = chromePrimary,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlassFilterOptionRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    chromePrimary: Color,
+    useLightChrome: Boolean,
+) {
+    val accent = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(if (selected) accent.copy(alpha = 0.14f) else Color.Transparent)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            fontSize = 16.sp,
+            color = if (selected) accent else chromePrimary,
+            style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
+        )
     }
 }
 
@@ -568,7 +689,8 @@ private fun RecentSearchChipsSection(
     recentSearches: List<String>,
     onChipClick: (String) -> Unit,
     onReplaceSearch: (String, String) -> Unit,
-    onDeleteSearch: (String) -> Unit
+    onDeleteSearch: (String) -> Unit,
+    chipTextColor: Color,
 ) {
     val display = recentSearches.take(MaxRecentChips)
     val row1 = display.take(RecentChipsPerRow)
@@ -596,7 +718,8 @@ private fun RecentSearchChipsSection(
                 RecentSearchChip(
                     text = term,
                     onClick = { onChipClick(term) },
-                    onLongClick = { editTarget = term }
+                    onLongClick = { editTarget = term },
+                    textColor = chipTextColor,
                 )
             }
         }
@@ -611,7 +734,8 @@ private fun RecentSearchChipsSection(
                     RecentSearchChip(
                         text = term,
                         onClick = { onChipClick(term) },
-                        onLongClick = { editTarget = term }
+                        onLongClick = { editTarget = term },
+                        textColor = chipTextColor,
                     )
                 }
             }
@@ -664,23 +788,21 @@ private fun RecentSearchChipsSection(
 private fun RecentSearchChip(
     text: String,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    textColor: Color,
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(AppShapes.MicroRadius))
-            .background(AppColors.SurfaceWhite, RoundedCornerShape(AppShapes.MicroRadius))
-            .border(1.dp, RecentChipBorderColor, RoundedCornerShape(AppShapes.MicroRadius))
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
-            .padding(horizontal = 12.dp, vertical = 1.dp)
+    val chipShape = RoundedCornerShape(GlassConstants.CornerRadius)
+    GlassSurface(
+        modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        shape = chipShape,
+        fillAlpha = GlassConstants.PillFillAlpha,
+        wrapHazeToContent = true,
     ) {
         Text(
             text = text,
             fontSize = 13.sp,
-            color = AppColors.SecondaryText
+            color = textColor,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
     }
 }
@@ -689,21 +811,21 @@ private fun RecentSearchChip(
 private fun FilterRow(
     label: String,
     value: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    labelColor: Color,
+    valueColor: Color,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 1.dp),
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
             fontSize = 14.sp,
-            color = AppColors.PrimaryText,
-            modifier = Modifier.padding(start = AppSpacing.PageHorizontal)
+            color = labelColor,
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -712,114 +834,14 @@ private fun FilterRow(
             Text(
                 text = value,
                 fontSize = 14.sp,
-                color = AppColors.SecondaryText
+                color = valueColor,
             )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = LocalizedStrings.get("search_cd_select"),
-                tint = AppColors.HintText,
-                modifier = Modifier
-                    .size(16.dp)
-                    .padding(end = AppSpacing.PageHorizontal)
+                tint = valueColor.copy(alpha = 0.7f),
+                modifier = Modifier.size(16.dp),
             )
-        }
-    }
-}
-
-@Composable
-private fun KeyLabelFilterDialog(
-    title: String,
-    options: List<Pair<String, String>>,
-    selectedKey: String,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val accent = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS)
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(AppShapes.CardRadius),
-            color = AppColors.SurfaceWhite,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.PrimaryText,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                options.forEach { (key, label) ->
-                    val selected = key == selectedKey
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSelect(key)
-                            }
-                            .background(
-                                if (selected) accent.copy(alpha = 0.1f) else Color.Transparent
-                            )
-                            .padding(vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = label,
-                            fontSize = 16.sp,
-                            color = if (selected) accent else AppColors.PrimaryText,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun <T> EnumFilterDialog(
-    title: String,
-    options: List<Pair<T, String>>,
-    selected: T,
-    onSelect: (T) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val accent = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS)
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(AppShapes.CardRadius),
-            color = AppColors.SurfaceWhite,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.PrimaryText,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                options.forEach { (value, label) ->
-                    val isSelected = value == selected
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(value) }
-                            .background(
-                                if (isSelected) accent.copy(alpha = 0.1f) else Color.Transparent
-                            )
-                            .padding(vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = label,
-                            fontSize = 16.sp,
-                            color = if (isSelected) accent else AppColors.PrimaryText,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }

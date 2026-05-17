@@ -46,12 +46,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
+import androidx.compose.ui.text.TextStyle
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.core.ui.AppSpacing
@@ -153,7 +157,7 @@ fun TrashScreen(
     }
 
     Scaffold(
-        containerColor = AppColors.ScreenBackground,
+        containerColor = Color.Transparent,
         topBar = {
             Column {
                 TrashTopBar(
@@ -238,6 +242,8 @@ private fun TrashTopBar(
     }
     val cdBack = LocalizedStrings.stringFor(lang, "back", context)
     val cdMenu = LocalizedStrings.stringFor(lang, "cd_menu", context)
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val useLightChrome = !LocalGlassAtmosphereUi.current.zones.topIsLight
     TopAppBar(
         title = {
             Column {
@@ -245,12 +251,14 @@ private fun TrashTopBar(
                     text = trashTitle,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
-                    color = AppColors.PrimaryText
+                    color = chrome.primary,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
                 )
                 Text(
                     text = countSubtitle,
                     fontSize = 12.sp,
-                    color = AppColors.SecondaryText
+                    color = chrome.secondary,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
                 )
             }
         },
@@ -263,7 +271,7 @@ private fun TrashTopBar(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = cdMenu,
-                        tint = AppColors.PrimaryText
+                        tint = chrome.primary,
                     )
                 }
                 DropdownMenu(
@@ -340,7 +348,7 @@ private fun TrashTopBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
     )
 }
 

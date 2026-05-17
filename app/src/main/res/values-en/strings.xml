@@ -56,6 +56,11 @@
     <string name="i18n_settings">Settings</string>
     <string name="i18n_notification_settings">Notification</string>
     <string name="i18n_theme_settings">Theme</string>
+    <string name="i18n_atmosphere_background_settings">Background</string>
+    <string name="i18n_atmosphere_background_section">Background</string>
+    <string name="i18n_atmosphere_background_row">Wallpaper</string>
+    <string name="i18n_change_atmosphere_background">Change background image</string>
+    <string name="i18n_restore_default_atmosphere_background">Restore default background</string>
     <string name="i18n_mood_settings">Mood &amp; Reflection</string>
     <string name="i18n_widget_settings">Widget Settings</string>
     <string name="i18n_language_settings">Language</string>
@@ -74,6 +79,9 @@
     <string name="i18n_light_mode">Light</string>
     <string name="i18n_dark_mode_option">Dark</string>
     <string name="i18n_theme_color">Theme Color</string>
+    <string name="i18n_ui_theme">Interface Style</string>
+    <string name="i18n_ui_theme_glass">Glass</string>
+    <string name="i18n_ui_theme_classic">Classic</string>
     <string name="i18n_vitality_blue">Blue</string>
     <string name="i18n_forest_green">Green</string>
     <string name="i18n_soft_pink">Pink</string>
