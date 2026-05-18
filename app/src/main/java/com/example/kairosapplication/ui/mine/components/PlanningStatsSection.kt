@@ -23,22 +23,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.model.WeeklyInsights
 
-private val TitleSans = Color(0xFF1A1A1A)
 private val BlockStreakTint = Color(0xFFEDE7F6)
 private val BlockTotalBorder = Color(0xFFE6E6EA)
-private val LabelCaps = Color(0xFF424242)
 private val SwitchBlue = Color(0xFF2196F3)
 private val SwitchThumbOff = Color(0xFFE0E0E0)
 
@@ -52,18 +49,12 @@ fun PlanningStatsSection(
     val context = LocalContext.current
     val planningHeading = LocalizedStrings.get("mine_planning_heading")
     val shareLabel = LocalizedStrings.get("share")
+    val cardText = LocalGlassTextColors.current
+    MineCardShell(modifier = modifier.fillMaxWidth()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 5.dp,
-                shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
-                ambientColor = Color.Black.copy(alpha = 0.06f),
-                spotColor = Color.Black.copy(alpha = 0.08f)
-            )
-            .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .border(1.dp, Color(0xFFE8E8EC), RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .padding(horizontal = 18.dp, vertical = 18.dp)
+            .padding(horizontal = 18.dp, vertical = 18.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -72,7 +63,7 @@ fun PlanningStatsSection(
         ) {
             Text(
                 text = LocalizedStrings.get("mine_planning_heading"),
-                color = TitleSans,
+                color = cardText.primary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.Serif,
@@ -95,7 +86,7 @@ fun PlanningStatsSection(
         if (!enabled) {
             Text(
                 text = LocalizedStrings.get("insights_off_today"),
-                color = LabelCaps.copy(alpha = 0.7f),
+                color = cardText.secondary.copy(alpha = 0.7f),
                 fontSize = 13.sp,
                 fontFamily = FontFamily.SansSerif,
                 modifier = Modifier.padding(vertical = 8.dp)
@@ -115,7 +106,7 @@ fun PlanningStatsSection(
                 StatBlock(
                     value = insights.daysWithRecord,
                     caption = LocalizedStrings.get("mine_stat_total_days"),
-                    background = AppColors.GlassFill,
+                    background = cardText.muted.copy(alpha = 0.12f),
                     outlined = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -144,19 +135,20 @@ fun PlanningStatsSection(
                 Icon(
                     imageVector = Icons.Outlined.Share,
                     contentDescription = null,
-                    tint = TitleSans.copy(alpha = 0.65f),
+                    tint = cardText.secondary.copy(alpha = 0.65f),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.size(6.dp))
                 Text(
                     text = LocalizedStrings.get("share"),
-                    color = TitleSans.copy(alpha = 0.65f),
+                    color = cardText.secondary.copy(alpha = 0.65f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     fontFamily = FontFamily.SansSerif
                 )
             }
         }
+    }
     }
 }
 
@@ -168,6 +160,7 @@ private fun StatBlock(
     outlined: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val cardText = LocalGlassTextColors.current
     val shape = RoundedCornerShape(AppShapes.CardRadius)
     Column(
         modifier = modifier
@@ -186,7 +179,7 @@ private fun StatBlock(
     ) {
         Text(
             text = value.toString(),
-            color = TitleSans,
+            color = cardText.primary,
             fontSize = 30.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.SansSerif
@@ -194,7 +187,7 @@ private fun StatBlock(
         Spacer(Modifier.height(8.dp))
         Text(
             text = caption,
-            color = LabelCaps,
+            color = cardText.secondary,
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = FontFamily.SansSerif,

@@ -35,10 +35,10 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** Padding between time/day label and the vertical rail segment. */
-val TimelineRailLabelPadding = 12.dp
-
 val TimelineRailWidth = 40.dp
+
+/** Vertical gap between note cards on the same calendar day (12–16dp). */
+val TimelineSameDayCardSpacing = 14.dp
 
 fun noteTimeLabel(note: Note, zone: ZoneId = ZoneId.systemDefault()): String =
     DateTimeFormatter.ofPattern("HH:mm")
@@ -47,28 +47,55 @@ fun noteTimeLabel(note: Note, zone: ZoneId = ZoneId.systemDefault()): String =
 fun notesShareSameMinute(a: Note, b: Note, zone: ZoneId = ZoneId.systemDefault()): Boolean =
     noteTimeLabel(a, zone) == noteTimeLabel(b, zone)
 
+/** Day-of-month label in the left rail; no connector lines (gap before first HH:mm). */
+@Composable
+fun TimelineDayNumberRail(
+    modifier: Modifier = Modifier,
+    label: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier.width(TimelineRailWidth),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        label()
+    }
+}
+
 /**
- * Left timeline gutter: continuous 1dp vertical line with optional centered label.
- * When [label] is null the line spans the full row height (same-minute continuation).
+ * Per-note left rail: [timeLabel] top-aligned with the card; [lineBelow] continues to the next time.
+ * When [timeLabel] is null the line spans the full row (same-minute continuation).
  */
 @Composable
-fun TimelineRailGutter(
+fun TimelineNoteRail(
     modifier: Modifier = Modifier,
-    label: @Composable (() -> Unit)? = null,
+    timeLabel: String? = null,
+    lineBelow: Boolean = false,
+    labelContent: @Composable (() -> Unit)? = null,
+    labelColor: Color = LocalGlassTextColors.current.muted,
+    labelFontSizeSp: Int = 12,
+    labelFontWeight: FontWeight = FontWeight.Normal,
 ) {
-    val lineColor = NoteCardConstants.TimelineConnectorColor
+    val lineColor = NoteCardConstants.timelineConnectorColor()
     Column(
         modifier = modifier
             .width(TimelineRailWidth)
             .fillMaxHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (label != null) {
-            RailLineSegment(Modifier.weight(1f), lineColor)
-            Box(modifier = Modifier.padding(vertical = TimelineRailLabelPadding)) {
-                label()
+        if (timeLabel != null || labelContent != null) {
+            if (labelContent != null) {
+                labelContent()
+            } else {
+                TimelineRailTimeLabel(
+                    text = timeLabel!!,
+                    color = labelColor,
+                    fontSizeSp = labelFontSizeSp,
+                    fontWeight = labelFontWeight,
+                )
             }
-            RailLineSegment(Modifier.weight(1f), lineColor)
+            if (lineBelow) {
+                RailLineSegment(Modifier.weight(1f), lineColor)
+            }
         } else {
             RailLineSegment(Modifier.fillMaxSize(), lineColor)
         }
@@ -107,6 +134,12 @@ fun TimelineRailTimeLabel(
     )
 }
 
+private fun timelineNoteLineBelow(
+    index: Int,
+    noteCount: Int,
+    connectRailBelowLastNote: Boolean,
+): Boolean = index < noteCount - 1 || connectRailBelowLastNote
+
 @Composable
 fun TimelineCardDayBlock(
     date: LocalDate,
@@ -118,6 +151,7 @@ fun TimelineCardDayBlock(
     projectsById: Map<Long, String>,
     publishedNoteActions: (Note) -> PublishedNoteCardActions,
     modifier: Modifier = Modifier,
+    connectRailBelowLastNote: Boolean = false,
 ) {
     val scrollText = LocalGlassTextColors.current
     val zone = ZoneId.systemDefault()
@@ -129,23 +163,24 @@ fun TimelineCardDayBlock(
         )
         notes.forEachIndexed { index, note ->
             val showTime = index == 0 || !notesShareSameMinute(notes[index - 1], note, zone)
+            val lineBelow = timelineNoteLineBelow(
+                index = index,
+                noteCount = notes.size,
+                connectRailBelowLastNote = connectRailBelowLastNote,
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                    .height(IntrinsicSize.Min)
+                    .then(
+                        if (index > 0) Modifier.padding(top = TimelineSameDayCardSpacing) else Modifier
+                    ),
                 verticalAlignment = Alignment.Top,
             ) {
-                TimelineRailGutter(
-                    label = if (showTime) {
-                        {
-                            TimelineRailTimeLabel(
-                                text = noteTimeLabel(note, zone),
-                                color = scrollText.muted,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                TimelineNoteRail(
+                    timeLabel = if (showTime) noteTimeLabel(note, zone) else null,
+                    lineBelow = if (showTime) lineBelow else true,
+                    labelColor = scrollText.muted,
                 )
                 Spacer(Modifier.width(12.dp))
                 NoteCard(
@@ -162,7 +197,9 @@ fun TimelineCardDayBlock(
                 )
             }
         }
-        Spacer(Modifier.height(AppSpacing.SectionLarge))
+        if (!connectRailBelowLastNote) {
+            Spacer(Modifier.height(AppSpacing.SectionLarge))
+        }
     }
 }
 
@@ -193,16 +230,14 @@ fun TimelineCardDateHeader(
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TimelineRailGutter(
-            label = {
-                TimelineRailTimeLabel(
-                    text = date.dayOfMonth.toString(),
-                    color = titleColor,
-                    fontSizeSp = 14,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            },
-        )
+        TimelineDayNumberRail {
+            TimelineRailTimeLabel(
+                text = date.dayOfMonth.toString(),
+                color = titleColor,
+                fontSizeSp = 14,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
         Spacer(Modifier.width(12.dp))
         Text(
             text = dateStr,
@@ -226,6 +261,7 @@ fun TimelineIntegratedDayBlock(
     projectsById: Map<Long, String>,
     publishedNoteActions: (Note) -> PublishedNoteCardActions,
     modifier: Modifier = Modifier,
+    connectRailBelowLastNote: Boolean = false,
 ) {
     val scrollText = LocalGlassTextColors.current
     val zone = ZoneId.systemDefault()
@@ -245,16 +281,14 @@ fun TimelineIntegratedDayBlock(
                 .padding(top = 2.dp, bottom = 1.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
-            TimelineRailGutter(
-                label = {
-                    TimelineRailTimeLabel(
-                        text = date.dayOfMonth.toString(),
-                        color = scrollText.primary,
-                        fontSizeSp = 18,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
+            TimelineDayNumberRail {
+                TimelineRailTimeLabel(
+                    text = date.dayOfMonth.toString(),
+                    color = scrollText.primary,
+                    fontSizeSp = 18,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             Spacer(Modifier.width(4.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -266,24 +300,25 @@ fun TimelineIntegratedDayBlock(
         }
         notes.forEachIndexed { index, note ->
             val showTime = index == 0 || !notesShareSameMinute(notes[index - 1], note, zone)
+            val lineBelow = timelineNoteLineBelow(
+                index = index,
+                noteCount = notes.size,
+                connectRailBelowLastNote = connectRailBelowLastNote,
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                    .height(IntrinsicSize.Min)
+                    .then(
+                        if (index > 0) Modifier.padding(top = TimelineSameDayCardSpacing) else Modifier
+                    ),
                 verticalAlignment = Alignment.Top,
             ) {
-                TimelineRailGutter(
-                    label = if (showTime) {
-                        {
-                            TimelineRailTimeLabel(
-                                text = noteTimeLabel(note, zone),
-                                color = accentColor,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                TimelineNoteRail(
+                    timeLabel = if (showTime) noteTimeLabel(note, zone) else null,
+                    lineBelow = if (showTime) lineBelow else true,
+                    labelColor = accentColor,
+                    labelFontWeight = FontWeight.Medium,
                 )
                 NoteTimelineIntegrated(
                     note = note,
@@ -299,6 +334,8 @@ fun TimelineIntegratedDayBlock(
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
+        if (!connectRailBelowLastNote) {
+            Spacer(Modifier.height(12.dp))
+        }
     }
 }

@@ -4,6 +4,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,15 +50,12 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
-import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
 private val CardBg = AppColors.GlassFill
 private val DividerC = Color(0xFFE8E5E0)
-private val TitleC = Color(0xFF1A1A1A)
-private val SubC = Color(0xFF9E9E9E)
 private val Blue = Color(0xFF2196F3)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,22 +131,28 @@ fun DataImportScreen(
         }
     }
 
-    Scaffold(
+    val chrome = rememberSettingsChrome()
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding(),
-        containerColor = BackgroundColor,
+            .background(BackgroundColor),
+    ) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
+                modifier = Modifier.statusBarsPadding(),
                 title = {
                     Text(
                         LocalizedStrings.get("data_import"),
-                        color = TitleC,
+                        color = chrome.title,
                         fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
-                    CommonBackButton(onClick = onBack)
+                    SettingsBackButton(onClick = onBack)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor),
             )
@@ -183,7 +188,7 @@ fun DataImportScreen(
                         Text(LocalizedStrings.get("select_file_import"))
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(LocalizedStrings.get("support_json"), color = SubC, fontSize = 13.sp)
+                    Text(LocalizedStrings.get("support_json"), color = chrome.subtitle, fontSize = 13.sp)
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -197,7 +202,7 @@ fun DataImportScreen(
                     Column(Modifier.padding(16.dp)) {
                         Text(
                             LocalizedStrings.get("file_info"),
-                            color = SubC,
+                            color = chrome.subtitle,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -207,12 +212,12 @@ fun DataImportScreen(
                         Text(
                             "${LocalizedStrings.get("export_date_label")}${data.exportDate}",
                             fontSize = 14.sp,
-                            color = TitleC
+                            color = chrome.title
                         )
                         Text(
                             "${LocalizedStrings.get("app_version_label")}${data.appVersion}",
                             fontSize = 14.sp,
-                            color = TitleC
+                            color = chrome.title
                         )
                         Spacer(Modifier.height(8.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = DividerC)
@@ -220,17 +225,17 @@ fun DataImportScreen(
                         Text(
                             "${LocalizedStrings.get("notes_count_label")}${data.notes.size}${LocalizedStrings.get("notes_count_suffix")}",
                             fontSize = 14.sp,
-                            color = TitleC
+                            color = chrome.title
                         )
                         Text(
                             "${LocalizedStrings.get("tasks_count_label")}${data.tasks.size}${LocalizedStrings.get("tasks_count_suffix")}",
                             fontSize = 14.sp,
-                            color = TitleC
+                            color = chrome.title
                         )
                         Text(
                             "${LocalizedStrings.get("moods_count_label")}${data.moods.size}${LocalizedStrings.get("moods_count_suffix")}",
                             fontSize = 14.sp,
-                            color = TitleC
+                            color = chrome.title
                         )
                         Spacer(Modifier.height(12.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = DividerC)
@@ -238,7 +243,7 @@ fun DataImportScreen(
                         Text(
                             LocalizedStrings.get("import_mode_label"),
                             fontSize = 14.sp,
-                            color = TitleC,
+                            color = chrome.title,
                             fontWeight = FontWeight.Medium
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -297,5 +302,6 @@ fun DataImportScreen(
                 }
             }
         )
+    }
     }
 }

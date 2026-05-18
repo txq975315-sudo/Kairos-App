@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.ui
+package com.example.kairosapplication.ui
 
 import android.content.Context
 import android.content.Intent
@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -16,11 +17,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -106,7 +107,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CreateScreen(
     onBack: () -> Unit,
@@ -293,9 +293,15 @@ fun CreateScreen(
     val atmosphere = LocalGlassAtmosphereUi.current
 
     val dockedTool = activeTool
-    val dockBarHeight = 72.dp
-    val toolPanelMaxHeight = 220.dp
-    val scrollBottomInset = if (dockedTool != null) dockBarHeight + toolPanelMaxHeight else dockBarHeight
+    val dockBarHeight = 44.dp
+    val density = LocalDensity.current
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+
+    LaunchedEffect(dockedTool) {
+        if (dockedTool != null) {
+            keyboardController?.hide()
+        }
+    }
     val dockShape = RoundedCornerShape(
         topStart = GlassConstants.CornerRadius,
         topEnd = GlassConstants.CornerRadius,
@@ -304,13 +310,22 @@ fun CreateScreen(
     )
 
     CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
+    val keyboardVisible = imeBottomPx > 0
+    var dockHeight by remember { mutableStateOf(0.dp) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Transparent)
-            .statusBarsPadding(),
+            .statusBarsPadding()
+            .imePadding(),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = dockHeight)
+                .verticalScroll(createScreenScrollState),
+        ) {
             Spacer(modifier = Modifier.height(AppSpacing.SectionSmall))
             Row(
                 modifier = Modifier
@@ -335,16 +350,9 @@ fun CreateScreen(
 
             Column(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(createScreenScrollState)
-                    .padding(bottom = scrollBottomInset),
+                    .padding(horizontal = AppSpacing.PageHorizontal),
             ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = AppSpacing.PageHorizontal),
-        ) {
         CalendarSection(
             currentMonth = currentMonth,
             selectedDate = selectedDate,
@@ -362,7 +370,6 @@ fun CreateScreen(
             value = titleInput,
             onValueChange = {
                 titleInput = it
-                // While typing, collapse options so keyboard + icon row stay visible.
                 activeTool = null
             },
             placeholder = taskTexts.titlePlaceholder,
@@ -377,7 +384,6 @@ fun CreateScreen(
             value = descriptionInput,
             onValueChange = {
                 descriptionInput = it
-                // While typing, collapse options so keyboard + icon row stay visible.
                 activeTool = null
             },
             placeholder = taskTexts.descriptionPlaceholder,
@@ -433,181 +439,184 @@ fun CreateScreen(
             )
         }
 
-        }
             }
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        val dockBottomInset = if (WindowInsets.isImeVisible) {
-            Modifier.imePadding()
-        } else {
-            Modifier.navigationBarsPadding()
-        }
-        Column(
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .then(dockBottomInset)
-                .clip(dockShape)
-                .glassBottomNavDock(),
+                .then(
+                    if (dockedTool != null || !keyboardVisible) {
+                        Modifier.navigationBarsPadding()
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
-            if (dockedTool != null) {
-                HorizontalDivider(color = atmosphere.quoteDividerColor(), thickness = 1.dp)
-                CreateToolPanel(
-                    activeTool = dockedTool,
-                    dateSelectionMode = dateSelectionMode,
-                    repeatRule = repeatRule,
-                    repeatRange = repeatRange,
-                    customRepeatRule = customRepeatRule,
-                    customRepeatEndDate = customRepeatEndDate,
-                    selectedTimeBlock = selectedTimeBlock,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coords ->
+                        dockHeight = with(density) { coords.size.height.toDp() }
+                    }
+                    .clip(dockShape)
+                    .glassBottomNavDock(),
+            ) {
+                ActionIconsRow(
+                    taskTexts = taskTexts,
+                    cardText = cardText,
+                    hasReminder = !reminderTime.isNullOrBlank(),
+                    onReminderClick = {
+                        keyboardController?.hide()
+                        activeTool = null
+                        showReminderDialog = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = dockBarHeight)
+                        .padding(
+                            start = AppSpacing.PageHorizontal,
+                            end = AppSpacing.PageHorizontal,
+                            top = 4.dp,
+                            bottom = if (keyboardVisible && dockedTool == null) 0.dp else 4.dp,
+                        ),
                     selectedUrgency = selectedUrgency,
-                    selectedLabel = selectedLabel,
-                    selectedSticker = selectedSticker,
-                    selectedDates = selectedDates,
-                    rangeStartDate = rangeStartDate,
-                    rangeEndDate = rangeEndDate,
-                    labelOptions = availableLabels,
-                    onSelectionModeChanged = { mode ->
-                        dateSelectionMode = if (dateSelectionMode == mode) null else mode
-                        if (dateSelectionMode != null) {
-                            repeatRange = null
-                            customRepeatEndDate = null
+                    onTimeClick = {
+                        keyboardController?.hide()
+                        activeTool = if (activeTool == CreateTool.TIME) null else CreateTool.TIME
+                    },
+                    onUrgencyClick = {
+                        keyboardController?.hide()
+                        activeTool = if (activeTool == CreateTool.URGENCY) null else CreateTool.URGENCY
+                    },
+                    onLabelClick = {
+                        keyboardController?.hide()
+                        activeTool = if (activeTool == CreateTool.LABEL) null else CreateTool.LABEL
+                    },
+                    onStickerClick = {
+                        keyboardController?.hide()
+                        activeTool = if (activeTool == CreateTool.STICKER) null else CreateTool.STICKER
+                    },
+                    onVoiceClick = {
+                        isRecording = true
+                        val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
+                            putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
+                            putExtra("android.speech.extra.PROMPT", taskTexts.voicePrompt)
                         }
-                        when (dateSelectionMode) {
-                            DateSelectionMode.SINGLE -> {
-                                repeatRule = TaskConstants.REPEAT_RULE_NONE
+                        try {
+                            speechLauncher.launch(intent)
+                        } catch (_: Exception) {
+                            isRecording = false
+                            Toast.makeText(context, taskTexts.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    onSubmit = submitCreateTask,
+                )
+                if (dockedTool != null) {
+                    HorizontalDivider(color = atmosphere.quoteDividerColor(), thickness = 1.dp)
+                    CreateToolPanel(
+                        activeTool = dockedTool,
+                        dateSelectionMode = dateSelectionMode,
+                        repeatRule = repeatRule,
+                        repeatRange = repeatRange,
+                        customRepeatRule = customRepeatRule,
+                        customRepeatEndDate = customRepeatEndDate,
+                        selectedTimeBlock = selectedTimeBlock,
+                        selectedUrgency = selectedUrgency,
+                        selectedLabel = selectedLabel,
+                        selectedSticker = selectedSticker,
+                        selectedDates = selectedDates,
+                        rangeStartDate = rangeStartDate,
+                        rangeEndDate = rangeEndDate,
+                        labelOptions = availableLabels,
+                        onSelectionModeChanged = { mode ->
+                            dateSelectionMode = if (dateSelectionMode == mode) null else mode
+                            if (dateSelectionMode != null) {
+                                repeatRange = null
+                                customRepeatEndDate = null
                             }
-                            DateSelectionMode.MULTI, DateSelectionMode.RANGE -> {
-                                val currentRule = repeatRule?.trim().orEmpty()
-                                if (currentRule.isEmpty() || currentRule == TaskConstants.REPEAT_RULE_NONE) {
-                                    repeatRule = TaskConstants.REPEAT_RULE_DAILY
-                                }
-                            }
-                            null -> {
-                                if (repeatRule == null) {
+                            when (dateSelectionMode) {
+                                DateSelectionMode.SINGLE -> {
                                     repeatRule = TaskConstants.REPEAT_RULE_NONE
                                 }
+                                DateSelectionMode.MULTI, DateSelectionMode.RANGE -> {
+                                    val currentRule = repeatRule?.trim().orEmpty()
+                                    if (currentRule.isEmpty() || currentRule == TaskConstants.REPEAT_RULE_NONE) {
+                                        repeatRule = TaskConstants.REPEAT_RULE_DAILY
+                                    }
+                                }
+                                null -> {
+                                    if (repeatRule == null) {
+                                        repeatRule = TaskConstants.REPEAT_RULE_NONE
+                                    }
+                                }
                             }
-                        }
-                        when (dateSelectionMode) {
-                            DateSelectionMode.SINGLE -> {
-                                selectedDates = setOf(selectedDate)
-                                rangeStartDate = null
-                                rangeEndDate = null
+                            when (dateSelectionMode) {
+                                DateSelectionMode.SINGLE -> {
+                                    selectedDates = setOf(selectedDate)
+                                    rangeStartDate = null
+                                    rangeEndDate = null
+                                }
+                                DateSelectionMode.MULTI -> {
+                                    selectedDates = if (selectedDates.isEmpty()) {
+                                        setOf(selectedDate)
+                                    } else {
+                                        selectedDates
+                                    }
+                                    rangeStartDate = null
+                                    rangeEndDate = null
+                                }
+                                DateSelectionMode.RANGE -> {
+                                    selectedDates = setOf(selectedDate)
+                                    rangeStartDate = selectedDate
+                                    rangeEndDate = null
+                                }
+                                null -> {
+                                    selectedDates = emptySet()
+                                    rangeStartDate = null
+                                    rangeEndDate = null
+                                }
                             }
-                            DateSelectionMode.MULTI -> {
-                                selectedDates = if (selectedDates.isEmpty()) setOf(selectedDate) else selectedDates
-                                rangeStartDate = null
-                                rangeEndDate = null
+                        },
+                        onRepeatRuleChanged = { rule ->
+                            if (repeatRange == null) {
+                                repeatRange = RepeatRange.UNLIMITED
                             }
-                            DateSelectionMode.RANGE -> {
-                                selectedDates = setOf(selectedDate)
-                                rangeStartDate = selectedDate
-                                rangeEndDate = null
-                            }
-                            null -> {
+                            repeatRule = if (repeatRule == rule) null else rule
+                        },
+                        onRepeatRangeChanged = { range ->
+                            repeatRange = if (repeatRange == range) null else range
+                            if (repeatRange != null) {
+                                dateSelectionMode = null
                                 selectedDates = emptySet()
                                 rangeStartDate = null
                                 rangeEndDate = null
-                            }
-                        }
-                    },
-                    onRepeatRuleChanged = { rule ->
-                        if (repeatRange == null) {
-                            repeatRange = RepeatRange.UNLIMITED
-                        }
-                        repeatRule = if (repeatRule == rule) null else rule
-                    },
-                    onRepeatRangeChanged = { range ->
-                        repeatRange = if (repeatRange == range) null else range
-                        if (repeatRange != null) {
-                            dateSelectionMode = null
-                            selectedDates = emptySet()
-                            rangeStartDate = null
-                            rangeEndDate = null
-                        } else {
-                            repeatRule = null
-                            customRepeatEndDate = null
-                        }
-                        when (repeatRange) {
-                            RepeatRange.UNLIMITED -> {
+                            } else {
+                                repeatRule = null
                                 customRepeatEndDate = null
                             }
-                            RepeatRange.NEXT_1_WEEK -> {
-                                customRepeatEndDate = null
+                            when (repeatRange) {
+                                RepeatRange.UNLIMITED -> customRepeatEndDate = null
+                                RepeatRange.NEXT_1_WEEK -> customRepeatEndDate = null
+                                RepeatRange.NEXT_2_WEEKS -> customRepeatEndDate = null
+                                RepeatRange.NEXT_4_WEEKS -> customRepeatEndDate = null
+                                RepeatRange.THIS_MONTH -> customRepeatEndDate = null
+                                RepeatRange.CUSTOM_END_DATE -> customRepeatEndDate = selectedDate
+                                null -> Unit
                             }
-                            RepeatRange.NEXT_2_WEEKS -> {
-                                customRepeatEndDate = null
-                            }
-                            RepeatRange.NEXT_4_WEEKS -> {
-                                customRepeatEndDate = null
-                            }
-                            RepeatRange.THIS_MONTH -> {
-                                customRepeatEndDate = null
-                            }
-                            RepeatRange.CUSTOM_END_DATE -> {
-                                customRepeatEndDate = selectedDate
-                            }
-                            null -> Unit
-                        }
-                    },
-                    onCustomRepeatRuleChanged = { customRepeatRule = it },
-                    onCustomRepeatEndDateChanged = { customRepeatEndDate = it },
-                    onTimeSelected = { selectedTimeBlock = it },
-                    onUrgencySelected = { selectedUrgency = it },
-                    onLabelSelected = { selectedLabel = it },
-                    onStickerSelected = { selectedSticker = it },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                HorizontalDivider(color = atmosphere.quoteDividerColor(), thickness = 1.dp)
+                        },
+                        onCustomRepeatRuleChanged = { customRepeatRule = it },
+                        onCustomRepeatEndDateChanged = { customRepeatEndDate = it },
+                        onTimeSelected = { selectedTimeBlock = it },
+                        onUrgencySelected = { selectedUrgency = it },
+                        onLabelSelected = { selectedLabel = it },
+                        onStickerSelected = { selectedSticker = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
-            ActionIconsRow(
-            taskTexts = taskTexts,
-            cardText = cardText,
-            hasReminder = !reminderTime.isNullOrBlank(),
-            onReminderClick = {
-                keyboardController?.hide()
-                activeTool = null
-                showReminderDialog = true
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 52.dp)
-                .padding(
-                    start = AppSpacing.PageHorizontal,
-                    end = AppSpacing.PageHorizontal,
-                    top = 10.dp,
-                    bottom = 10.dp,
-                ),
-            selectedUrgency = selectedUrgency,
-            onTimeClick = {
-                activeTool = if (activeTool == CreateTool.TIME) null else CreateTool.TIME
-            },
-            onUrgencyClick = {
-                activeTool = if (activeTool == CreateTool.URGENCY) null else CreateTool.URGENCY
-            },
-            onLabelClick = {
-                activeTool = if (activeTool == CreateTool.LABEL) null else CreateTool.LABEL
-            },
-            onStickerClick = {
-                activeTool = if (activeTool == CreateTool.STICKER) null else CreateTool.STICKER
-            },
-            onVoiceClick = {
-                isRecording = true
-                val intent = Intent("android.speech.action.RECOGNIZE_SPEECH").apply {
-                    putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form")
-                    putExtra("android.speech.extra.PROMPT", taskTexts.voicePrompt)
-                }
-                try {
-                    speechLauncher.launch(intent)
-                } catch (_: Exception) {
-                    isRecording = false
-                    Toast.makeText(context, taskTexts.toastVoiceNotSupported, Toast.LENGTH_SHORT).show()
-                }
-            },
-            onSubmit = submitCreateTask,
-            )
         }
     }
 
@@ -751,8 +760,8 @@ private fun RowScope.DayCell(
         null -> false
     }
     val cardText = LocalGlassTextColors.current
-    val backgroundColor = if (isSelected) cardText.primary else Color.Transparent
-    val textColor = if (isSelected) Color(0xFF1A1A1A) else cardText.primary
+    val backgroundColor = if (isSelected) AppColors.PrimaryText else Color.Transparent
+    val textColor = if (isSelected) Color.White else cardText.primary
 
     Box(
         modifier = Modifier
@@ -857,7 +866,7 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescTimeIcon,
                 tint = cardText.secondary,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(22.dp)
                     .clickable { onTimeClick() },
             )
             Icon(
@@ -865,7 +874,7 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescFlagIcon,
                 tint = Color(parseHexToArgb(urgencyColorConfig.colorForLevel(selectedUrgency))),
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(22.dp)
                     .clickable { onUrgencyClick() },
             )
             Icon(
@@ -873,7 +882,7 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescLabelIcon,
                 tint = cardText.secondary,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(22.dp)
                     .clickable { onLabelClick() },
             )
             Icon(
@@ -881,7 +890,7 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescAttachIcon,
                 tint = cardText.secondary,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(22.dp)
                     .clickable { onStickerClick() },
             )
             Icon(
@@ -889,7 +898,7 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescReminderIcon,
                 tint = if (hasReminder) Color(0xFF90CAF9) else cardText.secondary,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(22.dp)
                     .clickable { onReminderClick() },
             )
             Icon(
@@ -897,7 +906,7 @@ private fun ActionIconsRow(
                 contentDescription = taskTexts.contentDescMicIcon,
                 tint = cardText.secondary,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(22.dp)
                     .clickable { onVoiceClick() },
             )
         }
@@ -906,7 +915,7 @@ private fun ActionIconsRow(
             contentDescription = taskTexts.contentDescAddTask,
             tint = cardText.primary,
             modifier = Modifier
-                .size(28.dp)
+                .size(26.dp)
                 .clickable { onSubmit() },
         )
     }

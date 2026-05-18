@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.view.ViewUiState
 import com.example.kairosapplication.ui.view.viewClickable
@@ -52,6 +52,7 @@ fun TodayTab(
     val completedCount = tasks.count { it.isCompleted }
     val totalCount = tasks.size
     val isCalendarToday = focusedDate == LocalDate.now()
+    val chrome = LocalViewChrome.current
 
     Column(
         modifier = modifier
@@ -75,7 +76,7 @@ fun TodayTab(
                         } else {
                             LocalizedStrings.get("view_empty_tasks_other")
                         },
-                        color = AppColors.HintText,
+                        color = chrome.muted,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                     )
@@ -93,7 +94,7 @@ fun TodayTab(
                             "view_see_all_more",
                             tasks.size - TodayTabMaxTaskLines,
                         ),
-                        color = AppColors.HintText,
+                        color = chrome.muted,
                         fontSize = 12.sp,
                         textAlign = TextAlign.End,
                         modifier = Modifier
@@ -117,7 +118,7 @@ fun TodayTab(
                 ) {
                     Text(
                         text = LocalizedStrings.get("view_empty_notes"),
-                        color = AppColors.HintText,
+                        color = chrome.muted,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                     )
@@ -138,7 +139,7 @@ fun TodayTab(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = LocalizedStrings.get("view_see_all"),
-                        color = AppColors.HintText,
+                        color = chrome.muted,
                         fontSize = 12.sp,
                         textAlign = TextAlign.End,
                         modifier = Modifier

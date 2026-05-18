@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.data
+package com.example.kairosapplication.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -39,7 +39,6 @@ private val KEY_SETTINGS_MY_WEEKLY_INSIGHTS =
     booleanPreferencesKey("settings_my_weekly_insights")
 
 private val KEY_WIDGET_CONFIG_1X1 = stringPreferencesKey("widget_config_1x1")
-private val KEY_WIDGET_CONFIG_2X2 = stringPreferencesKey("widget_config_2x2")
 private val KEY_WIDGET_CONFIG_3X1 = stringPreferencesKey("widget_config_3x1")
 private val KEY_WIDGET_CONFIG_3X3 = stringPreferencesKey("widget_config_3x3")
 private val KEY_MONTH_OVERVIEW_METRICS = stringPreferencesKey("month_overview_metrics")
@@ -417,7 +416,6 @@ class DataStoreManager(context: Context) {
 
     private fun widgetConfigPreferencesKey(size: WidgetSize) = when (size) {
         WidgetSize._1X1 -> KEY_WIDGET_CONFIG_1X1
-        WidgetSize._2X2 -> KEY_WIDGET_CONFIG_2X2
         WidgetSize._3X1 -> KEY_WIDGET_CONFIG_3X1
         WidgetSize._3X3 -> KEY_WIDGET_CONFIG_3X3
     }

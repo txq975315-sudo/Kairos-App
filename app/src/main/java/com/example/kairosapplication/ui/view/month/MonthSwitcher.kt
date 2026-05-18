@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -50,6 +50,7 @@ fun MonthSwitcher(
     }
     val suffix = if (viewingCurrentMonth) LocalizedStrings.get("view_month_this_month") else ""
     val label = yearMonth.atDay(1).format(monthFmt) + suffix
+    val chrome = LocalViewChrome.current
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -61,7 +62,7 @@ fun MonthSwitcher(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = null,
-                tint = AppColors.IconNeutral,
+                tint = chrome.icon,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -71,7 +72,7 @@ fun MonthSwitcher(
         ) {
             Text(
                 text = label,
-                color = AppColors.HintText,
+                color = chrome.secondary,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clickable(onClick = onJumpToCurrentMonth),
@@ -84,7 +85,7 @@ fun MonthSwitcher(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = AppColors.IconNeutral,
+                tint = chrome.icon,
                 modifier = Modifier.size(20.dp),
             )
         }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,11 +24,11 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.size
@@ -42,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -71,10 +73,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -91,17 +95,26 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
-import com.example.kairosapplication.ui.glass.glassBottomNavDock
+import com.example.kairosapplication.ui.glass.glassBubbleBackdrop
 import com.example.kairosapplication.ui.glass.glassChromeTextStyle
+import com.example.kairosapplication.ui.glass.quoteDividerColor
 import com.example.kairosapplication.core.ui.AppShapes
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import com.example.kairosapplication.core.ui.CommonBackButton
+import com.example.kairosapplication.ui.EssayContinueCreateProjectDialog
+import com.example.kairosapplication.ui.glass.GlassTopBarChip
+import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.ui.components.NoteCardConstants
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -123,6 +136,37 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val DividerLight = Color(0xFFE8E8E8)
+
+private data class EditorFieldColors(
+    val primary: Color,
+    val secondary: Color,
+    val hint: Color,
+    val divider: Color,
+)
+
+@Composable
+private fun rememberEditorFieldColors(): EditorFieldColors {
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val atmosphere = LocalGlassAtmosphereUi.current
+    return remember(isGlass, chrome, atmosphere) {
+        if (isGlass) {
+            EditorFieldColors(
+                primary = chrome.primary,
+                secondary = chrome.secondary,
+                hint = chrome.muted,
+                divider = atmosphere.quoteDividerColor(),
+            )
+        } else {
+            EditorFieldColors(
+                primary = AppColors.PrimaryText,
+                secondary = AppColors.SecondaryText,
+                hint = AppColors.HintText,
+                divider = DividerLight,
+            )
+        }
+    }
+}
 private val SummaryFocusBg = Color.Transparent
 
 private const val MaxLinkedCategories = 2
@@ -255,7 +299,7 @@ private fun canSaveDraft(primary: String, summary: String, secondary: String): B
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteEditorScreen(
     noteId: Long?,
@@ -279,7 +323,7 @@ fun NoteEditorScreen(
     var primaryCategory by remember { mutableStateOf(NotePrimaryCategory.FREESTYLE) }
     var secondaryCategory by remember { mutableStateOf("") }
     var behaviorSummary by remember { mutableStateOf("") }
-    var bodyText by remember { mutableStateOf("") }
+    var bodyField by remember { mutableStateOf(TextFieldValue("")) }
     var linkedCategories by remember { mutableStateOf<List<String>>(emptyList()) }
     var sceneTags by remember { mutableStateOf<List<String>>(emptyList()) }
     var moodIcon by remember { mutableStateOf<String?>(null) }
@@ -298,7 +342,7 @@ fun NoteEditorScreen(
             primaryCategory = n.primaryCategory
             secondaryCategory = n.secondaryCategory
             behaviorSummary = n.behaviorSummary
-            bodyText = n.body
+            bodyField = TextFieldValue(n.body)
             linkedCategories = n.linkedCategories
                 .distinct()
                 .filter {
@@ -317,7 +361,7 @@ fun NoteEditorScreen(
                 lastPrimaryForNewNote = locked
                 secondaryCategory = ""
                 behaviorSummary = ""
-                bodyText = ""
+                bodyField = TextFieldValue("")
                 linkedCategories = emptyList()
                 sceneTags = emptyList()
                 moodIcon = null
@@ -335,7 +379,7 @@ fun NoteEditorScreen(
             primaryCategory = lastPrimaryForNewNote
             secondaryCategory = ""
             behaviorSummary = ""
-            bodyText = ""
+            bodyField = TextFieldValue("")
             linkedCategories = emptyList()
             sceneTags = emptyList()
             moodIcon = null
@@ -415,7 +459,7 @@ fun NoteEditorScreen(
             primaryCategory = primaryCategory,
             secondaryCategory = if (topic) secondaryCategory.trim() else "",
             behaviorSummary = behaviorSummary.trim(),
-            body = bodyText.trim(),
+            body = bodyField.text.trim(),
             sceneTags = sceneTags,
             moodIcon = moodIcon,
             linkedCategories = safeLinked,
@@ -450,7 +494,7 @@ fun NoteEditorScreen(
                 return
             }
         }
-        if (requireBodyForPost && bodyText.isBlank()) {
+        if (requireBodyForPost && bodyField.text.isBlank()) {
             scope.launch {
                 snackbarHostState.showSnackbar(
                     LocalizedStrings.stringFor(lang, "essay_editor_snackbar_need_body", context)
@@ -538,8 +582,19 @@ fun NoteEditorScreen(
     }
 
     val scrollState = rememberScrollState()
-    val postEnabled = canPost(primaryCategory, behaviorSummary, secondaryCategory, bodyText)
+    val postEnabled = canPost(primaryCategory, behaviorSummary, secondaryCategory, bodyField.text)
     val draftEnabled = canSaveDraft(primaryCategory, behaviorSummary, secondaryCategory)
+    val fieldColors = rememberEditorFieldColors()
+    val density = LocalDensity.current
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val keyboardVisible = imeBottomPx > 0
+    val editorDockBottomInset = if (keyboardVisible) {
+        val navPx = WindowInsets.navigationBars.getBottom(density)
+        val reducedPx = ((imeBottomPx - navPx).coerceAtLeast(0) * 0.35f).roundToInt()
+        with(density) { reducedPx.toDp() }
+    } else {
+        0.dp
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -562,7 +617,7 @@ fun NoteEditorScreen(
                     if (!postEnabled) {
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                if (bodyText.isBlank()) {
+                                if (bodyField.text.isBlank()) {
                                     LocalizedStrings.stringFor(lang, "essay_editor_snackbar_post_need_body", context)
                                 } else {
                                     LocalizedStrings.stringFor(lang, "essay_editor_snackbar_post_prereq", context)
@@ -579,13 +634,8 @@ fun NoteEditorScreen(
         }
     ) { padding ->
         val layoutDirection = LocalLayoutDirection.current
-        val editorDockHeight = 56.dp
-        val toolbarBottomInset = if (WindowInsets.isImeVisible) {
-            Modifier.imePadding()
-        } else {
-            Modifier.navigationBarsPadding()
-        }
-        Box(
+    var editorDockHeight by remember { mutableStateOf(48.dp) }
+    Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
@@ -603,7 +653,7 @@ fun NoteEditorScreen(
                     .verticalScroll(scrollState)
                     .fillMaxWidth(),
             ) {
-                HorizontalDivider(color = DividerLight, thickness = 1.dp)
+                HorizontalDivider(color = fieldColors.divider, thickness = 1.dp)
 
                 Column(Modifier.padding(horizontal = 12.dp)) {
                 if (primaryCategoryLocked) {
@@ -636,10 +686,11 @@ fun NoteEditorScreen(
                 }
                 }
 
-                HorizontalDivider(color = DividerLight, thickness = 1.dp)
+                HorizontalDivider(color = fieldColors.divider, thickness = 1.dp)
 
                 Column(Modifier.padding(horizontal = 12.dp)) {
                 BehaviorSummaryField(
+                    fieldColors = fieldColors,
                     text = behaviorSummary,
                     onTextChange = { if (it.length <= 50) behaviorSummary = it },
                     placeholder = EssayCategoryUi.summaryPlaceholder(primaryCategory, categoryConfig),
@@ -650,11 +701,11 @@ fun NoteEditorScreen(
                 }
 
                 if (!isTopicMode(primaryCategory)) {
-                    HorizontalDivider(color = DividerLight, thickness = 1.dp)
+                    HorizontalDivider(color = fieldColors.divider, thickness = 1.dp)
                 }
 
                 if (isTopicMode(primaryCategory)) {
-                    HorizontalDivider(color = DividerLight, thickness = 1.dp)
+                    HorizontalDivider(color = fieldColors.divider, thickness = 1.dp)
 
                     Column(Modifier.padding(horizontal = 12.dp)) {
                     SecondaryCategoryTwoRows(
@@ -668,7 +719,7 @@ fun NoteEditorScreen(
                     )
                     }
 
-                    HorizontalDivider(color = DividerLight, thickness = 1.dp)
+                    HorizontalDivider(color = fieldColors.divider, thickness = 1.dp)
 
                     Column(Modifier.padding(horizontal = 12.dp)) {
                     LinkedCategoriesTextRow(
@@ -691,19 +742,20 @@ fun NoteEditorScreen(
                     )
                     }
 
-                    HorizontalDivider(color = DividerLight, thickness = 1.dp)
+                    HorizontalDivider(color = fieldColors.divider, thickness = 1.dp)
                 }
 
                 Spacer(Modifier.height(EditorBlockGap))
 
                 Column(Modifier.padding(horizontal = 12.dp)) {
                 BodyEditorField(
-                    text = bodyText,
-                    onTextChange = { bodyText = it },
+                    fieldColors = fieldColors,
+                    value = bodyField,
+                    onValueChange = { bodyField = it },
                     placeholder = EssayCategoryUi.bodyPlaceholder(primaryCategory, categoryConfig),
                     focused = bodyFocused,
                     onFocusChange = { bodyFocused = it },
-                    focusRequester = bodyFocusRequester
+                    focusRequester = bodyFocusRequester,
                 )
                 }
 
@@ -733,11 +785,21 @@ fun NoteEditorScreen(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .then(toolbarBottomInset)
-                    .glassBottomNavDock(),
+                    .then(
+                        if (keyboardVisible) {
+                            Modifier.padding(bottom = editorDockBottomInset)
+                        } else {
+                            Modifier.navigationBarsPadding()
+                        },
+                    )
+                    .onGloballyPositioned { coords ->
+                        editorDockHeight = with(density) { coords.size.height.toDp() }
+                    }
+                    .glassBubbleBackdrop(),
             ) {
-                HorizontalDivider(color = DividerLight.copy(alpha = 0.45f), thickness = 1.dp)
+                HorizontalDivider(color = fieldColors.divider.copy(alpha = 0.45f), thickness = 1.dp)
                 EditorBottomToolBar(
+                    fieldColors = fieldColors,
                     mood = moodIcon,
                     onMoodSelected = { m -> moodIcon = if (moodIcon == m) null else m },
                     projects = uiState.noteProjects,
@@ -747,16 +809,29 @@ fun NoteEditorScreen(
                             if (id in selectedProjectIds) selectedProjectIds - id
                             else selectedProjectIds + id
                     },
+                    onCreateProject = { name ->
+                        taskViewModel.createNoteProject(name) { newId ->
+                            selectedProjectIds = (selectedProjectIds + newId).distinct()
+                        }
+                    },
                     onAppendToBody = { suffix ->
-                        bodyText += suffix
+                        val insertAt = bodyField.selection.end.coerceIn(0, bodyField.text.length)
+                        val newText = buildString {
+                            append(bodyField.text.substring(0, insertAt))
+                            append(suffix)
+                            append(bodyField.text.substring(insertAt))
+                        }
+                        val cursor = insertAt + suffix.length
+                        val updated = TextFieldValue(newText, TextRange(cursor, cursor))
+                        bodyField = updated
                         scope.launch {
-                            delay(32)
                             bodyFocusRequester.requestFocus()
+                            bodyField = updated
                         }
                     },
                     onConfirm = {
-                        val (newBody, newTags, newMentions) = stripHashTagsAndMentionsFromBody(bodyText)
-                        bodyText = newBody
+                        val (newBody, newTags, newMentions) = stripHashTagsAndMentionsFromBody(bodyField.text)
+                        bodyField = TextFieldValue(newBody, TextRange(newBody.length))
                         var next = sceneTags
                         for (t in newTags) {
                             if (t !in next) next = next + t
@@ -785,18 +860,32 @@ private fun EditorTopBar(
 ) {
     val chrome = LocalGlassAtmosphereUi.current.topChrome
     val useLightChrome = !LocalGlassAtmosphereUi.current.zones.topIsLight
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val postContentDescription = LocalizedStrings.get("essay_editor_post")
+    val backContentDescription = LocalizedStrings.get("essay_editor_cd_back")
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        CommonBackButton(
-            onClick = onBackClick,
-            contentDescription = LocalizedStrings.get("essay_editor_cd_back"),
-        )
+        if (isGlass) {
+            GlassTopBarChip(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = backContentDescription,
+                    tint = chrome.primary,
+                    modifier = Modifier.size(GlassConstants.IconSize),
+                )
+            }
+        } else {
+            CommonBackButton(
+                onClick = onBackClick,
+                contentDescription = backContentDescription,
+            )
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -813,19 +902,41 @@ private fun EditorTopBar(
                     style = glassChromeTextStyle(androidx.compose.ui.text.TextStyle.Default, useLightChrome),
                 )
             }
-            Button(
-                onClick = onPost,
-                enabled = postEnabled,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = XiaohongshuPostRed,
-                    disabledContainerColor = XiaohongshuPostRedDisabled,
-                    contentColor = Color.White,
-                    disabledContentColor = Color.White.copy(alpha = 0.7f),
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(AppShapes.CardRadius),
-            ) {
-                Text(LocalizedStrings.get("essay_editor_post"), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            if (isGlass) {
+                GlassTopBarChip(
+                    onClick = if (postEnabled) onPost else null,
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = postContentDescription,
+                        tint = if (postEnabled) chrome.primary else chrome.muted,
+                        modifier = Modifier
+                            .size(GlassConstants.IconSize)
+                            .rotate(-45f),
+                    )
+                }
+            } else {
+                Button(
+                    onClick = onPost,
+                    enabled = postEnabled,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = XiaohongshuPostRed,
+                        disabledContainerColor = XiaohongshuPostRedDisabled,
+                        contentColor = Color.White,
+                        disabledContentColor = Color.White.copy(alpha = 0.7f),
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(AppShapes.CardRadius),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = postContentDescription,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .rotate(-45f),
+                    )
+                }
             }
         }
     }
@@ -919,11 +1030,13 @@ private fun PrimaryCategoryTextRow(
     categoryConfig: EssayCategoryConfig,
     onSelect: (String) -> Unit,
 ) {
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
     val chipShape = PrimaryCategoryChipShape
     val density = LocalDensity.current
     val cornerPx = with(density) { 3.dp.toPx() }
     val selectedWordStyle = TextStyle(
-        color = Color.White,
+        color = if (isGlass) chrome.primary else Color.White,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 12.sp,
@@ -955,7 +1068,7 @@ private fun PrimaryCategoryTextRow(
                     .heightIn(min = 36.dp)
                     .padding(1.dp)
                     .then(
-                        if (isSel) {
+                        if (isSel && !isGlass) {
                             Modifier.shadow(
                                 elevation = PrimaryChipShadowElevation,
                                 shape = chipShape,
@@ -969,7 +1082,7 @@ private fun PrimaryCategoryTextRow(
                     )
                     .clip(chipShape)
                     .drawBehind {
-                        if (isSel) {
+                        if (isSel && !isGlass) {
                             drawRoundRect(
                                 color = color.copy(alpha = PrimaryChipBaseFillAlpha),
                                 cornerRadius = CornerRadius(cornerPx, cornerPx)
@@ -977,14 +1090,18 @@ private fun PrimaryCategoryTextRow(
                         }
                     }
                     .then(
-                        if (isSel) {
-                            Modifier.border(
+                        when {
+                            isSel && isGlass -> Modifier.border(
+                                width = 1.dp,
+                                color = Color.White.copy(alpha = 0.88f),
+                                shape = chipShape,
+                            )
+                            isSel -> Modifier.border(
                                 width = PrimaryChipStrokeWidth,
                                 color = color,
-                                shape = chipShape
+                                shape = chipShape,
                             )
-                        } else {
-                            Modifier
+                            else -> Modifier
                         }
                     )
                     .clickable(
@@ -994,7 +1111,7 @@ private fun PrimaryCategoryTextRow(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                if (isSel) {
+                if (isSel && !isGlass) {
                     PrimaryCategorySelectionLayers(brandColor = color, shape = chipShape)
                 }
                 Column(
@@ -1008,14 +1125,18 @@ private fun PrimaryCategoryTextRow(
                                 modifier = Modifier.fillMaxWidth(),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                style = selectedWordStyle
+                                style = if (isGlass) {
+                                    selectedWordStyle.copy(shadow = null)
+                                } else {
+                                    selectedWordStyle
+                                },
                             )
                         } else {
                             Text(
                                 text = word,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Normal,
-                                color = AppColors.SecondaryText,
+                                color = if (isGlass) chrome.muted else AppColors.SecondaryText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 lineHeight = 11.sp,
@@ -1031,12 +1152,13 @@ private fun PrimaryCategoryTextRow(
 
 @Composable
 private fun BehaviorSummaryField(
+    fieldColors: EditorFieldColors,
     text: String,
     onTextChange: (String) -> Unit,
     placeholder: String,
     focused: Boolean,
     onFocusChange: (Boolean) -> Unit,
-    counter: String
+    counter: String,
 ) {
     Row(
         modifier = Modifier
@@ -1058,14 +1180,14 @@ private fun BehaviorSummaryField(
                     .onFocusChanged { onFocusChange(it.isFocused) },
                 textStyle = TextStyle(
                     fontSize = 14.sp,
-                    color = AppColors.PrimaryText
+                    color = fieldColors.primary,
                 ),
                 decorationBox = { inner ->
                     if (text.isEmpty()) {
                         Text(
                             text = placeholder,
                             fontSize = 14.sp,
-                            color = AppColors.HintText
+                            color = fieldColors.hint,
                         )
                     }
                     inner()
@@ -1076,7 +1198,61 @@ private fun BehaviorSummaryField(
         Text(
             text = counter,
             fontSize = 12.sp,
-            color = if (text.length >= 50) AppColors.High else AppColors.HintText
+            color = if (text.length >= 50) AppColors.High else fieldColors.hint,
+        )
+    }
+}
+
+@Composable
+private fun RowScope.SecondaryTopicChipCell(
+    label: String,
+    isSelected: Boolean,
+    primaryColor: Color,
+    isGlass: Boolean,
+    chrome: com.example.kairosapplication.ui.glass.GlassTextColors,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .clickable(onClick = onClick)
+            .then(
+                if (isSelected && isGlass) {
+                    Modifier.border(
+                        1.dp,
+                        Color.White.copy(alpha = 0.88f),
+                        RoundedCornerShape(AppShapes.MiniRadius),
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .background(
+                if (isSelected && !isGlass) secondaryLinkedFillFromPrimary(primaryColor) else Color.Transparent,
+            )
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            maxLines = 1,
+            overflow = TextOverflow.Visible,
+            style = when {
+                isSelected && isGlass -> TextStyle(
+                    fontSize = 10.sp,
+                    color = chrome.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+                isSelected -> TopicChipWhiteTextStyle.merge(
+                    TextStyle(fontSize = 10.sp, textAlign = TextAlign.Center),
+                )
+                else -> TextStyle(
+                    fontSize = 10.sp,
+                    color = if (isGlass) chrome.muted else AppColors.SecondaryText,
+                    textAlign = TextAlign.Center,
+                )
+            },
         )
     }
 }
@@ -1091,6 +1267,8 @@ private fun SecondaryCategoryTwoRows(
     onSelect: (String) -> Unit,
     onAddClick: () -> Unit,
 ) {
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
     val distinctOptions = remember(chipOptions) { chipOptions.distinctBy { it.first } }
     val showAddButton = showAdd && distinctOptions.size < 8
     val itemsPerRow = 4
@@ -1112,38 +1290,14 @@ private fun SecondaryCategoryTwoRows(
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             firstRowItems.forEach { (id, label) ->
-                val isSelected = selectedId == id
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onSelect(id) }
-                        .background(
-                            if (isSelected) {
-                                secondaryLinkedFillFromPrimary(primaryColor)
-                            } else {
-                                Color.Transparent
-                            }
-                        )
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = label,
-                        maxLines = 1,
-                        overflow = TextOverflow.Visible,
-                        style = if (isSelected) {
-                            TopicChipWhiteTextStyle.merge(
-                                TextStyle(fontSize = 10.sp, textAlign = TextAlign.Center)
-                            )
-                        } else {
-                            TextStyle(
-                                fontSize = 10.sp,
-                                color = AppColors.SecondaryText,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    )
-                }
+                SecondaryTopicChipCell(
+                    label = label,
+                    isSelected = selectedId == id,
+                    primaryColor = primaryColor,
+                    isGlass = isGlass,
+                    chrome = chrome,
+                    onClick = { onSelect(id) },
+                )
             }
             if (showAddButton && firstRowItems.size < itemsPerRow) {
                 Box(
@@ -1169,38 +1323,14 @@ private fun SecondaryCategoryTwoRows(
                 horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 secondRowItems.forEach { (id, label) ->
-                    val isSelected = selectedId == id
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onSelect(id) }
-                            .background(
-                                if (isSelected) {
-                                    secondaryLinkedFillFromPrimary(primaryColor)
-                                } else {
-                                    Color.Transparent
-                                }
-                            )
-                            .padding(horizontal = 4.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            maxLines = 1,
-                            overflow = TextOverflow.Visible,
-                            style = if (isSelected) {
-                                TopicChipWhiteTextStyle.merge(
-                                    TextStyle(fontSize = 10.sp, textAlign = TextAlign.Center)
-                                )
-                            } else {
-                                TextStyle(
-                                    fontSize = 10.sp,
-                                    color = AppColors.SecondaryText,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        )
-                    }
+                    SecondaryTopicChipCell(
+                        label = label,
+                        isSelected = selectedId == id,
+                        primaryColor = primaryColor,
+                        isGlass = isGlass,
+                        chrome = chrome,
+                        onClick = { onSelect(id) },
+                    )
                 }
                 repeat(itemsPerRow - secondRowItems.size) {
                     Spacer(modifier = Modifier.weight(1f))
@@ -1227,6 +1357,8 @@ private fun LinkedCategoriesTextRow(
     selected: List<String>,
     onToggle: (String) -> Unit,
 ) {
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val chrome = LocalGlassAtmosphereUi.current.topChrome
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1243,21 +1375,28 @@ private fun LinkedCategoriesTextRow(
                 val parts = primaryLoc.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
                 if (parts.isEmpty()) listOf(primaryLoc) else parts
             }
-            val bg = when {
-                isPrimary -> linkedFill
-                isSel -> linkedFill
-                else -> Color.Transparent
-            }
+            val showFill = !isGlass && (isPrimary || isSel)
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .background(bg)
+                    .then(
+                        if (isGlass && (isPrimary || isSel)) {
+                            Modifier.border(
+                                1.dp,
+                                Color.White.copy(alpha = 0.88f),
+                                RoundedCornerShape(AppShapes.MiniRadius),
+                            )
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .background(if (showFill) linkedFill else Color.Transparent)
                     .then(
                         if (isPrimary) Modifier
                         else Modifier.clickable { onToggle(key) }
                     )
                     .padding(2.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     words.forEach { word ->
@@ -1265,23 +1404,29 @@ private fun LinkedCategoriesTextRow(
                             text = word,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            style = if (isPrimary || isSel) {
-                                TopicChipWhiteTextStyle.merge(
+                            style = when {
+                                isGlass && (isPrimary || isSel) -> TextStyle(
+                                    fontSize = 10.sp,
+                                    lineHeight = 11.sp,
+                                    color = chrome.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    textAlign = TextAlign.Center,
+                                )
+                                isPrimary || isSel -> TopicChipWhiteTextStyle.merge(
                                     TextStyle(
                                         fontSize = 10.sp,
                                         lineHeight = 11.sp,
-                                        textAlign = TextAlign.Center
-                                    )
+                                        textAlign = TextAlign.Center,
+                                    ),
                                 )
-                            } else {
-                                TextStyle(
+                                else -> TextStyle(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Normal,
-                                    color = AppColors.SecondaryText,
+                                    color = if (isGlass) chrome.muted else AppColors.SecondaryText,
                                     lineHeight = 11.sp,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -1292,12 +1437,13 @@ private fun LinkedCategoriesTextRow(
 
 @Composable
 private fun BodyEditorField(
-    text: String,
-    onTextChange: (String) -> Unit,
+    fieldColors: EditorFieldColors,
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
     placeholder: String,
     focused: Boolean,
     onFocusChange: (Boolean) -> Unit,
-    focusRequester: FocusRequester? = null
+    focusRequester: FocusRequester? = null,
 ) {
     Box(
         modifier = Modifier
@@ -1306,8 +1452,8 @@ private fun BodyEditorField(
             .padding(horizontal = 6.dp, vertical = 6.dp)
     ) {
         BasicTextField(
-            value = text,
-            onValueChange = onTextChange,
+            value = value,
+            onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 72.dp)
@@ -1317,16 +1463,16 @@ private fun BodyEditorField(
                 .onFocusChanged { onFocusChange(it.isFocused) },
             textStyle = TextStyle(
                 fontSize = 16.sp,
-                color = AppColors.PrimaryText,
-                lineHeight = 24.sp
+                color = fieldColors.primary,
+                lineHeight = 24.sp,
             ),
             decorationBox = { inner ->
-                if (text.isEmpty()) {
+                if (value.text.isEmpty()) {
                     Text(
                         text = placeholder,
                         fontSize = 16.sp,
-                        color = AppColors.HintText,
-                        lineHeight = 24.sp
+                        color = fieldColors.hint,
+                        lineHeight = 24.sp,
                     )
                 }
                 inner()
@@ -1430,7 +1576,8 @@ private val moodOptions = listOf("😊", "😐", "😢", "😡", "🤗", "😌",
 @Composable
 private fun EditorBottomBarSymbolButton(
     symbol: String,
-    onClick: () -> Unit
+    textColor: Color,
+    onClick: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -1443,40 +1590,54 @@ private fun EditorBottomBarSymbolButton(
             text = symbol,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            color = AppColors.PrimaryText
+            color = textColor,
         )
     }
 }
 
 @Composable
 private fun EditorBottomToolBar(
+    fieldColors: EditorFieldColors,
     mood: String?,
     onMoodSelected: (String) -> Unit,
     projects: List<Project>,
     selectedProjectIds: List<Long>,
     onProjectToggled: (Long) -> Unit,
+    onCreateProject: (String) -> Unit,
     onAppendToBody: (String) -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     var showMoodExpand by remember { mutableStateOf(false) }
     var showProjectPicker by remember { mutableStateOf(false) }
+    var showCreateProjectDialog by remember { mutableStateOf(false) }
+
+    if (showCreateProjectDialog) {
+        EssayContinueCreateProjectDialog(
+            onDismiss = { showCreateProjectDialog = false },
+            onConfirmName = { name ->
+                onCreateProject(name)
+                showCreateProjectDialog = false
+                showProjectPicker = true
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 0.dp)
+            .padding(start = 4.dp, end = 4.dp, top = 0.dp, bottom = 0.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            EditorBottomBarSymbolButton(symbol = "#") {
+            EditorBottomBarSymbolButton(symbol = "#", textColor = fieldColors.primary) {
                 showMoodExpand = false
                 showProjectPicker = false
                 onAppendToBody("#")
             }
-            EditorBottomBarSymbolButton(symbol = "@") {
+            EditorBottomBarSymbolButton(symbol = "@", textColor = fieldColors.primary) {
                 showMoodExpand = false
                 showProjectPicker = false
                 onAppendToBody("@")
@@ -1488,7 +1649,7 @@ private fun EditorBottomToolBar(
                     LocalizedStrings.get("essay_editor_mood")
                 },
                 fontSize = 13.sp,
-                color = AppColors.SecondaryText,
+                color = fieldColors.secondary,
                 modifier = Modifier
                     .clickable {
                         showProjectPicker = false
@@ -1505,7 +1666,7 @@ private fun EditorBottomToolBar(
             ) {
                 Row(
                     modifier = Modifier
-                        .border(1.dp, DividerLight, RoundedCornerShape(AppShapes.DenseInsetRadius))
+                        .border(1.dp, fieldColors.divider, RoundedCornerShape(AppShapes.DenseInsetRadius))
                         .clickable {
                             showMoodExpand = false
                             showProjectPicker = !showProjectPicker
@@ -1522,7 +1683,7 @@ private fun EditorBottomToolBar(
                             "${selectedProjectIds.size}"
                         },
                         fontSize = 13.sp,
-                        color = AppColors.SecondaryText
+                        color = fieldColors.secondary,
                     )
                 }
             }
@@ -1535,7 +1696,7 @@ private fun EditorBottomToolBar(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = LocalizedStrings.get("essay_editor_cd_done"),
-                    tint = AppColors.PrimaryText,
+                    tint = fieldColors.primary,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -1581,8 +1742,29 @@ private fun EditorBottomToolBar(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 140.dp)
+                    .heightIn(max = 160.dp)
             ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showCreateProjectDialog = true }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = fieldColors.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = LocalizedStrings.get("essay_dialog_new_project_name"),
+                        fontSize = 13.sp,
+                        color = fieldColors.primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
                 projects.forEach { project ->
                     Row(
                         modifier = Modifier
@@ -1595,7 +1777,7 @@ private fun EditorBottomToolBar(
                             onCheckedChange = { onProjectToggled(project.id) }
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text(project.name, fontSize = 13.sp, color = AppColors.PrimaryText)
+                        Text(project.name, fontSize = 13.sp, color = fieldColors.primary)
                     }
                 }
             }

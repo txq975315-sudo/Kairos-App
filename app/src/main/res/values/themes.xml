@@ -2,4 +2,23 @@
 <resources>
 
     <style name="Theme.KairosApplication" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Classic: white dialog, soft mint accent (diffused, not saturated block) -->
+    <style name="Theme.Kairos.DatePicker.Classic" parent="android:Theme.Material.Light.Dialog">
+        <item name="android:colorAccent">@color/kairos_date_picker_primary_classic</item>
+        <item name="android:colorPrimary">@color/kairos_date_picker_primary_classic</item>
+        <item name="android:colorPrimaryDark">@color/kairos_date_picker_primary_dark_classic</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:textColorPrimary">#1A1A1A</item>
+        <item name="android:textColorSecondary">#757575</item>
+    </style>
+
+    <!-- Glass: dark frosted shell, light mint chrome -->
+    <style name="Theme.Kairos.DatePicker.Glass" parent="android:Theme.Material.Dialog">
+        <item name="android:colorAccent">@color/kairos_date_picker_primary_glass</item>
+        <item name="android:colorPrimary">#7AB8AA</item>
+        <item name="android:windowBackground">@color/kairos_date_picker_surface_glass</item>
+        <item name="android:textColorPrimary">#F5F5F5</item>
+        <item name="android:textColorSecondary">#B0BEC5</item>
+    </style>
 </resources>

@@ -98,25 +98,25 @@ fun GlassBottomNav(
     val flatFrost = GlassConstants.usesBackdropBlur
     val topLineColor = Color.White.copy(alpha = GlassConstants.BottomNavTopBorderAlpha)
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (flatFrost) {
-                        Modifier.glassBottomNavDock()
-                    } else {
-                        Modifier
-                            .shadow(
-                                elevation = GlassConstants.GlassShadowElevation,
-                                shape = RectangleShape,
-                                ambientColor = Color.Black.copy(alpha = GlassConstants.ShadowAmbientAlpha),
-                                spotColor = Color.Black.copy(alpha = GlassConstants.ShadowSpotAlpha),
-                            )
-                            .glassBottomNavDock()
-                    },
-                ),
-        ) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (flatFrost) {
+                    Modifier.glassBottomNavDock()
+                } else {
+                    Modifier
+                        .shadow(
+                            elevation = GlassConstants.GlassShadowElevation,
+                            shape = RectangleShape,
+                            ambientColor = Color.Black.copy(alpha = GlassConstants.ShadowAmbientAlpha),
+                            spotColor = Color.Black.copy(alpha = GlassConstants.ShadowSpotAlpha),
+                        )
+                        .glassBottomNavDock()
+                },
+            ),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

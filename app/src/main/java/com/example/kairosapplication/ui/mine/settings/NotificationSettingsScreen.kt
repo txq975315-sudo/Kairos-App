@@ -1,7 +1,11 @@
 package com.example.kairosapplication.ui.mine.settings
 
 import android.Manifest
+import android.app.AlarmManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -67,6 +71,34 @@ fun NotificationSettingsScreen(
                 Manifest.permission.POST_NOTIFICATIONS
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
+    fun canScheduleExactAlarms(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        val am = context.getSystemService(AlarmManager::class.java) ?: return true
+        return am.canScheduleExactAlarms()
+    }
+
+    fun requestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        context.startActivity(
+            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        notificationHelper.createNotificationChannels()
+        if (dailyReminder) {
+            val (h, m) = parseTime(reminderTime)
+            notificationHelper.scheduleDailyReminder(h, m)
+        }
+        if (dailyReflection) {
+            val (h, m) = parseTime(reflectionTime)
+            notificationHelper.scheduleDailyReflection(h, m)
+        }
+    }
+
     LaunchedEffect(dailyReminder, reminderTime) {
         if (dailyReminder) {
             notificationHelper.createNotificationChannels()
@@ -107,6 +139,9 @@ fun NotificationSettingsScreen(
                     onCheckedChange = { next ->
                         if (next) {
                             if (canPost()) {
+                                if (!canScheduleExactAlarms()) {
+                                    requestExactAlarmPermission()
+                                }
                                 viewModel.setDailyReminder(true)
                             } else {
                                 permissionTarget = 1
@@ -132,6 +167,9 @@ fun NotificationSettingsScreen(
                     onCheckedChange = { next ->
                         if (next) {
                             if (canPost()) {
+                                if (!canScheduleExactAlarms()) {
+                                    requestExactAlarmPermission()
+                                }
                                 viewModel.setDailyReflection(true)
                             } else {
                                 permissionTarget = 2

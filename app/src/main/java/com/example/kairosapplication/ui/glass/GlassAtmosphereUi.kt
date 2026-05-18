@@ -53,6 +53,7 @@ fun rememberGlassAtmosphereUi(
         val zones = withContext(Dispatchers.IO) {
             if (!wallpaperUri.isNullOrBlank()) {
                 AtmosphereLuminance.sampleZonesFromUri(context, wallpaperUri)
+                    ?: AtmosphereLuminance.sampleZones(context, wallpaperResId)
             } else {
                 AtmosphereLuminance.sampleZones(context, wallpaperResId)
             }
@@ -75,8 +76,13 @@ fun ProvideGlassAtmosphereUi(
         LocalGlassAtmosphereUi provides ui,
         LocalGlassTextColors provides ui.cardText,
         LocalGlassHazeState provides hazeState,
-        content = content,
-    )
+    ) {
+        KairosSystemBarsEffect(
+            lightStatusBars = ui.zones.topIsLight,
+            lightNavigationBars = ui.zones.bottomIsLight,
+        )
+        content()
+    }
 }
 
 fun GlassAtmosphereUi.quoteDividerColor(): Color =
@@ -104,8 +110,10 @@ fun ProvideAppUiTheme(
                 LocalGlassAtmosphereUi provides classicUi,
                 LocalGlassTextColors provides GlassTextColors.onLightBackground(),
                 LocalGlassHazeState provides null,
-                content = content,
-            )
+            ) {
+                KairosSystemBarsEffect(lightStatusBars = true, lightNavigationBars = true)
+                content()
+            }
         }
     }
 }

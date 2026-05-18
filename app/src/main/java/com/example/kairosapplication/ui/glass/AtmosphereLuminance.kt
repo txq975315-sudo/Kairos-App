@@ -27,11 +27,20 @@ object AtmosphereLuminance {
         }
     }
 
-    fun sampleZonesFromUri(context: Context, uriString: String): GlassAtmosphereZones {
+    /**
+     * @return null when the URI is missing, revoked (photo picker), or unreadable — never throws.
+     */
+    fun sampleZonesFromUri(context: Context, uriString: String): GlassAtmosphereZones? {
         val options = BitmapFactory.Options().apply { inSampleSize = 8 }
-        val bitmap = context.contentResolver.openInputStream(Uri.parse(uriString))?.use { stream ->
-            BitmapFactory.decodeStream(stream, null, options)
-        } ?: return GlassAtmosphereZones.default()
+        val bitmap = try {
+            context.contentResolver.openInputStream(Uri.parse(uriString))?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, options)
+            }
+        } catch (_: SecurityException) {
+            null
+        } catch (_: Exception) {
+            null
+        } ?: return null
         return try {
             zonesFromBitmap(bitmap)
         } finally {

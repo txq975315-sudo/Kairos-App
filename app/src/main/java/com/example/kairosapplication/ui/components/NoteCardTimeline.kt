@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.ui.topic.rememberTopicPrimaryLabel
@@ -147,7 +146,7 @@ fun NoteCardTimeline(
                         modifier = Modifier
                             .width(1.dp)
                             .weight(1f)
-                            .background(NoteCardConstants.TimelineConnectorColor),
+                            .background(NoteCardConstants.timelineConnectorColor()),
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -162,7 +161,7 @@ fun NoteCardTimeline(
                         modifier = Modifier
                             .width(1.dp)
                             .weight(1f)
-                            .background(NoteCardConstants.TimelineConnectorColor),
+                            .background(NoteCardConstants.timelineConnectorColor()),
                     )
                 }
             }
@@ -276,7 +275,7 @@ private fun NoteCardTimelineShell(
                         text = note.behaviorSummary.ifBlank { "—" },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppColors.PrimaryText,
+                        color = cardText.primary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -285,7 +284,7 @@ private fun NoteCardTimelineShell(
                     Text(
                         text = mainBody.ifBlank { " " },
                         fontSize = 14.sp,
-                        color = AppColors.SecondaryText,
+                        color = cardText.secondary,
                         maxLines = bodyMaxLines,
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = 20.sp
@@ -338,7 +337,7 @@ private fun NoteCardTimelineShell(
                         Text(
                             text = assoc,
                             fontSize = 12.sp,
-                            color = AppColors.HintText,
+                            color = cardText.muted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )

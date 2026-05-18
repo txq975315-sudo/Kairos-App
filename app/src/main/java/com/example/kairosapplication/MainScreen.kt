@@ -84,7 +84,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.kairosapplication.ui.CreateScreen
 import com.example.kairosapplication.ui.FirstRunLanguageOverlay
 import com.example.kairosapplication.ui.EssayNavHost
-import com.example.kairosapplication.ui.mine.MineAllRecordsCustomizeScreen
+import com.example.kairosapplication.ui.mine.MineAllRecordsTab
 import com.example.kairosapplication.ui.mine.MineAllRecordsScreen
 import com.example.kairosapplication.ui.mine.MineScreen
 import com.example.kairosapplication.ui.mine.MineViewModel
@@ -227,7 +227,7 @@ fun MainScreen(
     var overlay by remember { mutableStateOf<Overlay?>(null) }
     var showMoodCalendar by remember { mutableStateOf(false) }
     var showMineAllRecords by remember { mutableStateOf(false) }
-    var showMineAllRecordsCustomize by remember { mutableStateOf(false) }
+    var mineAllRecordsInitialTab by remember { mutableStateOf(MineAllRecordsTab.Calendar) }
     var showTopicManageHub by remember { mutableStateOf(false) }
     var topicManageEditPrimaryKey by remember { mutableStateOf<String?>(null) }
     var showSettingsScreen by remember { mutableStateOf(false) }
@@ -235,6 +235,7 @@ fun MainScreen(
     var showImportScreen by remember { mutableStateOf(false) }
     var showNotificationSettings by remember { mutableStateOf(false) }
     var showThemeSettings by remember { mutableStateOf(false) }
+    var themeSettingsOpenedFromSettings by remember { mutableStateOf(false) }
     var showAtmosphereBackgroundSettings by remember { mutableStateOf(false) }
     var showMoodSettings by remember { mutableStateOf(false) }
     var showWidgetSettings by remember { mutableStateOf(false) }
@@ -257,7 +258,7 @@ fun MainScreen(
                 essayRoute != "essay_main" &&
                 essayRoute != "essay_search") ||
             (selectedTab == AppTab.Mine &&
-                (showTopicManageHub || showMineAllRecords || showMineAllRecordsCustomize || showMoodCalendar || showSettingsScreen || showExportScreen ||
+                (showTopicManageHub || showMineAllRecords || showMoodCalendar || showSettingsScreen || showExportScreen ||
                     showImportScreen || showNotificationSettings || showThemeSettings || showAtmosphereBackgroundSettings ||
                     showMoodSettings || showWidgetSettings || showLanguageSettings || showPrivacySettings || showMiscSettings ||
                     showQuoteSettings || showUrgencySettings))
@@ -270,7 +271,6 @@ fun MainScreen(
             showTopicManageHub = false
             topicManageEditPrimaryKey = null
             showMineAllRecords = false
-            showMineAllRecordsCustomize = false
             showMoodCalendar = false
             showSettingsScreen = false
             showExportScreen = false
@@ -376,10 +376,17 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
+        val contentBottomPadding = if (
+            selectedTab == AppTab.Today && currentRoute == "create"
+        ) {
+            0.dp
+        } else {
+            innerPadding.calculateBottomPadding()
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding())
+                .padding(bottom = contentBottomPadding)
         ) {
             if (selectedTab == AppTab.Today) {
                 NavHost(
@@ -461,15 +468,11 @@ fun MainScreen(
                     showMineAllRecords -> MineAllRecordsScreen(
                         mineViewModel = mineViewModel,
                         onBack = { showMineAllRecords = false },
-                        onOpenCustomize = { showMineAllRecordsCustomize = true },
+                        initialTab = mineAllRecordsInitialTab,
                         onGoTodayForTasks = {
                             showMineAllRecords = false
                             selectedTab = AppTab.Today
                         },
-                    )
-                    showMineAllRecordsCustomize -> MineAllRecordsCustomizeScreen(
-                        mineViewModel = mineViewModel,
-                        onBack = { showMineAllRecordsCustomize = false }
                     )
                     showMoodCalendar -> MoodCalendarScreen(
                         mineViewModel = mineViewModel,
@@ -502,7 +505,9 @@ fun MainScreen(
                         viewModel = settingsViewModel,
                         onBack = {
                             showThemeSettings = false
-                            showSettingsScreen = true
+                            if (themeSettingsOpenedFromSettings) {
+                                showSettingsScreen = true
+                            }
                         }
                     )
                     showAtmosphereBackgroundSettings -> AtmosphereBackgroundSettingsScreen(
@@ -572,6 +577,7 @@ fun MainScreen(
                         },
                         onNavigateToTheme = {
                             showSettingsScreen = false
+                            themeSettingsOpenedFromSettings = true
                             showThemeSettings = true
                         },
                         onNavigateToAtmosphereBackground = {
@@ -616,9 +622,18 @@ fun MainScreen(
                         mineViewModel = mineViewModel,
                         onNavigateToMoodCalendar = { showMoodCalendar = true },
                         onOpenSettings = { showSettingsScreen = true },
-                        onOpenTheme = { showThemeSettings = true },
-                        onOpenAllRecords = { showMineAllRecords = true },
-                        onCustomizeAllRecords = { showMineAllRecordsCustomize = true },
+                        onOpenTheme = {
+                            themeSettingsOpenedFromSettings = false
+                            showThemeSettings = true
+                        },
+                        onOpenAllRecords = {
+                            mineAllRecordsInitialTab = MineAllRecordsTab.Calendar
+                            showMineAllRecords = true
+                        },
+                        onCustomizeAllRecords = {
+                            mineAllRecordsInitialTab = MineAllRecordsTab.Stats
+                            showMineAllRecords = true
+                        },
                     )
                 }
             }

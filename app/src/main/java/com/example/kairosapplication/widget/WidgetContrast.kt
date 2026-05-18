@@ -52,13 +52,6 @@ object WidgetContrast {
                     }
                 }
             }
-            WidgetSize._2X2 -> {
-                views.setTextColor(R.id.widget_date, primary)
-                views.setTextColor(R.id.widget_task_count, muted)
-                views.setTextColor(R.id.widget_daily_quote, muted)
-                views.setTextColor(R.id.widget_2x2_month_title, primary)
-                views.setTextColor(R.id.widget_2x2_month_grid, muted)
-            }
             WidgetSize._3X1 ->
                 when (config.layoutKind) {
                     WidgetLayoutKind._3C -> {

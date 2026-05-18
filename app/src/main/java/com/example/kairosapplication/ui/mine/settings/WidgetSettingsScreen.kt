@@ -72,6 +72,7 @@ fun WidgetSettingsScreen(
     }
     var refreshStrategy by remember { mutableStateOf(WidgetRefreshStrategy.ON_APP_OPEN) }
     var showRefreshPicker by remember { mutableStateOf(false) }
+    val chrome = rememberSettingsChrome()
 
     LaunchedEffect(Unit) {
         refreshStrategy = repo.getConfig(WidgetSize._1X1).refreshStrategy
@@ -116,29 +117,11 @@ fun WidgetSettingsScreen(
                     }
                 )
                 SettingsGroupDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showRefreshPicker = true }
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        LocalizedStrings.get("widget_refresh_time"),
-                        color = SettingsTitleC,
-                        fontSize = 15.sp
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            LocalizedStrings.get(refreshStrategyKey(refreshStrategy)),
-                            color = SettingsSubC,
-                            fontSize = 12.sp
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("›", color = SettingsSubC, fontSize = 18.sp)
-                    }
-                }
+                SettingsNavRow(
+                    label = LocalizedStrings.get("widget_refresh_time"),
+                    value = LocalizedStrings.get(refreshStrategyKey(refreshStrategy)),
+                    onClick = { showRefreshPicker = true },
+                )
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -147,7 +130,7 @@ fun WidgetSettingsScreen(
     if (showRefreshPicker) {
         AlertDialog(
             onDismissRequest = { showRefreshPicker = false },
-            title = { Text(LocalizedStrings.get("widget_refresh_time"), color = SettingsTitleC) },
+            title = { Text(LocalizedStrings.get("widget_refresh_time"), color = chrome.title) },
             text = {
                 Column {
                     WidgetRefreshStrategy.entries.forEach { strategy ->
@@ -168,14 +151,14 @@ fun WidgetSettingsScreen(
                                     showRefreshPicker = false
                                 },
                                 colors = RadioButtonDefaults.colors(
-                                    selectedColor = SettingsTitleC,
-                                    unselectedColor = SettingsSubC
+                                    selectedColor = chrome.title,
+                                    unselectedColor = chrome.subtitle
                                 )
                             )
                             Text(
                                 LocalizedStrings.get(refreshStrategyKey(strategy)),
                                 fontSize = 15.sp,
-                                color = SettingsTitleC
+                                color = chrome.title
                             )
                         }
                     }

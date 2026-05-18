@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -54,13 +56,10 @@ import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
-import com.example.kairosapplication.core.ui.CommonBackButton
 import com.example.kairosapplication.ui.theme.BackgroundColor
 
 private val CardBg = AppColors.GlassFill
 private val DividerC = Color(0xFFE8E5E0)
-private val TitleC = Color(0xFF1A1A1A)
-private val SubC = Color(0xFF9E9E9E)
 private val Blue = Color(0xFF2196F3)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -106,6 +105,8 @@ fun DataExportScreen(
         }
     }
 
+    val chrome = rememberSettingsChrome()
+
     fun shareFile(file: java.io.File, mime: String) {
         val uri = FileProvider.getUriForFile(
             context,
@@ -122,22 +123,26 @@ fun DataExportScreen(
         )
     }
 
-    Scaffold(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding(),
-        containerColor = BackgroundColor,
+            .background(BackgroundColor),
+    ) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
+                modifier = Modifier.statusBarsPadding(),
                 title = {
                     Text(
                         LocalizedStrings.get("data_export"),
-                        color = TitleC,
+                        color = chrome.title,
                         fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
-                    CommonBackButton(onClick = onBack)
+                    SettingsBackButton(onClick = onBack)
                 },
                 actions = {
                     TextButton(
@@ -181,7 +186,7 @@ fun DataExportScreen(
                 Column(Modifier.padding(16.dp)) {
                     Text(
                         LocalizedStrings.get("export_content"),
-                        color = SubC,
+                        color = chrome.subtitle,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -224,7 +229,7 @@ fun DataExportScreen(
                 Column(Modifier.padding(16.dp)) {
                     Text(
                         LocalizedStrings.get("export_format"),
-                        color = SubC,
+                        color = chrome.subtitle,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -238,7 +243,7 @@ fun DataExportScreen(
                             .padding(vertical = 4.dp)
                     ) {
                         RadioButton(selected = formatJson, onClick = { formatJson = true })
-                        Text(LocalizedStrings.get("export_json_desc"), fontSize = 15.sp, color = TitleC)
+                        Text(LocalizedStrings.get("export_json_desc"), fontSize = 15.sp, color = chrome.title)
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -247,7 +252,7 @@ fun DataExportScreen(
                             .padding(vertical = 4.dp)
                     ) {
                         RadioButton(selected = !formatJson, onClick = { formatJson = false })
-                        Text(LocalizedStrings.get("export_txt_desc"), fontSize = 15.sp, color = TitleC)
+                        Text(LocalizedStrings.get("export_txt_desc"), fontSize = 15.sp, color = chrome.title)
                     }
                 }
             }
@@ -293,6 +298,7 @@ fun DataExportScreen(
             )
         }
     }
+    }
 }
 
 @Composable
@@ -302,6 +308,7 @@ private fun ExportCheckRow(
     enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val chrome = rememberSettingsChrome()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -309,7 +316,7 @@ private fun ExportCheckRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, fontSize = 15.sp, color = TitleC)
+        Text(label, fontSize = 15.sp, color = chrome.title)
         Checkbox(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -329,6 +336,7 @@ private fun ExportSettingsSheet(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val chrome = rememberSettingsChrome()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
@@ -347,7 +355,7 @@ private fun ExportSettingsSheet(
                 text = LocalizedStrings.get("export_settings"),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = TitleC,
+                color = chrome.title,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -358,7 +366,7 @@ private fun ExportSettingsSheet(
                 text = LocalizedStrings.get("export_filename"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = SubC
+                color = chrome.subtitle
             )
             Spacer(modifier = Modifier.height(8.dp))
             BasicTextField(
@@ -373,7 +381,7 @@ private fun ExportSettingsSheet(
                     if (customFileName.isEmpty()) {
                         Text(
                             text = LocalizedStrings.get("export_custom_name_hint"),
-                            color = SubC.copy(alpha = 0.6f),
+                            color = chrome.subtitle.copy(alpha = 0.6f),
                             fontSize = 15.sp
                         )
                     }
@@ -385,7 +393,7 @@ private fun ExportSettingsSheet(
                 Text(
                     text = LocalizedStrings.get("export_default_name"),
                     fontSize = 12.sp,
-                    color = SubC.copy(alpha = 0.7f)
+                    color = chrome.subtitle.copy(alpha = 0.7f)
                 )
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -395,7 +403,7 @@ private fun ExportSettingsSheet(
                 text = LocalizedStrings.get("export_location"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = SubC
+                color = chrome.subtitle
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -411,7 +419,7 @@ private fun ExportSettingsSheet(
                 Text(
                     LocalizedStrings.get("export_location_downloads"),
                     fontSize = 15.sp,
-                    color = TitleC
+                    color = chrome.title
                 )
             }
             Row(
@@ -427,7 +435,7 @@ private fun ExportSettingsSheet(
                 Text(
                     LocalizedStrings.get("export_location_documents"),
                     fontSize = 15.sp,
-                    color = TitleC
+                    color = chrome.title
                 )
             }
 
@@ -438,7 +446,7 @@ private fun ExportSettingsSheet(
             Text(
                 text = "${LocalizedStrings.get("export_format")}: $ext",
                 fontSize = 13.sp,
-                color = SubC,
+                color = chrome.subtitle,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -454,7 +462,7 @@ private fun ExportSettingsSheet(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(LocalizedStrings.get("cancel"), color = SubC)
+                    Text(LocalizedStrings.get("cancel"), color = chrome.subtitle)
                 }
                 Button(
                     onClick = onConfirm,

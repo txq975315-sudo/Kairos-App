@@ -140,27 +140,35 @@ class NotificationHelper(private val context: Context) {
         nm.notify(nid, notification)
     }
 
+    fun canScheduleExactAlarms(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        return alarmManager.canScheduleExactAlarms()
+    }
+
     fun scheduleDailyReminder(hour: Int, minute: Int) {
-        val trigger = nextTriggerMillis(hour, minute)
-        val pi = reminderAlarmPendingIntent()
-        val am = alarmManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi)
-        } else {
-            @Suppress("DEPRECATION")
-            am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi)
-        }
+        scheduleExactRtc(nextTriggerMillis(hour, minute), reminderAlarmPendingIntent())
     }
 
     fun scheduleDailyReflection(hour: Int, minute: Int) {
-        val trigger = nextTriggerMillis(hour, minute)
-        val pi = reflectionAlarmPendingIntent()
+        scheduleExactRtc(nextTriggerMillis(hour, minute), reflectionAlarmPendingIntent())
+    }
+
+    private fun scheduleExactRtc(triggerAtMillis: Long, pendingIntent: PendingIntent) {
         val am = alarmManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi)
-        } else {
-            @Suppress("DEPRECATION")
-            am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            } else {
+                @Suppress("DEPRECATION")
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            }
+        } catch (_: SecurityException) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            } else {
+                @Suppress("DEPRECATION")
+                am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            }
         }
     }
 

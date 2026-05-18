@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,10 +58,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.data.DataStoreManager
 import com.example.kairosapplication.core.ui.AppShapes
-import com.example.kairosapplication.ui.mine.settings.SettingsDividerC
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.ui.glass.ProvideAppUiTheme
 import com.example.kairosapplication.ui.mine.settings.SettingsL2Scaffold
-import com.example.kairosapplication.ui.mine.settings.SettingsSubC
-import com.example.kairosapplication.ui.mine.settings.SettingsTitleC
+import com.example.kairosapplication.ui.mine.settings.rememberSettingsChrome
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -90,10 +92,18 @@ class WidgetBackgroundActivity : BaseLocaleActivity() {
             val langState = remember { mutableStateOf(lang) }
             CompositionLocalProvider(LocalCurrentLanguage provides langState) {
                 KairosApplicationTheme(dynamicColor = false) {
-                    BackgroundEditScreen(
-                        initialSize = selectedSize,
-                        onBack = { finish() }
+                    val uiThemeKey by dm.getUiTheme().collectAsState(
+                        initial = AppUiTheme.STORAGE_GLASS,
                     )
+                    val appUiTheme = remember(uiThemeKey) {
+                        AppUiTheme.fromStorageKey(uiThemeKey)
+                    }
+                    ProvideAppUiTheme(theme = appUiTheme) {
+                        BackgroundEditScreen(
+                            initialSize = selectedSize,
+                            onBack = { finish() },
+                        )
+                    }
                 }
             }
         }
@@ -214,7 +224,9 @@ private fun BackgroundEditScreen(
         previewBitmap = bmp
     }
 
-    com.example.kairosapplication.ui.mine.settings.SettingsL2Scaffold(
+    val chrome = rememberSettingsChrome()
+
+    SettingsL2Scaffold(
         title = LocalizedStrings.get("widget_background_style"),
         onBack = onBack
     ) { padding ->
@@ -230,7 +242,7 @@ private fun BackgroundEditScreen(
                 LocalizedStrings.get("widget_preview_area"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = SettingsTitleC
+                color = chrome.title
             )
             Spacer(Modifier.height(8.dp))
             Box(
@@ -238,7 +250,7 @@ private fun BackgroundEditScreen(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(AppShapes.DenseInsetRadius))
-                    .border(1.dp, SettingsDividerC, RoundedCornerShape(AppShapes.DenseInsetRadius)),
+                    .border(1.dp, chrome.divider, RoundedCornerShape(AppShapes.DenseInsetRadius)),
                 contentAlignment = Alignment.Center
             ) {
                 val bmp = previewBitmap
@@ -253,18 +265,27 @@ private fun BackgroundEditScreen(
                     Text(
                         LocalizedStrings.get("widget_preview_placeholder"),
                         fontSize = 14.sp,
-                        color = SettingsSubC,
+                        color = chrome.subtitle,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
             }
             Spacer(Modifier.height(24.dp))
+            if (LocalAppUiTheme.current == AppUiTheme.Glass) {
+                Text(
+                    LocalizedStrings.get("widget_background_soon"),
+                    fontSize = 14.sp,
+                    color = chrome.subtitle,
+                    lineHeight = 20.sp,
+                )
+                Spacer(Modifier.height(32.dp))
+            } else {
             Text(
                 LocalizedStrings.get("widget_background_type"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = SettingsTitleC
+                color = chrome.title
             )
             Spacer(Modifier.height(8.dp))
             Row(
@@ -286,7 +307,7 @@ private fun BackgroundEditScreen(
                             onClick = { backgroundType = type },
                             colors = RadioButtonDefaults.colors(
                                 selectedColor = Color(0xFF7B61FF),
-                                unselectedColor = SettingsSubC
+                                unselectedColor = chrome.subtitle
                             )
                         )
                         Text(
@@ -301,7 +322,7 @@ private fun BackgroundEditScreen(
                                     LocalizedStrings.get("widget_bg_gradient")
                             },
                             fontSize = 11.sp,
-                            color = if (isSelected) SettingsTitleC else SettingsSubC,
+                            color = if (isSelected) chrome.title else chrome.subtitle,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.widthIn(min = 56.dp)
                         )
@@ -313,7 +334,7 @@ private fun BackgroundEditScreen(
                 Text(
                     LocalizedStrings.get("widget_preset_colors"),
                     fontSize = 13.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(
@@ -350,7 +371,7 @@ private fun BackgroundEditScreen(
                 Text(
                     "${LocalizedStrings.get("widget_alpha")}: $alphaPercent%",
                     fontSize = 13.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Slider(
                     value = alphaPercent.toFloat(),
@@ -369,7 +390,7 @@ private fun BackgroundEditScreen(
                 ) {
                     Text(
                         LocalizedStrings.get("widget_select_image"),
-                        color = SettingsTitleC,
+                        color = chrome.title,
                         fontSize = 14.sp
                     )
                 }
@@ -377,7 +398,7 @@ private fun BackgroundEditScreen(
                 Text(
                     "${LocalizedStrings.get("widget_blur_radius")}: $blurRadius",
                     fontSize = 13.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Slider(
                     value = blurRadius.toFloat(),
@@ -389,7 +410,7 @@ private fun BackgroundEditScreen(
                 Text(
                     "${LocalizedStrings.get("widget_alpha")}: $alphaPercent%",
                     fontSize = 13.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Slider(
                     value = alphaPercent.toFloat(),
@@ -420,7 +441,7 @@ private fun BackgroundEditScreen(
                 Text(
                     LocalizedStrings.get("widget_gradient_type"),
                     fontSize = 13.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -431,33 +452,33 @@ private fun BackgroundEditScreen(
                         onClick = { isRadialGradient = false },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = Color(0xFF7B61FF),
-                            unselectedColor = SettingsSubC
+                            unselectedColor = chrome.subtitle
                         )
                     )
                     Text(
                         LocalizedStrings.get("widget_linear"),
                         fontSize = 13.sp,
-                        color = SettingsTitleC
+                        color = chrome.title
                     )
                     RadioButton(
                         selected = isRadialGradient,
                         onClick = { isRadialGradient = true },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = Color(0xFF7B61FF),
-                            unselectedColor = SettingsSubC
+                            unselectedColor = chrome.subtitle
                         )
                     )
                     Text(
                         LocalizedStrings.get("widget_radial"),
                         fontSize = 13.sp,
-                        color = SettingsTitleC
+                        color = chrome.title
                     )
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
                     "${LocalizedStrings.get("widget_angle")}: ${gradientAngle}°",
                     fontSize = 13.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Slider(
                     value = gradientAngle.toFloat(),
@@ -469,6 +490,8 @@ private fun BackgroundEditScreen(
                 )
             }
             Spacer(Modifier.height(24.dp))
+            }
+            if (LocalAppUiTheme.current == AppUiTheme.Classic) {
             OutlinedButton(
                 onClick = {
                     scope.launch {
@@ -485,7 +508,7 @@ private fun BackgroundEditScreen(
             ) {
                 Text(
                     LocalizedStrings.get("widget_apply_all_sizes"),
-                    color = SettingsTitleC,
+                    color = chrome.title,
                     fontSize = 14.sp,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
@@ -506,13 +529,14 @@ private fun BackgroundEditScreen(
             ) {
                 Text(
                     LocalizedStrings.get("widget_apply_current_size"),
-                    color = SettingsTitleC,
+                    color = chrome.title,
                     fontSize = 14.sp,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
             }
             Spacer(Modifier.height(32.dp))
+            }
         }
     }
 }

@@ -190,13 +190,15 @@ fun GlassTimeBlockAddTaskButton(
 ) {
     val cardText = LocalGlassTextColors.current
 
+    val addButtonSize = com.example.kairosapplication.core.ui.TimeBlockQuickAddDimens.buttonSize
+    val iconSize = com.example.kairosapplication.core.ui.TimeBlockQuickAddDimens.iconSize
     GlassSurface(
         modifier = modifier
-            .size(GlassConstants.CompleteButtonSize)
+            .size(addButtonSize)
             .clickable(onClick = onClick),
         shape = CircleShape,
         fillAlpha = GlassConstants.PillFillAlpha,
-        wrapHazeToContent = true,
+        wrapHazeToContent = false,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -206,7 +208,7 @@ fun GlassTimeBlockAddTaskButton(
                 imageVector = Icons.Default.Add,
                 contentDescription = LocalizedStrings.get("cd_add_task"),
                 tint = cardText.secondary,
-                modifier = Modifier.size(GlassConstants.CompletedCheckSize),
+                modifier = Modifier.size(iconSize),
             )
         }
     }

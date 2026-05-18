@@ -91,7 +91,6 @@ fun EssayNavHost(
                 onBackClick = onBack,
                 onNoteClick = { noteId -> onNavigateToEditor(noteId) },
                 onNavigateToNewNote = { onNavigateToEditor(null) },
-                mainBottomBarInset = mainBottomBarInset,
             )
         }
         composable(

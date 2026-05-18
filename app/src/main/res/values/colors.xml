@@ -1,22 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Widget remote views -->
+    <color name="widget_date_secondary">#9E9E9E</color>
+    <color name="widget_task_muted">#757575</color>
+    <color name="widget_today_day_primary">#1A1A1A</color>
 
-    <!-- 3×1 triptych widget: warm wood sides + Figma-style primary slots -->
-    <color name="widget_wood_panel">#FFEBE4DC</color>
-    <color name="widget_wood_text">#FF6D5F52</color>
-    <color name="widget_wood_dots">#FFB8A99A</color>
-    <color name="widget_primary_slot_fill">#FFEDE7FF</color>
-    <color name="widget_primary_slot_title">#FF5C4F96</color>
-    <color name="widget_primary_slot_sub">#FF6E5FA8</color>
-    <color name="widget_today_center_bg">#FFF9F9F9</color>
-    <color name="widget_date_secondary">#FF757575</color>
-    <color name="widget_today_day_primary">#FF1A1A1A</color>
-    <color name="widget_task_muted">#FF888888</color>
+    <!-- Date picker: Classic white + soft mint accent -->
+    <color name="kairos_date_picker_primary_classic">#8EC4B5</color>
+    <color name="kairos_date_picker_primary_dark_classic">#6FA895</color>
+    <!-- Date picker: Glass dark shell + light mint chrome -->
+    <color name="kairos_date_picker_primary_glass">#B8E8DE</color>
+    <color name="kairos_date_picker_surface_glass">#E8222A32</color>
 </resources>

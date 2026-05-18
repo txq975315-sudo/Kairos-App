@@ -78,6 +78,10 @@ object GlassConstants {
      * Route C — bright liquid glass: light blur + minimal tint; color comes from wallpaper.
      */
     val GlassBackdropBlurRadius = 8.dp
+    /** Modal picker scrim — stronger dim so wallpaper does not compete with the card. */
+    const val PickerDialogScrimAlpha = 0.48f
+    /** Picker card tint when backdrop blur is unavailable inside [android.app.Dialog]. */
+    const val PickerDialogFillAlpha = 0.92f
     const val GlassHazeTintAlpha = 0.035f
     const val GlassHazeNoiseFactor = 0f
 

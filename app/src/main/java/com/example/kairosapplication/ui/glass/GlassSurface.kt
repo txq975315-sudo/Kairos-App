@@ -24,6 +24,7 @@ import com.example.kairosapplication.core.ui.constants.GlassConstants
  *
  * @param wrapHazeToContent When true (chips/pills), haze is clipped to content size.
  *   When false (task rows with [Modifier.fillMaxWidth]), haze fills the given bounds.
+ * @param skipHazeBackdrop When true (system dialogs), skip [glassBubbleBackdrop] — haze cannot sample outside the main window.
  */
 @Composable
 fun GlassSurface(
@@ -31,6 +32,7 @@ fun GlassSurface(
     shape: Shape,
     fillAlpha: Float = GlassConstants.TaskCardFillAlpha,
     wrapHazeToContent: Boolean = false,
+    skipHazeBackdrop: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     if (LocalAppUiTheme.current == AppUiTheme.Classic) {
@@ -74,9 +76,9 @@ fun GlassSurface(
                 },
             )
             .clip(shape)
-            .glassBubbleBackdrop(),
+            .then(if (skipHazeBackdrop) Modifier else Modifier.glassBubbleBackdrop()),
     ) {
-        if (!flatFrost && fillAlpha > 0f) {
+        if (fillAlpha > 0f && (skipHazeBackdrop || !flatFrost)) {
             Box(
                 modifier = Modifier
                     .matchParentSize()

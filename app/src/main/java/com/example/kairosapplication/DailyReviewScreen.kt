@@ -35,9 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppReviewLayout
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.core.ui.AppSpacing
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.ui.glass.GlassQuoteSection
 import com.example.kairosapplication.ui.glass.GlassSurface
@@ -412,6 +415,12 @@ private fun DailyTaskCard(
     onEdit: () -> Unit,
 ) {
     val cardText = LocalGlassTextColors.current
+    val isClassic = LocalAppUiTheme.current == AppUiTheme.Classic
+    val titleColor = when {
+        !task.isCompleted -> cardText.primary
+        isClassic -> AppColors.PrimaryText
+        else -> cardText.muted
+    }
     val selectAccent = Color(0xFF8A7CF8)
     val shape = RoundedCornerShape(GlassConstants.CornerRadius)
 
@@ -431,7 +440,7 @@ private fun DailyTaskCard(
         ) {
             Text(
                 text = task.title,
-                color = if (task.isCompleted) cardText.muted else cardText.primary,
+                color = titleColor,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,

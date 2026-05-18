@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,8 +30,9 @@ fun GlassTopBar(
     onDailyReviewClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cardText = LocalGlassTextColors.current
-    val chrome = LocalGlassAtmosphereUi.current.topChrome
+    val atmosphere = LocalGlassAtmosphereUi.current
+    val chrome = atmosphere.topChrome
+    val useLightChrome = !atmosphere.zones.topIsLight
 
     Row(
         modifier = modifier
@@ -43,15 +45,16 @@ fun GlassTopBar(
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = cardText.secondary,
+                    tint = chrome.secondary,
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "$completedCount / $totalCount",
-                    color = cardText.primary,
+                    color = chrome.primary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
+                    style = glassChromeTextStyle(TextStyle.Default, useLightChrome),
                 )
             }
         }

@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,7 +22,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.ui.view.today.UrgencyCircle
 import com.example.taskmodel.constants.TaskConstants
 import com.example.taskmodel.model.Task
@@ -46,6 +46,7 @@ fun TimelineTaskCompactRow(
     modifier: Modifier = Modifier,
 ) {
     val done = task.isCompleted
+    val chrome = LocalViewChrome.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -55,7 +56,7 @@ fun TimelineTaskCompactRow(
     ) {
         Text(
             text = task.title,
-            color = if (done) AppColors.HintText else AppColors.PrimaryText,
+            color = if (done) chrome.muted else chrome.primary,
             fontSize = 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -82,6 +83,7 @@ fun TimelineTasksByTimeBlocks(
 ) {
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
+    val chrome = LocalViewChrome.current
     var remaining = maxVisible
     Column(modifier = modifier) {
         TaskConstants.TIME_BLOCKS.forEach { block ->
@@ -90,7 +92,7 @@ fun TimelineTasksByTimeBlocks(
             if (blockTasks.isEmpty()) return@forEach
             Text(
                 text = timelineTimeBlockLabel(block),
-                color = AppColors.HintText,
+                color = chrome.muted,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 1.dp, bottom = 1.dp),
@@ -119,7 +121,7 @@ fun TimelineTasksByTimeBlocks(
                     ctx,
                     sortedTasks.size - maxVisible,
                 ),
-                color = AppColors.HintText,
+                color = chrome.muted,
                 fontSize = 10.sp,
                 modifier = Modifier.padding(top = 2.dp),
             )

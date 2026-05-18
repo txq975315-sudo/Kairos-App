@@ -27,7 +27,8 @@
             android:exported="true"
             android:label="@string/app_name"
             android:launchMode="singleTop"
-            android:theme="@style/Theme.KairosApplication">
+            android:theme="@style/Theme.KairosApplication"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -99,18 +100,6 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info_1x1" />
-        </receiver>
-
-        <receiver
-            android:name=".widget.KairosWidgetProvider2x2"
-            android:exported="true"
-            android:label="@string/widget_picker_label_2x2">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_info_2x2" />
         </receiver>
 
         <receiver

@@ -33,8 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -75,6 +75,7 @@ fun WeekTab(
     val dayFmt = remember(lang) {
         DateTimeFormatter.ofPattern("EEE M/d", locale)
     }
+    val chrome = LocalViewChrome.current
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(0.dp),
@@ -91,7 +92,7 @@ fun WeekTab(
                         bottom = 2.dp,
                     ),
                     thickness = 0.5.dp,
-                    color = AppColors.Divider.copy(alpha = 0.55f),
+                    color = chrome.divider.copy(alpha = 0.55f),
                 )
             }
             WeekDayTimelineRow(
@@ -123,6 +124,7 @@ private fun WeekDayTimelineRow(
     onPublishedChangeTopic: (Long) -> Unit,
     onPublishedDelete: (Long) -> Unit,
 ) {
+    val chrome = LocalViewChrome.current
     val sortedTasks = remember(tasks) { TaskUtils.sortTasks(tasks) }
     Row(
         modifier = Modifier
@@ -137,7 +139,7 @@ private fun WeekDayTimelineRow(
         ) {
             Text(
                 text = dayLabel,
-                color = AppColors.PrimaryText,
+                color = chrome.primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -145,7 +147,7 @@ private fun WeekDayTimelineRow(
             if (sortedTasks.isEmpty()) {
                 Text(
                     text = LocalizedStrings.get("view_week_no_tasks"),
-                    color = AppColors.HintText,
+                    color = chrome.muted,
                     fontSize = 12.sp,
                 )
             } else {
@@ -157,7 +159,7 @@ private fun WeekDayTimelineRow(
             Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = LocalizedStrings.get("view_week_add_task"),
-                color = AppColors.HintText,
+                color = chrome.muted,
                 fontSize = 11.sp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -169,7 +171,7 @@ private fun WeekDayTimelineRow(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(0.5.dp)
-                .background(AppColors.Divider.copy(alpha = 0.45f)),
+                .background(chrome.divider.copy(alpha = 0.45f)),
         )
         Column(
             modifier = Modifier
@@ -179,7 +181,7 @@ private fun WeekDayTimelineRow(
         ) {
             Text(
                 text = dayLabel,
-                color = AppColors.PrimaryText,
+                color = chrome.primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -187,7 +189,7 @@ private fun WeekDayTimelineRow(
             if (notes.isEmpty()) {
                 Text(
                     text = LocalizedStrings.get("view_week_no_notes"),
-                    color = AppColors.HintText.copy(alpha = 0.85f),
+                    color = chrome.muted.copy(alpha = 0.85f),
                     fontSize = 12.sp,
                 )
             } else {
@@ -265,6 +267,7 @@ private fun WeekTimelineNoteBlock(
     val bodyPreview = remember(note.body) {
         note.body.trim().lineSequence().firstOrNull()?.take(72)?.trim().orEmpty().ifBlank { "—" }
     }
+    val chrome = LocalViewChrome.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -285,7 +288,7 @@ private fun WeekTimelineNoteBlock(
                 Text(
                     text = topicLine,
                     style = TextStyle(
-                        color = AppColors.PrimaryText,
+                        color = chrome.primary,
                         fontSize = 12.sp,
                         lineHeight = 13.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -296,7 +299,7 @@ private fun WeekTimelineNoteBlock(
                 Text(
                     text = summaryLine,
                     style = TextStyle(
-                        color = AppColors.HintText,
+                        color = chrome.muted,
                         fontSize = 11.sp,
                         lineHeight = 12.sp,
                     ),
@@ -306,7 +309,7 @@ private fun WeekTimelineNoteBlock(
                 Text(
                     text = bodyPreview,
                     style = TextStyle(
-                        color = AppColors.HintText.copy(alpha = 0.9f),
+                        color = chrome.muted.copy(alpha = 0.9f),
                         fontSize = 11.sp,
                         lineHeight = 12.sp,
                     ),

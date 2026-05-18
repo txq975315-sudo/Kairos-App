@@ -4,15 +4,13 @@ import org.json.JSONObject
 
 enum class WidgetSize(val displayName: String) {
     _1X1("1×1"),
-    _2X2("2×2"),
     _3X1("3×1"),
-    _3X3("3×3")
+    _3X3("3×3"),
 }
 
 enum class WidgetLayoutKind(val displayName: String) {
     _1A("计数类"),
     _1B("Todo类"),
-    _2A("Todo展示类"),
     _3A("Todo展示类"),
     _3B("统计类"),
     _3C("一周任务条"),
@@ -64,7 +62,6 @@ object WidgetDefaults {
     fun defaultConfig(size: WidgetSize): WidgetConfig {
         val layout = when (size) {
             WidgetSize._1X1 -> WidgetLayoutKind._1A
-            WidgetSize._2X2 -> WidgetLayoutKind._2A
             WidgetSize._3X1 -> WidgetLayoutKind._3A
             WidgetSize._3X3 -> WidgetLayoutKind._4A
         }
@@ -103,12 +100,16 @@ fun decodeWidgetConfig(json: String?): WidgetConfig? {
     if (json.isNullOrBlank()) return null
     return try {
         val o = JSONObject(json)
-        val size = o.optString("size").let { s ->
-            WidgetSize.entries.find { it.name == s } ?: return null
+        val sizeRaw = o.optString("size")
+        val size = when {
+            sizeRaw == "_2X2" -> WidgetSize._3X1
+            else -> WidgetSize.entries.find { it.name == sizeRaw } ?: return null
         }
         val layoutKind = o.optString("layoutKind").let { s ->
-            WidgetLayoutKind.entries.find { it.name == s }
-                ?: WidgetDefaults.defaultConfig(size).layoutKind
+            when (s) {
+                "_2A" -> WidgetLayoutKind._3A
+                else -> WidgetLayoutKind.entries.find { it.name == s }
+            } ?: WidgetDefaults.defaultConfig(size).layoutKind
         }
         val refreshStrategy = o.optString("refreshStrategy").let { s ->
             WidgetRefreshStrategy.entries.find { it.name == s }

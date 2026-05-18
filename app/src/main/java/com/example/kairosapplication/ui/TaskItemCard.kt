@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.taskmodel.constants.TaskConstants
@@ -182,6 +184,40 @@ fun TaskItemCard(
 
     @Composable
     fun TaskCardInner() {
+        if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 1.dp,
+                        shape = cardShape,
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.08f),
+                    )
+                    .clip(cardShape)
+                    .border(0.5.dp, Color(0xFFE8E8E8), cardShape)
+                    .onGloballyPositioned { lc ->
+                        onDragAnchorYRoot?.invoke(lc.boundsInRoot().center.y)
+                    },
+                shape = cardShape,
+                colors = CardDefaults.cardColors(containerColor = AppColors.CardBackground),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                TaskCardContentRow(
+                    task = task,
+                    urgencyColor = urgencyColor,
+                    hasDescription = hasDescription,
+                    titleFontSize = titleFontSize,
+                    descriptionFontSize = descriptionFontSize,
+                    minCardHeight = minCardHeight,
+                    dragModifier = dragModifier,
+                    onToggleComplete = onToggleComplete,
+                    onOpenDetail = onOpenDetail,
+                    classicStyle = true,
+                )
+            }
+            return
+        }
         val glassBrush = Brush.verticalGradient(
             colorStops = arrayOf(
                 0f to AppColors.TaskCardGlassTop,
@@ -240,89 +276,18 @@ fun TaskItemCard(
                         .blur(AppColors.TaskCardBlurRadius)
                         .background(innerGlowBrush, cardShape)
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = minCardHeight)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    TaskTagLeading(
-                        label = task.label,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .then(dragModifier)
-                            .clickable { onOpenDetail() },
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = task.title,
-                            fontSize = titleFontSize,
-                            fontWeight = FontWeight.Medium,
-                            color = if (task.isCompleted) Color(0xFF9E9E9E) else Color(0xFF333333),
-                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                        if (hasDescription) {
-                            Text(
-                                text = task.description,
-                                fontSize = descriptionFontSize,
-                                color = Color(0xFF757575),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.width(12.dp))
-
-                    val completedBrush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFE8E8E8).copy(alpha = 0.9f),
-                            Color(0xFFDFDFDF).copy(alpha = 0.7f)
-                        ),
-                        center = androidx.compose.ui.geometry.Offset(12f, 12f),
-                        radius = 12f
-                    )
-                    val incompleteColor = urgencyColor.copy(alpha = 0.12f)
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .then(
-                                if (task.isCompleted) {
-                                    Modifier.background(completedBrush)
-                                } else {
-                                    Modifier.background(incompleteColor)
-                                }
-                            )
-                            .border(
-                                width = 2.2.dp,
-                                color = if (task.isCompleted) {
-                                    Color(0xFFCCCCCC)
-                                } else {
-                                    urgencyColor.copy(alpha = 0.85f)
-                                },
-                                shape = CircleShape
-                            )
-                            .clickable { onToggleComplete() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (task.isCompleted) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = LocalizedStrings.get("cd_completed_task"),
-                                tint = Color(0xFF8A8A8A),
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    }
-                }
+                TaskCardContentRow(
+                    task = task,
+                    urgencyColor = urgencyColor,
+                    hasDescription = hasDescription,
+                    titleFontSize = titleFontSize,
+                    descriptionFontSize = descriptionFontSize,
+                    minCardHeight = minCardHeight,
+                    dragModifier = dragModifier,
+                    onToggleComplete = onToggleComplete,
+                    onOpenDetail = onOpenDetail,
+                    classicStyle = false,
+                )
             }
         }
     }
@@ -337,6 +302,112 @@ fun TaskItemCard(
         }
     } else {
         TaskCardInner()
+    }
+}
+
+@Composable
+private fun TaskCardContentRow(
+    task: Task,
+    urgencyColor: Color,
+    hasDescription: Boolean,
+    titleFontSize: androidx.compose.ui.unit.TextUnit,
+    descriptionFontSize: androidx.compose.ui.unit.TextUnit,
+    minCardHeight: androidx.compose.ui.unit.Dp,
+    dragModifier: Modifier,
+    onToggleComplete: () -> Unit,
+    onOpenDetail: () -> Unit,
+    classicStyle: Boolean,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = minCardHeight)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        TaskTagLeading(
+            label = task.label,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .then(dragModifier)
+                .clickable { onOpenDetail() },
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = task.title,
+                fontSize = titleFontSize,
+                fontWeight = FontWeight.Medium,
+                color = if (task.isCompleted) {
+                    AppColors.HintText
+                } else {
+                    AppColors.PrimaryText
+                },
+                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+            )
+            if (hasDescription) {
+                Text(
+                    text = task.description,
+                    fontSize = descriptionFontSize,
+                    color = AppColors.SecondaryText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                )
+            }
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        val completedBrush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFFE8E8E8).copy(alpha = 0.9f),
+                Color(0xFFDFDFDF).copy(alpha = 0.7f),
+            ),
+            center = androidx.compose.ui.geometry.Offset(12f, 12f),
+            radius = 12f,
+        )
+        val incompleteFill = if (classicStyle) {
+            urgencyColor.copy(alpha = 0.18f)
+        } else {
+            urgencyColor.copy(alpha = 0.12f)
+        }
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .then(
+                    if (task.isCompleted) {
+                        Modifier.background(completedBrush)
+                    } else {
+                        Modifier.background(incompleteFill)
+                    },
+                )
+                .border(
+                    width = if (classicStyle) 2.dp else 2.2.dp,
+                    color = if (task.isCompleted) {
+                        Color(0xFFCCCCCC)
+                    } else {
+                        urgencyColor.copy(alpha = 0.85f)
+                    },
+                    shape = CircleShape,
+                )
+                .clickable { onToggleComplete() },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (task.isCompleted) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = LocalizedStrings.get("cd_completed_task"),
+                    tint = AppColors.SecondaryText,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
     }
 }
 

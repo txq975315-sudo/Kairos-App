@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.widget
+package com.example.kairosapplication.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -36,18 +36,6 @@ data class Widget1x1DisplayState(
     val language: LocalizationManager.Language
 )
 
-data class Widget2x2DisplayState(
-    val dateLine: String,
-    val statsLine: String,
-    val quoteLine: String,
-    val tasks: List<WidgetTaskRow>,
-    val showTasks: Boolean,
-    val showQuote: Boolean,
-    val language: LocalizationManager.Language,
-    val monthTitle: String,
-    val monthGrid: String
-)
-
 data class Widget1x1TodoLine(
     val title: String,
     val done: Boolean,
@@ -73,9 +61,8 @@ object WidgetManager {
 
     private val allProviderClasses = listOf(
         KairosWidgetProvider1x1::class.java,
-        KairosWidgetProvider2x2::class.java,
         KairosWidgetProvider3x1::class.java,
-        KairosWidgetProvider3x3::class.java
+        KairosWidgetProvider3x3::class.java,
     )
 
     private fun forcedHintFromProvider(
@@ -86,7 +73,6 @@ object WidgetManager {
             ?: return null
         return when (info.provider.className) {
             KairosWidgetProvider1x1::class.java.name -> WidgetSize._1X1
-            KairosWidgetProvider2x2::class.java.name -> WidgetSize._2X2
             KairosWidgetProvider3x1::class.java.name -> WidgetSize._3X1
             KairosWidgetProvider3x3::class.java.name -> WidgetSize._3X3
             else -> null
@@ -119,8 +105,7 @@ object WidgetManager {
         }
         if (minWidth <= 0 || minHeight <= 0) return WidgetSize._1X1
         return when {
-            minWidth in 1..149 && minHeight in 1..149 -> WidgetSize._1X1
-            minWidth in 1..249 && minHeight in 1..249 -> WidgetSize._2X2
+            minWidth in 1..249 && minHeight in 1..249 -> WidgetSize._1X1
             minWidth >= 250 && minHeight in 1..149 -> WidgetSize._3X1
             minWidth in 1..149 && minHeight >= 250 -> WidgetSize._3X1
             else -> WidgetSize._3X3
@@ -201,63 +186,6 @@ object WidgetManager {
         return if (line.length > 200) line.take(200) + "…" else line
     }
 
-    suspend fun load2x2DisplayState(context: Context, config: WidgetConfig): Widget2x2DisplayState {
-        val appContext = context.applicationContext
-        val today = LocalDate.now()
-        val language =
-            LocalizationManager.Language.fromCode(DataStoreManager(appContext).getLanguageSync())
-        val locale =
-            if (language == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
-        val dateLine = today.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
-        val taskRepository = TaskRepository(appContext)
-        val dayTasks =
-            TaskUtils.sortTasks(taskRepository.getTasksSnapshot().filter { it.taskDate == today })
-        val showTasks = config.displayConfig.showTasks
-        val total = if (showTasks) dayTasks.size else 0
-        val completed = if (showTasks) dayTasks.count { it.isCompleted } else 0
-        val statsLine = if (!showTasks) {
-            "—"
-        } else {
-            String.format(
-                Locale.US,
-                LocalizedStrings.stringFor(language, "widget_2x2_stats", appContext),
-                completed,
-                total
-            )
-        }
-        val quoteBody = loadDailyQuoteBody(taskRepository, language, appContext)
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", appContext)
-        val rawQuote = if (config.displayConfig.showDailyQuote) {
-            if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
-        } else {
-            ""
-        }
-        val quoteLine = when {
-            rawQuote.isEmpty() -> ""
-            rawQuote.length <= 120 -> rawQuote
-            else -> rawQuote.take(117) + "…"
-        }
-        val tasks = if (showTasks) {
-            dayTasks.take(10).map {
-                WidgetTaskRow(it.title.ifBlank { "—" }, it.isCompleted, it.id, it.urgency)
-            }
-        } else {
-            emptyList()
-        }
-        val (monthTitle, monthGrid) = WidgetViewFactory.build2x2CalendarExtras(today, language)
-        return Widget2x2DisplayState(
-            dateLine = dateLine,
-            statsLine = statsLine,
-            quoteLine = quoteLine,
-            tasks = tasks,
-            showTasks = showTasks,
-            showQuote = config.displayConfig.showDailyQuote,
-            language = language,
-            monthTitle = monthTitle,
-            monthGrid = monthGrid
-        )
-    }
-
     suspend fun updateWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -293,10 +221,6 @@ object WidgetManager {
                     val state = load1x1DisplayState(appContext)
                     WidgetViewFactory.createRemoteViews(appContext, config, state, appWidgetId)
                 }
-                config.size == WidgetSize._2X2 -> {
-                    val st = load2x2DisplayState(appContext, config)
-                    WidgetViewFactory.createRemoteViews2x2(appContext, config, st, appWidgetId)
-                }
                 config.size == WidgetSize._3X1 ->
                     WidgetViewFactory.createRemoteViews3x1Fallback(
                         appContext,
@@ -320,7 +244,7 @@ object WidgetManager {
         WidgetViewFactory.applyBackgroundToRemoteViews(appContext, config, remoteViews, size)
         appWidgetManager.updateAppWidget(appWidgetId, remoteViews)
         val notifyTaskList = when (config.size) {
-            WidgetSize._2X2, WidgetSize._3X3 -> true
+            WidgetSize._3X3 -> true
             WidgetSize._3X1 -> config.layoutKind == WidgetLayoutKind._3B ||
                 config.layoutKind == WidgetLayoutKind._3D
             else -> false

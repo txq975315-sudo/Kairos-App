@@ -155,8 +155,9 @@ fun TopicNotesYearMonthTimeline(
                                 .groupBy { it.recordedDate }
                                 .entries
                                 .sortedByDescending { it.key }
-                            dateGroups.forEach { (date, dayNotes) ->
+                            dateGroups.forEachIndexed { dayIndex, (date, dayNotes) ->
                                 val sortedDayNotes = dayNotes.sortedByDescending { it.createdAt }
+                                val connectBelow = dayIndex < dateGroups.lastIndex
                                 item(key = "td_${year}_${month}_$date") {
                                     if (integratedLayout) {
                                         TimelineIntegratedDayBlock(
@@ -168,6 +169,7 @@ fun TopicNotesYearMonthTimeline(
                                             onToggleExpand = onToggleExpand,
                                             projectsById = projectsById,
                                             publishedNoteActions = publishedNoteActions,
+                                            connectRailBelowLastNote = connectBelow,
                                         )
                                     } else {
                                         TimelineCardDayBlock(
@@ -179,6 +181,7 @@ fun TopicNotesYearMonthTimeline(
                                             onToggleExpand = onToggleExpand,
                                             projectsById = projectsById,
                                             publishedNoteActions = publishedNoteActions,
+                                            connectRailBelowLastNote = connectBelow,
                                         )
                                     }
                                 }

@@ -398,7 +398,7 @@ private fun ProjectTimelineGutterRow(
                 modifier = Modifier
                     .width(1.dp)
                     .fillMaxHeight()
-                    .background(NoteCardConstants.TimelineConnectorColor)
+                    .background(NoteCardConstants.timelineConnectorColor())
             )
         }
         Box(modifier = Modifier.weight(1f)) {

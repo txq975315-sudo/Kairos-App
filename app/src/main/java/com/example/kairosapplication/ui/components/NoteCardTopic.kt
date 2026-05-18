@@ -157,7 +157,7 @@ fun NoteCardTopic(
                     Text(
                         text = timeStr,
                         fontSize = 12.sp,
-                        color = AppColors.HintText
+                        color = cardText.muted
                     )
                 }
             }

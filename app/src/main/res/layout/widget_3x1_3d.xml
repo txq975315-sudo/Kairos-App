@@ -254,6 +254,7 @@
                 android:divider="@android:color/transparent"
                 android:dividerHeight="0dp"
                 android:listSelector="@android:color/transparent"
+                android:paddingBottom="36dp"
                 android:scrollbars="vertical" />
 
             <TextView
@@ -261,23 +262,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
+                android:paddingBottom="36dp"
                 android:text="—"
                 android:textColor="#BDBDBD"
                 android:textSize="11sp"
                 android:visibility="gone" />
-        </FrameLayout>
 
-        <TextView
-            android:id="@+id/widget_daily_quote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:gravity="center_horizontal"
-            android:maxLines="2"
-            android:paddingTop="2dp"
-            android:text=""
-            android:textAlignment="center"
-            android:textColor="#9E9E9E"
-            android:textSize="10sp" />
+            <TextView
+                android:id="@+id/widget_daily_quote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:background="#1AFFFFFF"
+                android:ellipsize="end"
+                android:gravity="center_horizontal"
+                android:maxLines="2"
+                android:minHeight="32dp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="6dp"
+                android:text=""
+                android:textAlignment="center"
+                android:textColor="#9E9E9E"
+                android:textSize="10sp" />
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>

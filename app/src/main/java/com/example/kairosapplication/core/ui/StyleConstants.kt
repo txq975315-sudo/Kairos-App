@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.core.ui
+package com.example.kairosapplication.core.ui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -16,12 +16,12 @@ import com.example.taskmodel.model.UrgencyConfig
  * 3) Reuse across Essay / View / Widget / Mine.
  */
 object AppColors {
-    // ---------- Screen backgrounds (quiet sage-warm mist) ----------
-    val ScreenBackground = Color(0xFFEDF0EC)
-    val SurfaceWhite = Color(0xFFFAFBFA)
-    val Divider = Color(0xFFE1E6E1)
-    /** Cards: green-gray white (avoid pure #FFF per “calm” spec) */
-    val CardBackground = Color(0xFFF5F7F5)
+    // ---------- Screen backgrounds (Classic flat neutral) ----------
+    val ScreenBackground = Color(0xFFF9F9F9)
+    val SurfaceWhite = Color(0xFFFFFFFF)
+    val Divider = Color(0xFFE8E8E8)
+    /** Classic task / note cards: opaque white */
+    val CardBackground = Color(0xFFFFFFFF)
     /**
      * Unified translucent face over global atmosphere (tasks, notes, mine cards, widget previews, …).
      * Single knob: lower = more see-through.
@@ -63,17 +63,17 @@ object AppColors {
     val TimelineLine = Color(0xFFDDE2DD)
 
     // ---------- Text / icons (soft charcoal, not pure black) ----------
-    val PrimaryText = Color(0xFF2E312E)
-    val SecondaryText = Color(0xFF6A706A)
-    val HintText = Color(0xFF949994)
+    val PrimaryText = Color(0xFF1A1A1A)
+    val SecondaryText = Color(0xFF757575)
+    val HintText = Color(0xFF9E9E9E)
     val IconNeutral = Color(0xFF8B918B)
     val BackIcon = Color(0xFF3A3D3A)
 
     // ---------- Time-block backgrounds (same families, lower chroma) ----------
     val AnytimeBackground = Color(0xFFEFEBE3)
-    val MorningBackground = Color(0xFFF7F2E6)
-    val AfternoonBackground = Color(0xFFF3E4DC)
-    val EveningBackground = Color(0xFFE9E5F2)
+    val MorningBackground = Color(0xFFFFF8E7)
+    val AfternoonBackground = Color(0xFFFFE8DC)
+    val EveningBackground = Color(0xFFEDE7F6)
 
     // ---------- Time-block glass effect (similar to TaskCard but lighter) ----------
     val TimeBlockGlassTop = Color(0xFFFFFFFF).copy(alpha = 0.18f)

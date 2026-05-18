@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -39,6 +39,7 @@ fun OverviewSection(
 ) {
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
+    val chrome = LocalViewChrome.current
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -50,7 +51,7 @@ fun OverviewSection(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = LocalizedStrings.stringFor(lang, "view_month_summary", ctx),
-                    color = AppColors.HintText,
+                    color = chrome.muted,
                     fontSize = 12.sp,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -58,7 +59,7 @@ fun OverviewSection(
             }
             Text(
                 text = "›",
-                color = AppColors.HintText,
+                color = chrome.muted,
                 fontSize = 18.sp,
                 modifier = Modifier.padding(start = 4.dp),
             )
@@ -66,7 +67,7 @@ fun OverviewSection(
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 0.5.dp,
-            color = AppColors.Divider,
+            color = chrome.divider,
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(
@@ -96,6 +97,7 @@ private fun OverviewMetricCell(
     label: String,
     modifier: Modifier = Modifier,
 ) {
+    val chrome = LocalViewChrome.current
     Column(
         modifier = modifier.padding(horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -104,7 +106,7 @@ private fun OverviewMetricCell(
             text = valueText,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = AppColors.PrimaryText,
+            color = chrome.primary,
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
@@ -113,7 +115,7 @@ private fun OverviewMetricCell(
             text = label,
             fontSize = 11.sp,
             fontWeight = FontWeight.Normal,
-            color = AppColors.HintText,
+            color = chrome.muted,
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
@@ -142,11 +144,12 @@ private fun formatOverviewMetricValue(
 
 @Composable
 private fun OverviewVerticalDivider() {
+    val chrome = LocalViewChrome.current
     Box(
         modifier = Modifier
             .width(0.5.dp)
             .height(40.dp)
             .padding(horizontal = 6.dp)
-            .background(AppColors.Divider),
+            .background(chrome.divider),
     )
 }

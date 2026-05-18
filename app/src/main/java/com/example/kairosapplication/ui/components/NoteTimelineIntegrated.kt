@@ -104,6 +104,7 @@ fun NoteTimelineIntegrated(
     val contentInset = railWidth + railToTextGap
     val railBottomInset =
         RailLineEndInset - RailLineBelowTimeShift - RailLineLengthExtra
+    val connectorColor = NoteCardConstants.timelineConnectorColor()
 
     Box(
         modifier = modifier
@@ -125,7 +126,7 @@ fun NoteTimelineIntegrated(
                             val cx = 40.dp.toPx() / 2f
                             val lineW = 1.dp.toPx()
                             drawRect(
-                                color = NoteCardConstants.TimelineConnectorColor,
+                                color = connectorColor,
                                 topLeft = Offset(cx - lineW / 2f, topPx),
                                 size = Size(lineW, (size.height - topPx - bottomPx).coerceAtLeast(0f))
                             )

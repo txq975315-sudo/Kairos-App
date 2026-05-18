@@ -15,6 +15,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -111,12 +112,14 @@ fun ViewScreen(
         }
     }
 
+    val viewChrome = rememberViewChromeColors()
+
+    CompositionLocalProvider(LocalViewChrome provides viewChrome) {
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Transparent)
-            .statusBarsPadding()
-            .padding(top = 8.dp),
+            .statusBarsPadding(),
     ) {
         Column(Modifier.fillMaxSize()) {
             TimeSelector(
@@ -167,7 +170,7 @@ fun ViewScreen(
             HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = 0.5.dp,
-                color = AppColors.Divider,
+                color = viewChrome.divider,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Box(
@@ -361,5 +364,6 @@ fun ViewScreen(
                 },
             )
         }
+    }
     }
 }

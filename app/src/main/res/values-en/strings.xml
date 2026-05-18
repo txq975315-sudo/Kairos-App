@@ -5,11 +5,9 @@
     <string name="widget_picker_label">Kairos</string>
     <string name="widget_picker_description">Today\'s date, progress ring, task list, and daily quote. Resize the widget for more layouts.</string>
     <string name="widget_picker_label_1x1">Kairos · 1×1</string>
-    <string name="widget_picker_label_2x2">Kairos · 2×2</string>
     <string name="widget_picker_label_3x1">Kairos · 3×1</string>
     <string name="widget_picker_label_3x3">Kairos · 3×3</string>
     <string name="widget_picker_description_1x1">Compact summary: date, progress, optional quote, or Todo layout (1×1 Todo) in settings.</string>
-    <string name="widget_picker_description_2x2">Date, task list, and daily quote. Configure layout and background in widget settings.</string>
     <string name="widget_picker_description_3x1">Wide strip: yesterday / today (four time-block cards) / tomorrow; other layouts in settings.</string>
     <string name="widget_picker_description_3x3">Month heatmap and tasks. Choose today-only or full-month mode in settings.</string>
     <string name="task_content_desc_add_task">Add task</string>
@@ -149,7 +147,6 @@
     <string name="i18n_widget_main_tab_small">Small</string>
     <string name="i18n_widget_main_tab_medium">Medium</string>
     <string name="i18n_widget_main_tab_large">Large</string>
-    <string name="i18n_widget_main_tab_super">Super large</string>
     <string name="i18n_widget_main_no_tasks">No tasks today</string>
     <string name="i18n_widget_main_week_row">M T W T F S S</string>
     <string name="i18n_widget_main_today_tasks">Today</string>
@@ -223,14 +220,12 @@
     <string name="i18n_widget_angle">Angle</string>
     <string name="i18n_widget_apply_all_sizes">Apply to All Sizes</string>
     <string name="i18n_widget_apply_current_size">Apply to Current Size Only</string>
-    <string name="i18n_widget_2x2_stats">Done %1$d / %2$d total</string>
     <string name="i18n_widget_3x1_more_tasks">+%1$d more in app</string>
     <string name="i18n_widget_task_list_empty">No tasks</string>
     <string name="i18n_widget_checkin_stats">Streak %1$d · Total %2$d days</string>
     <string name="i18n_widget_4b_section">This month</string>
     <string name="i18n_widget_layout_1a">Summary ring</string>
     <string name="i18n_widget_layout_1b">Todo list</string>
-    <string name="i18n_widget_layout_2a">Todo list</string>
     <string name="i18n_widget_layout_3a">Todo list</string>
     <string name="i18n_widget_layout_3b">Check-in stats</string>
     <string name="i18n_widget_layout_3c">Week strip</string>

@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -49,6 +49,7 @@ fun WeekSwitcher(
             append(LocalizedStrings.get("view_week_this_week"))
         }
     }
+    val chrome = LocalViewChrome.current
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -60,7 +61,7 @@ fun WeekSwitcher(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = null,
-                tint = AppColors.IconNeutral,
+                tint = chrome.icon,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -70,7 +71,7 @@ fun WeekSwitcher(
         ) {
             Text(
                 text = rangeText,
-                color = AppColors.HintText,
+                color = chrome.secondary,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clickable(onClick = onResetToCurrentWeek),
@@ -83,7 +84,7 @@ fun WeekSwitcher(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = AppColors.IconNeutral,
+                tint = chrome.icon,
                 modifier = Modifier.size(20.dp),
             )
         }

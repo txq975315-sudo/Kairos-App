@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,7 +60,11 @@ import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.ui.view.ChromeSegmentTabRow
+import com.example.kairosapplication.ui.view.LocalViewChrome
+import com.example.kairosapplication.ui.view.rememberViewChromeColors
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.widget.WidgetTaskTitleClip
 import com.example.kairosapplication.widget.WidgetViewFactory
 import com.example.kairosapplication.widget.data.WidgetSize
@@ -75,15 +80,10 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-private val PreviewCardBg = AppColors.GlassFill
 private val WidgetPurpleTrack = Color(0xFFE8DEF8)
 private val WidgetPurpleProgress = Color(0xFF7B61FF)
 private val WidgetPurpleAccent = Color(0xFF7B61FF)
 private val WidgetCalTodayFill = Color(0xFF9F8CF7)
-private val TextPrimary = Color(0xFF1A1A1A)
-private val TextMuted = Color(0xFF9E9E9E)
-private val TextQuote = Color(0xFF333333)
-
 @Composable
 fun WidgetMainScreen(
     taskViewModel: TaskViewModel,
@@ -111,75 +111,49 @@ fun WidgetMainScreen(
     val dayNum = today.dayOfMonth.toString()
     val previewTasks = remember(sortedToday) { sortedToday.take(5) }
     val previewTasks1b = remember(sortedToday) { sortedToday.take(3) }
-    val yesterday = remember(today) { today.minusDays(1) }
-    val tomorrow = remember(today) { today.plusDays(1) }
-    val yTasks = remember(uiState.tasks, yesterday) {
-        TaskUtils.sortTasks(uiState.tasks.filter { it.taskDate == yesterday })
-    }
-    val tmTasks = remember(uiState.tasks, tomorrow) {
-        TaskUtils.sortTasks(uiState.tasks.filter { it.taskDate == tomorrow })
-    }
-    val triptychMergedDateLine = remember(today, lang, isZh, context) {
-        val mmDd = if (isZh) {
-            DateTimeFormatter.ofPattern("MM-dd", Locale.CHINA).format(today)
-        } else {
-            DateTimeFormatter.ofPattern("MM-dd", Locale.ENGLISH).format(today)
-        }
-        val wd = today.dayOfWeek.getDisplayName(
-            TextStyle.SHORT,
-            if (isZh) Locale.CHINA else Locale.ENGLISH
-        )
-        val todayLabel = LocalizedStrings.stringFor(lang, "view_tab_today", context)
-        "${today.dayOfMonth} · $todayLabel · $wd · $mmDd"
-    }
-    val triptychGridSlots = remember(sortedToday) {
-        List(10) { idx ->
-            sortedToday.getOrNull(idx)?.let { t ->
-                t.title.trim().ifBlank { "—" } to t.isCompleted
-            }
-        }
-    }
-    val triptychOverflow = remember(sortedToday, lang, context) {
-        val n = sortedToday.size - 10
-        if (n > 0) {
-            LocalizedStrings.stringFor(lang, "widget_3x1_more_tasks", context, n)
-        } else {
-            null
-        }
-    }
-    val weekdayFullFor2x2 = remember(today, lang) {
+    val weekdayFullLabel = remember(today, lang) {
         today.dayOfWeek.getDisplayName(
             TextStyle.FULL,
             if (lang == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
         )
     }
-    val monthTitle2x2 = remember(today, lang) {
-        WidgetViewFactory.build2x2CalendarExtras(today, lang).first
+    val monthTitleLabel = remember(today, lang) {
+        WidgetViewFactory.buildWidgetMonthTitle(today, lang)
     }
-    val monthGrid2x2Annotated = remember(today) {
-        monthGridPreviewAnnotated(YearMonth.from(today), today)
+    val previewText = LocalGlassTextColors.current
+    val monthGridAnnotated = remember(today, previewText) {
+        monthGridPreviewAnnotated(
+            YearMonth.from(today),
+            today,
+            previewText.primary,
+            previewText.muted,
+        )
     }
-    val yesterdaySideAnnotated = remember(yTasks) {
-        buildWidgetSideAnnotated(yTasks, strikeCompleted = true)
-    }
-    val tomorrowSideAnnotated = remember(tmTasks) {
-        buildWidgetSideAnnotated(tmTasks, strikeCompleted = false)
-    }
-
     var selectedSizeKey by rememberSaveable { mutableStateOf(WidgetSize._1X1.name) }
     val selectedSize = WidgetSize.valueOf(selectedSizeKey)
+    val viewChrome = rememberViewChromeColors()
+    val widgetTabLabels = WidgetSize.entries.map { size ->
+        when (size) {
+            WidgetSize._1X1 -> LocalizedStrings.get("widget_main_tab_small")
+            WidgetSize._3X1 -> LocalizedStrings.get("widget_main_tab_medium")
+            WidgetSize._3X3 -> LocalizedStrings.get("widget_main_tab_large")
+        }
+    }
+    val selectedTabIndex = WidgetSize.entries.indexOf(selectedSize).coerceAtLeast(0)
 
+    CompositionLocalProvider(LocalViewChrome provides viewChrome) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Transparent)
             .statusBarsPadding()
     ) {
-        WidgetSizeTabRow(
-            selected = selectedSize,
-            onSelect = { selectedSizeKey = it.name }
+        ChromeSegmentTabRow(
+            labels = widgetTabLabels,
+            selectedIndex = selectedTabIndex,
+            onSelect = { idx -> selectedSizeKey = WidgetSize.entries[idx].name },
         )
-        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE0E0E0))
+        HorizontalDivider(thickness = 0.5.dp, color = viewChrome.divider)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -195,30 +169,20 @@ fun WidgetMainScreen(
                     quote = quote,
                     tasks1b = previewTasks1b
                 )
-                WidgetSize._2X2 -> Widget3x1TriptychStrip(
-                    yesterdayDay = yesterday.dayOfMonth,
-                    yesterdayTasksAnnotated = yesterdaySideAnnotated,
-                    mergedDateLine = triptychMergedDateLine,
-                    gridSlots = triptychGridSlots,
-                    overflowHint = triptychOverflow,
-                    tomorrowDay = tomorrow.dayOfMonth,
-                    tomorrowTasksAnnotated = tomorrowSideAnnotated,
-                    modifier = Modifier.fillMaxWidth()
-                )
                 WidgetSize._3X1 -> {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Split2x2WidgetPreviewCard(
-                            weekdayLabel = weekdayFullFor2x2,
+                        LargeWidgetTodoPreviewCard(
+                            weekdayLabel = weekdayFullLabel,
                             completed = completed,
                             total = total,
                             tasks = previewTasks,
                             quote = quote,
-                            monthTitle = monthTitle2x2,
-                            monthGrid = monthGrid2x2Annotated,
-                            isZh = isZh
+                            monthTitle = monthTitleLabel,
+                            monthGrid = monthGridAnnotated,
+                            isZh = isZh,
                         )
                         Widget3x1WeekQuotePreview(
                             today = today,
@@ -238,55 +202,6 @@ fun WidgetMainScreen(
             }
         }
     }
-}
-
-@Composable
-private fun WidgetSizeTabRow(
-    selected: WidgetSize,
-    onSelect: (WidgetSize) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.Bottom
-    ) {
-        WidgetSize.entries.forEach { size ->
-            val label = when (size) {
-                WidgetSize._1X1 -> LocalizedStrings.get("widget_main_tab_small")
-                WidgetSize._2X2 -> LocalizedStrings.get("widget_main_tab_medium")
-                WidgetSize._3X1 -> LocalizedStrings.get("widget_main_tab_large")
-                WidgetSize._3X3 -> LocalizedStrings.get("widget_main_tab_super")
-            }
-            val isSelected = size == selected
-            val interaction = remember { MutableInteractionSource() }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(
-                        interactionSource = interaction,
-                        indication = null
-                    ) { onSelect(size) }
-                    .padding(vertical = 8.dp, horizontal = 4.dp)
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) TextPrimary else TextMuted,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-                Box(
-                    modifier = Modifier
-                        .height(3.dp)
-                        .fillMaxWidth(0.55f)
-                        .background(if (isSelected) TextPrimary else Color.Transparent)
-                )
-            }
-        }
     }
 }
 
@@ -336,31 +251,17 @@ private fun Preview1ACard(
     quote: String,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .background(PreviewCardBg)
-            .padding(12.dp)
-            .aspectRatio(1f)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(dayName, fontSize = 11.sp, color = TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(dayNum, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-        }
-        Spacer(Modifier.height(8.dp))
+    WidgetPreviewCardShell(modifier = modifier.aspectRatio(1f)) {
+        val frac = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
         Box(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(12.dp),
         ) {
-            val frac = if (total <= 0) 0f else (completed.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.align(Alignment.Center),
+                contentAlignment = Alignment.Center,
+            ) {
                 Canvas(modifier = Modifier.size(72.dp)) {
                     val stroke = 5.dp.toPx()
                     val diameter = size.minDimension
@@ -371,7 +272,7 @@ private fun Preview1ACard(
                         useCenter = false,
                         topLeft = androidx.compose.ui.geometry.Offset.Zero,
                         size = Size(diameter, diameter),
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
                     )
                     drawArc(
                         color = WidgetPurpleProgress,
@@ -380,27 +281,50 @@ private fun Preview1ACard(
                         useCenter = false,
                         topLeft = androidx.compose.ui.geometry.Offset.Zero,
                         size = Size(diameter, diameter),
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                        style = Stroke(width = stroke, cap = StrokeCap.Round),
                     )
                 }
                 Text(
                     text = if (total > 0) "$completed/$total" else "0/0",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = LocalGlassTextColors.current.primary,
                 )
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    dayName,
+                    fontSize = 11.sp,
+                    color = LocalGlassTextColors.current.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    dayNum,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = LocalGlassTextColors.current.primary,
+                )
+            }
+            Text(
+                text = quote,
+                fontSize = 10.sp,
+                color = LocalGlassTextColors.current.secondary,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 12.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter),
+            )
         }
-        Text(
-            text = quote,
-            fontSize = 10.sp,
-            color = TextQuote,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 12.sp,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 
@@ -414,14 +338,12 @@ private fun Preview1BCard(
     tasks: List<Task>,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .background(PreviewCardBg)
-            .padding(12.dp)
-            .aspectRatio(1f)
-    ) {
+    WidgetPreviewCardShell(modifier = modifier.aspectRatio(1f)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -431,13 +353,13 @@ private fun Preview1BCard(
                 text = dayNum,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                color = LocalGlassTextColors.current.primary,
                 maxLines = 1,
             )
             Text(
                 text = weekdayLabel,
                 fontSize = 10.sp,
-                color = TextMuted,
+                color = LocalGlassTextColors.current.muted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -446,7 +368,7 @@ private fun Preview1BCard(
                 text = if (total > 0) "$completed/$total" else "0/0",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                color = LocalGlassTextColors.current.primary,
                 maxLines = 1,
             )
             Icon(
@@ -482,7 +404,7 @@ private fun Preview1BCard(
                             text = markChar,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (task.isCompleted) WidgetPurpleProgress else TextMuted,
+                            color = if (task.isCompleted) WidgetPurpleProgress else LocalGlassTextColors.current.muted,
                             modifier = Modifier.padding(end = 4.dp)
                         )
                     } else {
@@ -492,7 +414,7 @@ private fun Preview1BCard(
                     Text(
                         text = task?.title?.takeIf { it.isNotBlank() } ?: "—",
                         fontSize = 11.sp,
-                        color = if (done) TextMuted else TextPrimary,
+                        color = if (done) LocalGlassTextColors.current.muted else LocalGlassTextColors.current.primary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textDecoration = if (done) TextDecoration.LineThrough else null,
@@ -504,18 +426,19 @@ private fun Preview1BCard(
         Text(
             text = quote,
             fontSize = 10.sp,
-            color = TextQuote,
+            color = LocalGlassTextColors.current.secondary,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             lineHeight = 12.sp,
             modifier = Modifier.fillMaxWidth()
         )
+        }
     }
 }
 
 @Composable
-private fun Split2x2WidgetPreviewCard(
+private fun LargeWidgetTodoPreviewCard(
     weekdayLabel: String,
     completed: Int,
     total: Int,
@@ -525,117 +448,156 @@ private fun Split2x2WidgetPreviewCard(
     monthGrid: AnnotatedString,
     isZh: Boolean
 ) {
-    Row(
+    WidgetPreviewCardShell(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .background(PreviewCardBg)
-            .padding(horizontal = 10.dp, vertical = 10.dp)
+            .height(220.dp),
     ) {
         Column(
             modifier = Modifier
-                .weight(0.42f)
-                .fillMaxHeight()
+                .fillMaxSize()
+                .padding(horizontal = 10.dp, vertical = 10.dp),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = weekdayLabel,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = if (isZh) "已完成${completed}/总${total}" else "${completed} of ${total} done",
-                    fontSize = 10.sp,
-                    color = TextMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth(),
             ) {
-                tasks.take(5).forEach { task ->
+                Column(
+                    modifier = Modifier
+                        .weight(0.42f)
+                        .fillMaxHeight(),
+                ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 3.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            text = if (task.isCompleted) "✓" else "○",
-                            fontSize = 12.sp,
-                            color = if (task.isCompleted) WidgetPurpleProgress else TextMuted
+                            text = weekdayLabel,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = LocalGlassTextColors.current.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = task.title,
-                            fontSize = 12.sp,
-                            color = if (task.isCompleted) TextMuted else TextPrimary,
-                            maxLines = 2,
+                            text = if (isZh) "已完成${completed}/总${total}" else "${completed} of ${total} done",
+                            fontSize = 10.sp,
+                            color = LocalGlassTextColors.current.muted,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                            modifier = Modifier.weight(1f)
                         )
                     }
+                    Spacer(Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        tasks.take(5).forEach { task ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    text = if (task.isCompleted) "✓" else "○",
+                                    fontSize = 12.sp,
+                                    color = if (task.isCompleted) {
+                                        WidgetPurpleProgress
+                                    } else {
+                                        LocalGlassTextColors.current.muted
+                                    },
+                                )
+                                Text(
+                                    text = task.title,
+                                    fontSize = 12.sp,
+                                    color = if (task.isCompleted) {
+                                        LocalGlassTextColors.current.muted
+                                    } else {
+                                        LocalGlassTextColors.current.primary
+                                    },
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                        if (tasks.isEmpty()) {
+                            Text(
+                                LocalizedStrings.get("widget_main_no_tasks"),
+                                fontSize = 12.sp,
+                                color = LocalGlassTextColors.current.muted,
+                            )
+                        }
+                    }
                 }
-                if (tasks.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .weight(0.58f)
+                        .fillMaxHeight()
+                        .padding(start = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Text(
-                        LocalizedStrings.get("widget_main_no_tasks"),
+                        text = monthTitle,
                         fontSize = 12.sp,
-                        color = TextMuted
+                        fontWeight = FontWeight.Bold,
+                        color = LocalGlassTextColors.current.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = monthGrid,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
                     )
                 }
             }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = quote,
-                fontSize = 10.sp,
-                color = TextMuted,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Column(
-            modifier = Modifier
-                .weight(0.58f)
-                .fillMaxHeight()
-                .padding(start = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = monthTitle,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = monthGrid,
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                textAlign = TextAlign.Center,
+            WidgetDailyQuoteBar(
+                quote = quote,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .padding(top = 8.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun WidgetDailyQuoteBar(
+    quote: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White.copy(alpha = 0.12f))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = quote,
+            fontSize = 10.sp,
+            color = LocalGlassTextColors.current.secondary,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 12.sp,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -647,7 +609,12 @@ private fun previewCalendarWeekCount(ym: YearMonth): Int {
     return kotlin.math.max(1, (spanDays + 6) / 7)
 }
 
-private fun monthGridPreviewAnnotated(ym: YearMonth, today: LocalDate): AnnotatedString {
+private fun monthGridPreviewAnnotated(
+    ym: YearMonth,
+    today: LocalDate,
+    inMonthColor: Color,
+    outOfMonthColor: Color,
+): AnnotatedString {
     val first = ym.atDay(1)
     val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
     val startGrid = ym.atDay(1).minusDays(offset.toLong())
@@ -671,7 +638,7 @@ private fun monthGridPreviewAnnotated(ym: YearMonth, today: LocalDate): Annotate
                         length
                     )
                 } else {
-                    val color = if (inMonth) TextPrimary else Color(0xFFBDBDBD)
+                    val color = if (inMonth) inMonthColor else outOfMonthColor
                     addStyle(SpanStyle(color = color), start, length)
                 }
                 if (col < 6) append(' ')
@@ -681,27 +648,9 @@ private fun monthGridPreviewAnnotated(ym: YearMonth, today: LocalDate): Annotate
     }
 }
 
-private fun widget3x3PreviewTaskBackground(urgency: Int, done: Boolean): Color =
-    if (done) TextMuted.copy(alpha = 0.38f)
+private fun widget3x3PreviewTaskBackground(urgency: Int, done: Boolean, muted: Color): Color =
+    if (done) muted.copy(alpha = 0.38f)
     else TaskUtils.getUrgencyColor(urgency).copy(alpha = 0.28f)
-
-private fun buildWidgetSideAnnotated(tasks: List<Task>, strikeCompleted: Boolean) = buildAnnotatedString {
-    if (tasks.isEmpty()) {
-        append("—")
-        return@buildAnnotatedString
-    }
-    val grey = Color(0xFF888888)
-    tasks.take(4).forEachIndexed { i, t ->
-        if (i > 0) append('\n')
-        val title = t.title.trim().ifBlank { "—" }.take(22)
-        val start = length
-        append(title)
-        addStyle(SpanStyle(color = grey), start, length)
-        if (strikeCompleted && t.isCompleted) {
-            addStyle(SpanStyle(textDecoration = TextDecoration.LineThrough), start, length)
-        }
-    }
-}
 
 @Composable
 private fun Widget3x1WeekQuotePreview(
@@ -732,15 +681,16 @@ private fun Widget3x1WeekQuotePreview(
         }
     }
 
-    Column(
+    WidgetPreviewCardShell(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 228.dp)
-            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .background(PreviewCardBg)
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .height(228.dp),
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -749,20 +699,20 @@ private fun Widget3x1WeekQuotePreview(
             Text(
                 text = "‹",
                 fontSize = 16.sp,
-                color = TextMuted,
+                color = LocalGlassTextColors.current.muted,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
             Text(
                 text = "${weekStart.format(mdFmt)}–${weekEnd.format(mdFmt)}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                color = LocalGlassTextColors.current.primary,
                 modifier = Modifier.padding(horizontal = 6.dp),
             )
             Text(
                 text = "›",
                 fontSize = 16.sp,
-                color = TextMuted,
+                color = LocalGlassTextColors.current.muted,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
         }
@@ -773,7 +723,7 @@ private fun Widget3x1WeekQuotePreview(
                     text = label,
                     modifier = Modifier.weight(1f),
                     fontSize = 11.sp,
-                    color = TextMuted,
+                    color = LocalGlassTextColors.current.muted,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -787,7 +737,7 @@ private fun Widget3x1WeekQuotePreview(
         ) {
             for (i in 0..6) {
                 val d = weekStart.plusDays(i.toLong())
-                val dayColor = if (d == today) Color(0xFF1976D2) else TextPrimary
+                val dayColor = if (d == today) Color(0xFF1976D2) else LocalGlassTextColors.current.primary
                 Text(
                     text = d.dayOfMonth.toString(),
                     modifier = Modifier.weight(1f),
@@ -798,77 +748,89 @@ private fun Widget3x1WeekQuotePreview(
                 )
             }
         }
-        Row(
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(top = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            tasksByWeekday.forEach { colTasks ->
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    if (colTasks.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(18.dp)
-                                .clip(RoundedCornerShape(AppShapes.MiniRadius))
-                                .background(Color(0xFFF0F0F0)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "—",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = TextMuted,
-                                maxLines = 1,
-                            )
-                        }
-                    } else {
-                        colTasks.forEach { task ->
-                            val snippet = WidgetTaskTitleClip.for3x3CalendarCell(task.title)
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                tasksByWeekday.forEach { colTasks ->
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        if (colTasks.isEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(18.dp)
                                     .clip(RoundedCornerShape(AppShapes.MiniRadius))
-                                    .background(widget3x3PreviewTaskBackground(task.urgency, task.isCompleted)),
+                                    .background(Color(0xFFF0F0F0)),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = snippet,
+                                    text = "—",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = if (task.isCompleted) TextMuted else TextPrimary,
+                                    color = LocalGlassTextColors.current.muted,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 2.dp),
                                 )
+                            }
+                        } else {
+                            colTasks.forEach { task ->
+                                val snippet = WidgetTaskTitleClip.for3x3CalendarCell(task.title)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(18.dp)
+                                        .clip(RoundedCornerShape(AppShapes.MiniRadius))
+                                        .background(
+                                            widget3x3PreviewTaskBackground(
+                                                task.urgency,
+                                                task.isCompleted,
+                                                LocalGlassTextColors.current.muted,
+                                            ),
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = snippet,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (task.isCompleted) {
+                                            LocalGlassTextColors.current.muted
+                                        } else {
+                                            LocalGlassTextColors.current.primary
+                                        },
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textDecoration = if (task.isCompleted) {
+                                            TextDecoration.LineThrough
+                                        } else {
+                                            null
+                                        },
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 2.dp),
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        Text(
-            text = quote,
-            fontSize = 11.sp,
-            color = TextMuted,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp)
+        WidgetDailyQuoteBar(
+            quote = quote,
+            modifier = Modifier.fillMaxWidth(),
         )
+        }
     }
 }
 
@@ -900,14 +862,12 @@ private fun SuperLargePreviewCard(
     }
     val superLargeWeekCount = remember(ym) { previewCalendarWeekCount(ym) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .clip(RoundedCornerShape(AppShapes.FeaturePanelRadius))
-            .background(PreviewCardBg)
-            .padding(12.dp)
-    ) {
+    WidgetPreviewCardShell(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+        ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -921,20 +881,20 @@ private fun SuperLargePreviewCard(
                 Text(
                     text = "‹",
                     fontSize = 18.sp,
-                    color = TextMuted,
+                    color = LocalGlassTextColors.current.muted,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 Text(
                     text = monthTitle,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = LocalGlassTextColors.current.primary,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
                 Text(
                     text = "›",
                     fontSize = 18.sp,
-                    color = TextMuted,
+                    color = LocalGlassTextColors.current.muted,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
             }
@@ -949,7 +909,7 @@ private fun SuperLargePreviewCard(
                     text = label,
                     modifier = Modifier.weight(1f),
                     fontSize = 11.sp,
-                    color = TextMuted,
+                    color = LocalGlassTextColors.current.muted,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -993,7 +953,11 @@ private fun SuperLargePreviewCard(
                                 text = date.dayOfMonth.toString(),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Normal,
-                                color = if (inMonth) TextPrimary else Color(0xFFBDBDBD),
+                                color = if (inMonth) {
+                                    LocalGlassTextColors.current.primary
+                                } else {
+                                    LocalGlassTextColors.current.muted.copy(alpha = 0.65f)
+                                },
                                 textAlign = TextAlign.Center,
                                 maxLines = 1
                             )
@@ -1006,14 +970,20 @@ private fun SuperLargePreviewCard(
                                     .fillMaxWidth()
                                     .height(18.dp)
                                     .clip(RoundedCornerShape(AppShapes.MiniRadius))
-                                    .background(widget3x3PreviewTaskBackground(t.urgency, t.isCompleted)),
+                                    .background(
+                                    widget3x3PreviewTaskBackground(
+                                        t.urgency,
+                                        t.isCompleted,
+                                        LocalGlassTextColors.current.muted,
+                                    ),
+                                ),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     text = snippet,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = if (t.isCompleted) TextMuted else TextPrimary,
+                                    color = if (t.isCompleted) LocalGlassTextColors.current.muted else LocalGlassTextColors.current.primary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     textDecoration = if (t.isCompleted) TextDecoration.LineThrough else null,
@@ -1033,11 +1003,12 @@ private fun SuperLargePreviewCard(
         Text(
             text = quote,
             fontSize = 11.sp,
-            color = TextMuted,
+            color = LocalGlassTextColors.current.muted,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
+        }
     }
 }

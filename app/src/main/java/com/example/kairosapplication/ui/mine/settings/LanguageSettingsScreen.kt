@@ -55,6 +55,7 @@ fun LanguageSettingsScreen(
         onBack = onBack,
         modifier = modifier
     ) { padding ->
+        val chrome = rememberSettingsChrome()
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -67,7 +68,7 @@ fun LanguageSettingsScreen(
                 Text(
                     "${LocalizedStrings.get("current_language")}: $currentLabel",
                     fontSize = 15.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 SettingsGroupDivider()
                 Spacer(Modifier.height(4.dp))
@@ -89,7 +90,7 @@ fun LanguageSettingsScreen(
                     Text(
                         LocalizationManager.Language.ZH.displayName,
                         fontSize = 15.sp,
-                        color = SettingsTitleC
+                        color = chrome.title
                     )
                 }
                 Row(
@@ -110,7 +111,7 @@ fun LanguageSettingsScreen(
                     Text(
                         LocalizationManager.Language.EN.displayName,
                         fontSize = 15.sp,
-                        color = SettingsTitleC
+                        color = chrome.title
                     )
                 }
             }
@@ -118,7 +119,7 @@ fun LanguageSettingsScreen(
             Text(
                 LocalizedStrings.get("language_hint"),
                 fontSize = 13.sp,
-                color = SettingsSubC,
+                color = chrome.subtitle,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
             Spacer(Modifier.height(32.dp))

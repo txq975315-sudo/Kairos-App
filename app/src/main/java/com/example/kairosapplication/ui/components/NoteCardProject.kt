@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -82,6 +84,11 @@ fun NoteCardProject(
     val bodyMaxLines = if (expandable && !expanded) 3 else Int.MAX_VALUE
 
     val cardText = LocalGlassTextColors.current
+    val headlineColor = if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+        AppColors.PrimaryText
+    } else {
+        cardText.primary
+    }
     GlassNoteCardShell(
         modifier = modifier.fillMaxWidth(),
         onClick = { if (expandable) onToggleExpand() else onNoteClick(note.id) },
@@ -101,7 +108,7 @@ fun NoteCardProject(
                         text = headline,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = cardText.primary,
+                        color = headlineColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -162,7 +169,7 @@ fun NoteCardProject(
                     projectCount,
                 ),
                 fontSize = 12.sp,
-                color = AppColors.HintText
+                color = cardText.muted
             )
             if (expandable && expanded) {
                 Spacer(Modifier.height(8.dp))

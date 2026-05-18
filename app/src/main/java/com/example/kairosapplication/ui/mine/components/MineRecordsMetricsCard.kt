@@ -15,33 +15,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.ui.mine.records.MineRecordsMetric
 import com.example.kairosapplication.ui.mine.records.MineRecordsOverview
 import kotlin.math.max
-
-private val GradientStart = Color(0xFF9F8CF7)
-private val GradientEnd = Color(0xFFC8BCFA)
-private val OnGradient = Color.White
-private val OnGradientMuted = Color.White.copy(alpha = 0.82f)
 
 private val MinMetricCellWidth = 52.dp
 
@@ -60,23 +51,12 @@ fun MineRecordsMetricsCard(
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     val list = metrics.distinct()
-    Column(
+    val cardText = LocalGlassTextColors.current
+    val dividerColor = cardText.muted.copy(alpha = 0.35f)
+
+    MineCardShell(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(AppShapes.CardRadius),
-                ambientColor = Color.Black.copy(alpha = 0.12f),
-                spotColor = Color.Black.copy(alpha = 0.12f)
-            )
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(GradientStart, GradientEnd),
-                    start = Offset(0f, 0f),
-                    end = Offset(600f, 280f)
-                ),
-                shape = RoundedCornerShape(AppShapes.CardRadius)
-            )
             .then(
                 if (onClick != null && onMetricIndexClick == null) {
                     if (onMetricsLongPress != null) {
@@ -90,31 +70,37 @@ fun MineRecordsMetricsCard(
                 } else {
                     Modifier
                 },
-            )
-            .padding(vertical = 22.dp, horizontal = 8.dp)
+            ),
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val maxPerRow = max(1, (maxWidth / MinMetricCellWidth).toInt())
-            val useTwoRows = list.size > maxPerRow
-            val chunks: List<List<MineRecordsMetric>> = if (!useTwoRows) {
-                listOf(list)
-            } else {
-                val mid = (list.size + 1) / 2
-                listOf(list.take(mid), list.drop(mid))
-            }
-            var indexOffset = 0
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                chunks.forEach { row ->
-                    MetricsMetricRow(
-                        rowMetrics = row,
-                        overview = overview,
-                        lang = lang,
-                        ctx = ctx,
-                        globalIndexOffset = indexOffset,
-                        onMetricIndexClick = onMetricIndexClick,
-                        onMetricsLongPress = onMetricsLongPress,
-                    )
-                    indexOffset += row.size
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 22.dp, horizontal = 8.dp),
+        ) {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val maxPerRow = max(1, (maxWidth / MinMetricCellWidth).toInt())
+                val useTwoRows = list.size > maxPerRow
+                val chunks: List<List<MineRecordsMetric>> = if (!useTwoRows) {
+                    listOf(list)
+                } else {
+                    val mid = (list.size + 1) / 2
+                    listOf(list.take(mid), list.drop(mid))
+                }
+                var indexOffset = 0
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    chunks.forEach { row ->
+                        MetricsMetricRow(
+                            rowMetrics = row,
+                            overview = overview,
+                            lang = lang,
+                            ctx = ctx,
+                            globalIndexOffset = indexOffset,
+                            dividerColor = dividerColor,
+                            onMetricIndexClick = onMetricIndexClick,
+                            onMetricsLongPress = onMetricsLongPress,
+                        )
+                        indexOffset += row.size
+                    }
                 }
             }
         }
@@ -129,9 +115,11 @@ private fun MetricsMetricRow(
     lang: LocalizationManager.Language,
     ctx: Context,
     globalIndexOffset: Int,
+    dividerColor: Color,
     onMetricIndexClick: ((Int) -> Unit)?,
     onMetricsLongPress: (() -> Unit)?,
 ) {
+    val cardText = LocalGlassTextColors.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -143,7 +131,7 @@ private fun MetricsMetricRow(
                     modifier = Modifier
                         .width(1.dp)
                         .height(52.dp)
-                        .background(OnGradient.copy(alpha = 0.45f))
+                        .background(dividerColor),
                 )
             }
             val globalIndex = globalIndexOffset + index
@@ -156,9 +144,11 @@ private fun MetricsMetricRow(
                 Modifier
             }
             Box(modifier = Modifier.weight(1f)) {
-                GradientMetricCell(
+                MetricCell(
                     valueText = formatMineMetricValue(overview, metric, lang, ctx),
                     label = LocalizedStrings.stringFor(lang, metric.labelKey(), ctx),
+                    valueColor = cardText.primary,
+                    labelColor = cardText.secondary,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 6.dp)
@@ -170,18 +160,20 @@ private fun MetricsMetricRow(
 }
 
 @Composable
-private fun GradientMetricCell(
+private fun MetricCell(
     valueText: String,
     label: String,
+    valueColor: Color,
+    labelColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = valueText,
-            color = OnGradient,
+            color = valueColor,
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.SansSerif,
@@ -190,7 +182,7 @@ private fun GradientMetricCell(
         Spacer(Modifier.height(6.dp))
         Text(
             text = label,
-            color = OnGradientMuted,
+            color = labelColor,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = FontFamily.SansSerif,

@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.ui.view.today
+package com.example.kairosapplication.ui.view.today
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.text.TaskUiLocalLabels
-import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.ui.view.LocalViewChrome
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
@@ -91,6 +91,7 @@ private fun urgencyDotColor(urgency: Int): Color {
 fun TodayAgendaSectionHeader(title: String) {
     val lang = LocalCurrentLanguage.current.value
     val label = if (lang == LocalizationManager.Language.EN) title.uppercase(Locale.US) else title
+    val chrome = LocalViewChrome.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,7 +100,7 @@ fun TodayAgendaSectionHeader(title: String) {
     ) {
         Text(
             text = label,
-            color = AppColors.HintText,
+            color = chrome.muted,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
         )
@@ -107,7 +108,7 @@ fun TodayAgendaSectionHeader(title: String) {
         HorizontalDivider(
             modifier = Modifier.weight(1f),
             thickness = 0.5.dp,
-            color = AppColors.Divider,
+            color = chrome.divider,
         )
     }
 }
@@ -122,6 +123,7 @@ private fun AgendaTaskRow(
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     val gap = twoEmGap()
+    val chrome = LocalViewChrome.current
     val subtitle = remember(task.label, lang, ctx) {
         val raw = task.label?.trim().orEmpty()
         if (raw.isEmpty() || raw == TaskConstants.LABEL_NONE) {
@@ -144,7 +146,7 @@ private fun AgendaTaskRow(
             if (showTimeLabel) {
                 Text(
                     text = timeLabel,
-                    color = AppColors.SecondaryText,
+                    color = chrome.secondary,
                     fontSize = 11.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -168,7 +170,7 @@ private fun AgendaTaskRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = task.title,
-                color = if (task.isCompleted) AppColors.HintText else AppColors.PrimaryText,
+                color = if (task.isCompleted) chrome.muted else chrome.primary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
@@ -183,7 +185,7 @@ private fun AgendaTaskRow(
                     } else {
                         subtitle
                     },
-                    color = AppColors.HintText,
+                    color = chrome.muted,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -212,6 +214,7 @@ private fun AgendaNoteBlock(
     val ctx = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
     val gap = twoEmGap()
+    val chrome = LocalViewChrome.current
     val dotColor = remember(note.primaryCategory) { NoteCardConstants.categoryColor(note.primaryCategory) }
     val primaryTopic = remember(note.primaryCategory, lang, ctx) {
         TopicDisplayStrings.primaryLabel(note.primaryCategory, lang, ctx)
@@ -234,7 +237,7 @@ private fun AgendaNoteBlock(
                 if (showTimeLabel) {
                     Text(
                         text = timeLabel,
-                        color = AppColors.SecondaryText,
+                        color = chrome.secondary,
                         fontSize = 11.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -258,7 +261,7 @@ private fun AgendaNoteBlock(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = headline,
-                    color = AppColors.PrimaryText,
+                    color = chrome.primary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -271,7 +274,7 @@ private fun AgendaNoteBlock(
                     } else {
                         primaryTopic
                     },
-                    color = AppColors.HintText,
+                    color = chrome.muted,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -306,6 +309,7 @@ fun TodayTodoAgendaTimeline(
     modifier: Modifier = Modifier,
 ) {
     var remaining = maxVisible
+    val chrome = LocalViewChrome.current
     Column(modifier = modifier) {
         TaskConstants.TIME_BLOCKS.forEach { block ->
             if (remaining <= 0) return@forEach
@@ -331,7 +335,7 @@ fun TodayTodoAgendaTimeline(
                     "view_week_more_tasks",
                     sortedTasks.size - maxVisible,
                 ),
-                color = AppColors.HintText,
+                color = chrome.muted,
                 fontSize = 10.sp,
                 modifier = Modifier.padding(top = 4.dp),
             )

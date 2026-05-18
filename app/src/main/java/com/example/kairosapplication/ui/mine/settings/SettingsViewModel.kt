@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.ui.mine.settings
+package com.example.kairosapplication.ui.mine.settings
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.example.kairosapplication.ui.glass.AtmosphereWallpaperAccess
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,6 +39,12 @@ class SettingsViewModel(
 
     init {
         refreshCacheSize()
+        viewModelScope.launch {
+            val stored = dataStoreManager.getAtmosphereWallpaperUri().first()
+            if (!stored.isNullOrBlank() && !AtmosphereWallpaperAccess.canRead(appContext, stored)) {
+                dataStoreManager.setAtmosphereWallpaperUri(null)
+            }
+        }
     }
 
     val lastBackupTime: StateFlow<Long> = dataStoreManager.lastBackupTimestampFlow

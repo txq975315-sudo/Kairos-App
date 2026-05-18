@@ -1,7 +1,9 @@
 package com.example.kairosapplication.ui.mine.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,11 +12,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -37,16 +47,96 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.i18n.LocalizedStrings
-import com.example.kairosapplication.core.ui.CommonBackButton
-import com.example.kairosapplication.ui.theme.BackgroundColor
+import com.example.kairosapplication.ui.glass.GlassTopBarChip
+import com.example.kairosapplication.ui.glass.GlassSurface
+import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
+import com.example.kairosapplication.ui.glass.quoteDividerColor
 
-val SettingsCardBg = AppColors.GlassFill
+val SettingsCardBg = AppColors.SurfaceWhite
 val SettingsDividerC = Color(0xFFE8E5E0)
 val SettingsTitleC = Color(0xFF1A1A1A)
 val SettingsSubC = Color(0xFF9E9E9E)
 val SettingsSwitchBlue = Color(0xFF2196F3)
 val SettingsSwitchThumbOff = Color(0xFFE0E0E0)
+
+data class SettingsChrome(
+    val pageBackground: Color,
+    val title: Color,
+    val subtitle: Color,
+    val divider: Color,
+    val useLightChrome: Boolean,
+)
+
+@Composable
+fun rememberSettingsChrome(): SettingsChrome {
+    val theme = LocalAppUiTheme.current
+    if (theme == AppUiTheme.Classic) {
+        return SettingsChrome(
+            pageBackground = AppColors.ScreenBackground,
+            title = SettingsTitleC,
+            subtitle = SettingsSubC,
+            divider = SettingsDividerC,
+            useLightChrome = false,
+        )
+    }
+    val atmosphere = LocalGlassAtmosphereUi.current
+    return SettingsChrome(
+        pageBackground = Color.Transparent,
+        title = atmosphere.topChrome.primary,
+        subtitle = atmosphere.topChrome.muted,
+        divider = atmosphere.quoteDividerColor(),
+        useLightChrome = !atmosphere.zones.topIsLight,
+    )
+}
+
+@Composable
+fun SettingsBackButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    val chrome = rememberSettingsChrome()
+    val cd = contentDescription ?: LocalizedStrings.get("back")
+    when (LocalAppUiTheme.current) {
+        AppUiTheme.Glass -> {
+            GlassTopBarChip(
+                onClick = onClick,
+                modifier = modifier.size(40.dp),
+                shape = CircleShape,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = cd,
+                    tint = chrome.title,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        AppUiTheme.Classic -> {
+            Box(
+                modifier = modifier
+                    .size(40.dp)
+                    .shadow(1.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(AppColors.SurfaceWhite)
+                    .clickable(onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIosNew,
+                    contentDescription = cd,
+                    tint = AppColors.BackIcon,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,48 +146,134 @@ fun SettingsL2Scaffold(
     modifier: Modifier = Modifier,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    Scaffold(
+    val chrome = rememberSettingsChrome()
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding(),
-        containerColor = BackgroundColor,
-        topBar = {
-            TopAppBar(
-                title = { Text(title, color = SettingsTitleC, fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    CommonBackButton(onClick = onBack)
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundColor),
-            )
-        }
-    ) { padding ->
-        content(padding)
+            .background(chrome.pageBackground),
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    modifier = Modifier.statusBarsPadding(),
+                    title = {
+                        Text(
+                            title,
+                            color = chrome.title,
+                            fontWeight = FontWeight.SemiBold,
+                            style = glassChromeTextStyle(
+                                androidx.compose.ui.text.TextStyle.Default,
+                                chrome.useLightChrome,
+                            ),
+                        )
+                    },
+                    navigationIcon = {
+                        SettingsBackButton(onClick = onBack)
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = chrome.pageBackground,
+                    ),
+                )
+            },
+            content = content,
+        )
     }
 }
 
 @Composable
-fun SettingsGroupCard(title: String, content: @Composable () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
-        color = SettingsCardBg,
-        shadowElevation = 2.dp
-    ) {
+fun SettingsGroupCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val chrome = rememberSettingsChrome()
+    val shape = RoundedCornerShape(AppShapes.DenseInsetRadius)
+    val inner: @Composable () -> Unit = {
         Column(Modifier.padding(16.dp)) {
             if (title.isNotBlank()) {
-                Text(title, color = SettingsSubC, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    title,
+                    color = chrome.subtitle,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    style = glassChromeTextStyle(
+                        androidx.compose.ui.text.TextStyle.Default,
+                        chrome.useLightChrome,
+                    ),
+                )
                 Spacer(Modifier.height(8.dp))
-                HorizontalDivider(thickness = 0.5.dp, color = SettingsDividerC)
+                HorizontalDivider(thickness = 0.5.dp, color = chrome.divider)
                 Spacer(Modifier.height(4.dp))
             }
             content()
         }
     }
+    when (LocalAppUiTheme.current) {
+        AppUiTheme.Glass -> {
+            GlassSurface(
+                modifier = modifier.fillMaxWidth(),
+                shape = shape,
+                fillAlpha = GlassConstants.TaskCardFillAlpha,
+                wrapHazeToContent = false,
+                content = { inner() },
+            )
+        }
+        AppUiTheme.Classic -> {
+            Surface(
+                modifier = modifier.fillMaxWidth(),
+                shape = shape,
+                color = SettingsCardBg,
+                shadowElevation = 2.dp,
+                content = { inner() },
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingsThemeRadioRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val chrome = rememberSettingsChrome()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = if (LocalAppUiTheme.current == AppUiTheme.Glass) {
+                    Color.White
+                } else {
+                    SettingsSwitchBlue
+                },
+                unselectedColor = chrome.subtitle,
+            ),
+        )
+        Text(
+            label,
+            fontSize = 15.sp,
+            color = chrome.title,
+            style = glassChromeTextStyle(
+                androidx.compose.ui.text.TextStyle.Default,
+                chrome.useLightChrome,
+            ),
+        )
+    }
 }
 
 @Composable
 fun SettingsGroupDivider() {
-    HorizontalDivider(thickness = 0.5.dp, color = SettingsDividerC)
+    val chrome = rememberSettingsChrome()
+    HorizontalDivider(thickness = 0.5.dp, color = chrome.divider)
 }
 
 @Composable
@@ -113,7 +289,8 @@ fun SettingsSwitchRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = SettingsTitleC, fontSize = 15.sp)
+        val chrome = rememberSettingsChrome()
+        Text(label, color = chrome.title, fontSize = 15.sp)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -135,6 +312,7 @@ fun SettingsSwitchRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val chrome = rememberSettingsChrome()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -149,13 +327,13 @@ fun SettingsSwitchRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = SettingsTitleC,
+                tint = chrome.title,
                 modifier = Modifier.padding(end = 16.dp)
             )
             Column {
-                Text(title, color = SettingsTitleC, fontSize = 15.sp)
+                Text(title, color = chrome.title, fontSize = 15.sp)
                 if (subtitle != null) {
-                    Text(subtitle, color = SettingsSubC, fontSize = 12.sp)
+                    Text(subtitle, color = chrome.subtitle, fontSize = 12.sp)
                 }
             }
         }
@@ -178,6 +356,7 @@ fun SettingsNavRow(
     value: String,
     onClick: () -> Unit
 ) {
+    val chrome = rememberSettingsChrome()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -186,11 +365,35 @@ fun SettingsNavRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = SettingsTitleC, fontSize = 15.sp)
+        Text(
+            label,
+            color = chrome.title,
+            fontSize = 15.sp,
+            style = glassChromeTextStyle(
+                androidx.compose.ui.text.TextStyle.Default,
+                chrome.useLightChrome,
+            ),
+        )
         if (value.isNotEmpty()) {
-            Text(value, color = SettingsSubC, fontSize = 15.sp)
+            Text(
+                value,
+                color = chrome.subtitle,
+                fontSize = 15.sp,
+                style = glassChromeTextStyle(
+                    androidx.compose.ui.text.TextStyle.Default,
+                    chrome.useLightChrome,
+                ),
+            )
         } else {
-            Text("›", color = SettingsSubC, fontSize = 18.sp)
+            Text(
+                "›",
+                color = chrome.subtitle,
+                fontSize = 18.sp,
+                style = glassChromeTextStyle(
+                    androidx.compose.ui.text.TextStyle.Default,
+                    chrome.useLightChrome,
+                ),
+            )
         }
     }
 }

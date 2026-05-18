@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.ui.mine.settings
+package com.example.kairosapplication.ui.mine.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -137,6 +137,7 @@ private fun UrgencyLevelRow(
     level: UrgencyLevelConfig,
     onClick: () -> Unit
 ) {
+    val chrome = rememberSettingsChrome()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -155,17 +156,17 @@ private fun UrgencyLevelRow(
             Text(
                 text = level.label,
                 fontSize = 15.sp,
-                color = SettingsTitleC
+                color = chrome.title
             )
             if (level.description.isNotBlank()) {
                 Text(
                     text = level.description,
                     fontSize = 12.sp,
-                    color = SettingsSubC
+                    color = chrome.subtitle
                 )
             }
         }
-        Text("›", fontSize = 18.sp, color = SettingsSubC)
+        Text("›", fontSize = 18.sp, color = chrome.subtitle)
     }
 }
 

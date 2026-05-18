@@ -2,6 +2,8 @@ package com.example.kairosapplication.i18n
 
 import android.content.Context
 import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * **Monday-first (ISO 8601)** week model used app-wide: month grid, check-in calendar,
@@ -30,3 +32,18 @@ private fun weekHeaderKey(dow: DayOfWeek): String = when (dow) {
 /** Short weekday labels for header row (Mon…Sun order). */
 fun weekShortHeadersMondayFirst(context: Context, lang: LocalizationManager.Language): List<String> =
     WeekdayOrderMondayFirst.map { dow -> LocalizedStrings.stringFor(lang, weekHeaderKey(dow), context) }
+
+/** Monday-first month grid cells (leading/trailing null padding). */
+fun buildCalendarDaysForMonth(month: YearMonth): List<LocalDate?> {
+    val firstDay = month.atDay(1)
+    val leadingEmpty = (firstDay.dayOfWeek.value + 6) % 7
+    val totalDays = month.lengthOfMonth()
+    val cells = MutableList<LocalDate?>(leadingEmpty) { null }
+    for (day in 1..totalDays) {
+        cells.add(month.atDay(day))
+    }
+    while (cells.size % 7 != 0) {
+        cells.add(null)
+    }
+    return cells
+}

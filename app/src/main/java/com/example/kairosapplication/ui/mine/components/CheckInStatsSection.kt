@@ -36,6 +36,9 @@ import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.ui.mine.MineViewModel
 import com.example.kairosapplication.ui.mine.records.CalendarDayVisual
 import com.example.kairosapplication.ui.mine.records.CheckInViewMode
@@ -51,11 +54,11 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val TitleColor = Color(0xFF1A1A1A)
-private val SubGray = Color(0xFF9E9E9E)
 private val TodayBorder = Color(0xFF9E9E9E)
-private val ToggleBg = Color(0xFFF0F0F2)
-private val ToggleSelected = Color(0xFF5B7CFA)
+private val ToggleBgClassic = Color(0xFFF0F0F2)
+private val ToggleSelectedClassic = Color(0xFF5B7CFA)
+private val ToggleBgGlass = Color.White.copy(alpha = 0.14f)
+private val ToggleSelectedGlass = Color(0xFF5B7CFA).copy(alpha = 0.48f)
 private val EmojiSize = 26.sp
 private val FutureMuted = Color(0xFFBDBDBD)
 private val FutureDot = Color(0xFFE0E0E0)
@@ -73,6 +76,10 @@ fun CheckInStatsSection(
     onViewAllRecordsClick: (() -> Unit)? = null,
 ) {
     val lang = LocalCurrentLanguage.current.value
+    val cardText = LocalGlassTextColors.current
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val toggleBg = if (isGlass) ToggleBgGlass else ToggleBgClassic
+    val toggleSelected = if (isGlass) ToggleSelectedGlass else ToggleSelectedClassic
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
     var weekCursor by remember { mutableStateOf(LocalDate.now()) }
 
@@ -111,25 +118,27 @@ fun CheckInStatsSection(
             ) {
                 Text(
                     text = LocalizedStrings.get("mine_checkin_title"),
-                    color = TitleColor,
+                    color = cardText.primary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Row(
                     modifier = Modifier
-                        .background(ToggleBg, RoundedCornerShape(AppShapes.FeaturePanelRadius))
+                        .background(toggleBg, RoundedCornerShape(AppShapes.FeaturePanelRadius))
                         .padding(3.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     CheckInModeChip(
                         label = LocalizedStrings.get("mine_checkin_week"),
                         selected = viewMode == CheckInViewMode.WEEK,
-                        onClick = { onViewModeChange(CheckInViewMode.WEEK) }
+                        selectedColor = toggleSelected,
+                        onClick = { onViewModeChange(CheckInViewMode.WEEK) },
                     )
                     CheckInModeChip(
                         label = LocalizedStrings.get("mine_checkin_month"),
                         selected = viewMode == CheckInViewMode.MONTH,
-                        onClick = { onViewModeChange(CheckInViewMode.MONTH) }
+                        selectedColor = toggleSelected,
+                        onClick = { onViewModeChange(CheckInViewMode.MONTH) },
                     )
                 }
             }
@@ -146,7 +155,7 @@ fun CheckInStatsSection(
                     CheckInViewMode.WEEK -> weekCursor = weekCursor.minusWeeks(1)
                 }
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = TitleColor)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = cardText.primary)
             }
             Text(
                 text = when (viewMode) {
@@ -157,7 +166,7 @@ fun CheckInStatsSection(
                         "${monday.format(shortMd)} – ${sunday.format(shortMd)}"
                     }
                 },
-                color = TitleColor,
+                color = cardText.primary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f),
@@ -169,7 +178,7 @@ fun CheckInStatsSection(
                     CheckInViewMode.WEEK -> weekCursor = weekCursor.plusWeeks(1)
                 }
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TitleColor)
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = cardText.primary)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -181,7 +190,7 @@ fun CheckInStatsSection(
                 Text(
                     text = w,
                     fontSize = 11.sp,
-                    color = SubGray,
+                    color = cardText.muted,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center
                 )
@@ -212,7 +221,7 @@ fun CheckInStatsSection(
             val counts = pastTierCountsInMonth(yearMonth, today, tasksByDate, essayByDate)
             Text(
                 text = formatMonthPastSummary(lang, counts),
-                color = SubGray,
+                color = cardText.muted,
                 fontSize = 11.sp,
                 lineHeight = 15.sp,
             )
@@ -220,7 +229,7 @@ fun CheckInStatsSection(
         Spacer(Modifier.height(8.dp))
         Text(
             text = LocalizedStrings.get("mine_checkin_legend"),
-            color = SubGray,
+            color = cardText.muted,
             fontSize = 11.sp,
             lineHeight = 15.sp
         )
@@ -260,10 +269,12 @@ private fun formatMonthPastSummary(
 private fun CheckInModeChip(
     label: String,
     selected: Boolean,
+    selectedColor: Color,
     onClick: () -> Unit,
 ) {
-    val bg = if (selected) ToggleSelected else Color.Transparent
-    val fg = if (selected) Color.White else TitleColor
+    val cardText = LocalGlassTextColors.current
+    val bg = if (selected) selectedColor else Color.Transparent
+    val fg = if (selected) Color.White else cardText.primary
     Text(
         text = label,
         fontSize = 13.sp,
@@ -373,11 +384,12 @@ private fun CheckInDayCell(
     isToday: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val cardText = LocalGlassTextColors.current
     val isFutureStyle = visual.useMutedFutureStyle
     val titleColor = when {
         isFutureStyle -> FutureMuted
-        visual.past == PastCheckInDisplay.EMPTY -> SubGray
-        else -> TitleColor
+        visual.past == PastCheckInDisplay.EMPTY -> cardText.muted
+        else -> cardText.primary
     }
     Column(
         modifier = modifier

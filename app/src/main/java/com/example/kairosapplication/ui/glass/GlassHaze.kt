@@ -55,7 +55,7 @@ fun Modifier.glassNavColumnPlate(
 @Composable
 fun Modifier.glassBottomNavDock(): Modifier {
     if (LocalAppUiTheme.current == AppUiTheme.Classic) {
-        return background(com.example.kairosapplication.core.ui.AppColors.BottomBarSurface)
+        return background(com.example.kairosapplication.core.ui.AppColors.ScreenBackground)
     }
     val fill = Color.Black.copy(alpha = GlassConstants.BottomNavFillAlpha)
     if (!GlassConstants.usesBackdropBlur) return background(fill)

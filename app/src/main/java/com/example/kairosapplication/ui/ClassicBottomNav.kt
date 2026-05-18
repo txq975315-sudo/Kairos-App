@@ -44,7 +44,7 @@ fun ClassicBottomNav(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(AppColors.BottomBarSurface),
+            .background(AppColors.ScreenBackground),
     ) {
         HorizontalDivider(color = AppColors.BottomBarGlassStroke, thickness = 0.5.dp)
         Row(

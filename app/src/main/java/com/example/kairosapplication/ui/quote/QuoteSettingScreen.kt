@@ -54,7 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppScreenHeader
 import com.example.kairosapplication.core.ui.AppSpacing
-import com.example.kairosapplication.core.ui.CommonBackButton
+import com.example.kairosapplication.ui.mine.settings.SettingsBackButton
+import com.example.kairosapplication.ui.mine.settings.rememberSettingsChrome
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
@@ -124,11 +125,11 @@ fun QuoteSettingScreen(
         }
     }
 
+    val settingsChrome = rememberSettingsChrome()
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Transparent)
-            .statusBarsPadding(),
+            .background(settingsChrome.pageBackground),
     ) {
         Column(
             modifier = Modifier
@@ -139,10 +140,11 @@ fun QuoteSettingScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CommonBackButton(onClick = onBack)
+                SettingsBackButton(onClick = onBack)
                 Text(
                     text = LocalizedStrings.get("quote_settings_title"),
                     fontSize = AppScreenHeader.titleSp,

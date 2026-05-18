@@ -55,30 +55,38 @@ fun GlassTodayContent(
     // Reactive task filtering
     val anytimeTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
-            }
+            com.example.taskmodel.util.TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
+                },
+            )
         }
     }
     val morningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
-            }
+            com.example.taskmodel.util.TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
+                },
+            )
         }
     }
     val afternoonTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
-            }
+            com.example.taskmodel.util.TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
+                },
+            )
         }
     }
     val eveningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
-            }
+            com.example.taskmodel.util.TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
+                },
+            )
         }
     }
 

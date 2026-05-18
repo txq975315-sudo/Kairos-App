@@ -15,6 +15,9 @@ import androidx.compose.material.icons.filled.Spa
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import androidx.compose.runtime.Composable
 import com.example.taskmodel.constants.NotePrimaryCategory
 import com.example.taskmodel.constants.NoteSecondaryCategories
 
@@ -101,7 +104,16 @@ object NoteCardConstants {
         AppColors.MorningBackground.copy(alpha = CategoryIconTileAlpha)
 
     /** Thin rail between left-side note times (card timeline). */
-    val TimelineConnectorColor = Color.White.copy(alpha = 0.32f)
+    val TimelineConnectorColorGlass = Color.White.copy(alpha = 0.32f)
+    val TimelineConnectorColorClassic = Color(0xFFE0E0E0)
+
+    @Composable
+    fun timelineConnectorColor(): Color =
+        if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+            TimelineConnectorColorClassic
+        } else {
+            TimelineConnectorColorGlass
+        }
 
     fun categoryIcon(key: String): ImageVector = when (key) {
         NotePrimaryCategory.FREESTYLE -> Icons.Filled.AutoStories

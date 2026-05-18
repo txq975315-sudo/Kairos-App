@@ -60,6 +60,7 @@ fun MiscSettingsScreen(
         onBack = onBack,
         modifier = modifier
     ) { padding ->
+        val chrome = rememberSettingsChrome()
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -72,7 +73,7 @@ fun MiscSettingsScreen(
                 Text(
                     "${LocalizedStrings.stringFor(lang, "cache_size", context)}: $cacheLabel",
                     fontSize = 15.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
                 Spacer(Modifier.height(12.dp))
                 Button(
@@ -145,7 +146,7 @@ fun MiscSettingsScreen(
                 Text(
                     "${LocalizedStrings.get("version_prefix")}$versionName",
                     fontSize = 15.sp,
-                    color = SettingsTitleC
+                    color = chrome.title
                 )
             }
             Spacer(Modifier.height(32.dp))

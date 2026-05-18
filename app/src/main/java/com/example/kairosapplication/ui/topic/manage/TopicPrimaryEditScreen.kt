@@ -1,5 +1,6 @@
 package com.example.kairosapplication.ui.topic.manage
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -46,19 +45,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
+import com.example.kairosapplication.i18n.LocalizationManager
 import com.example.kairosapplication.i18n.LocalizedStrings
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
-import com.example.kairosapplication.core.ui.CommonBackButton
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
+import com.example.kairosapplication.ui.mine.MineDetailScaffold
+import com.example.kairosapplication.ui.mine.components.MineCardShell
+import com.example.kairosapplication.ui.mine.settings.rememberSettingsChrome
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
-import com.example.kairosapplication.ui.theme.BackgroundColor
+import androidx.compose.ui.text.TextStyle
 import com.example.taskmodel.model.EssaySecondaryCategoryConfig
 import com.example.taskmodel.viewmodel.TaskViewModel
 import java.util.UUID
 
-private val TitleColor = Color(0xFF1A1A1A)
-private val Muted = Color(0xFF757575)
-private val SectionBg = Color(0xFFFAFAFA)
+private val ClassicTitleColor = Color(0xFF1A1A1A)
+private val ClassicMuted = Color(0xFF757575)
+private val ClassicSectionBg = Color(0xFFFAFAFA)
+private val LinkAccent = Color(0xFF5C6BC0)
 
 /** 仅管理二级课题；主课题名称与引导句由系统固定，不在此编辑。 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,36 +164,30 @@ fun TopicPrimaryEditScreen(
         onBack()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(BackgroundColor)
-            .statusBarsPadding(),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.SurfaceWhite)
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CommonBackButton(onClick = onBack)
-            Text(
-                text = EssayCategoryUi.primaryDisplayName(primaryKey, config, lang, context),
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TitleColor,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = { persistSecondariesOnly() }) {
-                Text(LocalizedStrings.get("save"))
-            }
-        }
-        HorizontalDivider(color = Color(0xFFE0E0E0))
+    val chrome = rememberSettingsChrome()
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
+    val cardText = LocalGlassTextColors.current
+    val titleColor = if (isGlass) cardText.primary else ClassicTitleColor
+    val mutedColor = if (isGlass) cardText.muted else ClassicMuted
 
+    MineDetailScaffold(
+        title = EssayCategoryUi.primaryDisplayName(primaryKey, config, lang, context),
+        onBack = onBack,
+        modifier = modifier,
+        actions = {
+            TextButton(onClick = { persistSecondariesOnly() }) {
+                Text(
+                    LocalizedStrings.get("save"),
+                    color = chrome.title,
+                    style = glassChromeTextStyle(TextStyle.Default, chrome.useLightChrome),
+                )
+            }
+        },
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -195,7 +195,8 @@ fun TopicPrimaryEditScreen(
                 Text(
                     text = LocalizedStrings.get("topic_manage_secondary_only_subtitle"),
                     fontSize = 11.sp,
-                    color = Muted,
+                    color = chrome.subtitle,
+                    style = glassChromeTextStyle(TextStyle.Default, chrome.useLightChrome),
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
             }
@@ -208,13 +209,14 @@ fun TopicPrimaryEditScreen(
                     Text(
                         "${LocalizedStrings.get("topic_secondary_manage")} (${draftSecondaries.size}/8)",
                         fontSize = 13.sp,
-                        color = Muted,
+                        color = chrome.subtitle,
                         fontWeight = FontWeight.Medium,
+                        style = glassChromeTextStyle(TextStyle.Default, chrome.useLightChrome),
                     )
                     Text(
                         text = "+ ${LocalizedStrings.get("topic_secondary_add")}",
                         fontSize = 13.sp,
-                        color = Color(0xFF5C6BC0),
+                        color = LinkAccent,
                         modifier = Modifier
                             .clickable(enabled = draftSecondaries.size < 8, onClick = { openAddSecondary() })
                             .padding(4.dp),
@@ -228,70 +230,23 @@ fun TopicPrimaryEditScreen(
                         mutableStateOf(sec.guide?.isNotBlank() == true)
                     }
                     val guideText = sec.guide?.takeIf { it.isNotBlank() }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(SectionBg, RoundedCornerShape(AppShapes.DenseInsetRadius))
-                            .padding(10.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang, context),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = TitleColor,
-                                )
-                                if (guideText != null) {
-                                    Spacer(Modifier.height(4.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clickable { guideExpanded = !guideExpanded }
-                                            .fillMaxWidth(),
-                                    ) {
-                                        Text(
-                                            text = LocalizedStrings.get("topic_secondary_guide_fold_hint"),
-                                            fontSize = 11.sp,
-                                            color = Muted,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        Icon(
-                                            imageVector = if (guideExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                            contentDescription = null,
-                                            tint = Muted,
-                                        )
-                                    }
-                                    if (guideExpanded) {
-                                        Text(
-                                            text = "▸ $guideText",
-                                            fontSize = 11.sp,
-                                            color = Muted,
-                                            lineHeight = 14.sp,
-                                        )
-                                    }
-                                }
-                            }
-                            IconButton(onClick = { openEditSecondary(index, sec) }) {
-                                Icon(Icons.Default.Edit, contentDescription = null, tint = Muted)
-                            }
-                            IconButton(
-                                onClick = {
-                                    draftSecondaries = draftSecondaries.toMutableList().also { it.removeAt(index) }
-                                },
-                                enabled = draftSecondaries.size > 1,
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = if (draftSecondaries.size > 1) Muted else Muted.copy(alpha = 0.35f),
-                                )
-                            }
-                        }
-                    }
+                    SecondaryTopicRow(
+                        isGlass = isGlass,
+                        titleColor = titleColor,
+                        mutedColor = mutedColor,
+                        primaryKey = primaryKey,
+                        sec = sec,
+                        lang = lang,
+                        context = context,
+                        guideText = guideText,
+                        guideExpanded = guideExpanded,
+                        onGuideExpandedToggle = { guideExpanded = !guideExpanded },
+                        canDelete = draftSecondaries.size > 1,
+                        onEdit = { openEditSecondary(index, sec) },
+                        onDelete = {
+                            draftSecondaries = draftSecondaries.toMutableList().also { it.removeAt(index) }
+                        },
+                    )
                 }
             }
         }
@@ -316,7 +271,7 @@ fun TopicPrimaryEditScreen(
                     },
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TitleColor,
+                    color = titleColor,
                 )
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
@@ -351,6 +306,97 @@ fun TopicPrimaryEditScreen(
                 }
                 Spacer(Modifier.height(8.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun SecondaryTopicRow(
+    isGlass: Boolean,
+    titleColor: Color,
+    mutedColor: Color,
+    primaryKey: String,
+    sec: EssaySecondaryCategoryConfig,
+    lang: LocalizationManager.Language,
+    context: Context,
+    guideText: String?,
+    guideExpanded: Boolean,
+    onGuideExpandedToggle: () -> Unit,
+    canDelete: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val rowContent: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    EssayCategoryUi.secondaryDisplayLabel(primaryKey, sec, lang, context),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = titleColor,
+                )
+                if (guideText != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable(onClick = onGuideExpandedToggle)
+                            .fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = LocalizedStrings.get("topic_secondary_guide_fold_hint"),
+                            fontSize = 11.sp,
+                            color = mutedColor,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Icon(
+                            imageVector = if (guideExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = mutedColor,
+                        )
+                    }
+                    if (guideExpanded) {
+                        Text(
+                            text = "▸ $guideText",
+                            fontSize = 11.sp,
+                            color = mutedColor,
+                            lineHeight = 14.sp,
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = null, tint = mutedColor)
+            }
+            IconButton(onClick = onDelete, enabled = canDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = if (canDelete) mutedColor else mutedColor.copy(alpha = 0.35f),
+                )
+            }
+        }
+    }
+
+    if (isGlass) {
+        MineCardShell(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(AppShapes.DenseInsetRadius),
+        ) {
+            rowContent()
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(ClassicSectionBg, RoundedCornerShape(AppShapes.DenseInsetRadius)),
+        ) {
+            rowContent()
         }
     }
 }

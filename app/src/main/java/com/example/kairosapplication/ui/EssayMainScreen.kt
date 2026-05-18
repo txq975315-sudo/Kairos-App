@@ -51,10 +51,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import com.example.kairosapplication.ui.glass.GlassDropdownMenu
+import com.example.kairosapplication.ui.glass.KairosDatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -64,7 +63,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -88,6 +86,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.R
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.core.ui.AppInteraction
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
@@ -105,6 +105,7 @@ import com.example.kairosapplication.ui.components.TimelineIntegratedDayBlock
 import com.example.kairosapplication.ui.components.TopicNotesYearMonthTimeline
 import com.example.kairosapplication.ui.topic.EssayCategoryUi
 import com.example.kairosapplication.ui.glass.GlassNoteCardShell
+import com.example.kairosapplication.ui.glass.GlassTopBarChip
 import com.example.kairosapplication.ui.glass.LocalGlassAtmosphereUi
 import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.ui.glass.glassChromeTextStyle
@@ -249,30 +250,15 @@ fun EssayMainScreen(
     }
 
     if (showDatePicker) {
-        val millis = selectedDate.atStartOfDay(zone).toInstant().toEpochMilli()
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = millis)
-        DatePickerDialog(
+        KairosDatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { m ->
-                            selectedDate = Instant.ofEpochMilli(m).atZone(zone).toLocalDate()
-                        }
-                        showDatePicker = false
-                    }
-                ) {
-                    Text(LocalizedStrings.get("confirm"), color = PrimaryTextColor)
-                }
+            onDateConfirmed = {
+                selectedDate = it
+                showDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(LocalizedStrings.get("cancel"), color = SecondaryTextColor)
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+            initialDate = selectedDate,
+            zone = zone,
+        )
     }
 
     LaunchedEffect(commentNoteId, allTimelineNotes) {
@@ -312,6 +298,7 @@ fun EssayMainScreen(
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
             contentWindowInsets = WindowInsets.statusBars,
             topBar = {
+                val isClassicUi = LocalAppUiTheme.current == AppUiTheme.Classic
                 val shadowElevation = 4.dp
                 val shadowColor = Color.Black.copy(alpha = AppInteraction.ShadowAlpha)
                 val topBarGlassBrush = Brush.verticalGradient(
@@ -339,212 +326,66 @@ fun EssayMainScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                // Left: Date card with glass effect
-                Card(
-                    modifier = Modifier
-                        .shadow(
-                            elevation = shadowElevation,
-                            shape = RoundedCornerShape(AppShapes.CardRadius),
-                            ambientColor = shadowColor,
-                            spotColor = Color(0xFF1A2850).copy(alpha = 0.15f)
+                // Left: date chip — same GlassTopBarChip as Today / Classic Essay
+                GlassTopBarChip(onClick = { showDatePicker = true }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = dateLabel,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = topChrome.primary,
+                            style = glassChromeTextStyle(androidx.compose.ui.text.TextStyle.Default, useLightChrome),
                         )
-                        .clip(RoundedCornerShape(AppShapes.CardRadius))
-                        .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), RoundedCornerShape(AppShapes.CardRadius)),
-                    shape = RoundedCornerShape(AppShapes.CardRadius),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Box {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clip(RoundedCornerShape(AppShapes.CardRadius))
-                                .background(topBarGlassBrush)
+                        Text(
+                            text = " ▼",
+                            fontSize = 12.sp,
+                            color = topChrome.secondary,
+                            style = glassChromeTextStyle(androidx.compose.ui.text.TextStyle.Default, useLightChrome),
                         )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clip(RoundedCornerShape(AppShapes.CardRadius))
-                                .blur(AppColors.TaskCardBlurRadius)
-                                .background(AppColors.TopBarGrayMist)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clip(RoundedCornerShape(AppShapes.CardRadius))
-                                .blur(AppColors.TaskCardBlurRadius)
-                                .background(topBarInnerGlowBrush)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clip(RoundedCornerShape(AppShapes.CardRadius))
-                                .background(AppColors.GlassFill.copy(alpha = 0.07f))
-                        )
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .clickable { showDatePicker = true },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = dateLabel,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = topChrome.primary,
-                                style = glassChromeTextStyle(androidx.compose.ui.text.TextStyle.Default, useLightChrome),
-                            )
-                            Text(
-                                text = " ▼",
-                                fontSize = 12.sp,
-                                color = topChrome.secondary,
-                                style = glassChromeTextStyle(androidx.compose.ui.text.TextStyle.Default, useLightChrome),
-                            )
-                        }
                     }
                 }
-                
+
                 Spacer(Modifier.weight(1f))
-                
-                // Center: Inbox button with glass effect
+
                 BadgedBox(
-                    badge = {
-                        if (inboxCount > 0) {
-                            Badge { Text(text = inboxCount.toString()) }
+                        badge = {
+                            if (inboxCount > 0) {
+                                Badge { Text(text = inboxCount.toString()) }
+                            }
+                        },
+                    ) {
+                        GlassTopBarChip(onClick = onNavigateToInbox) {
+                            Icon(
+                                imageVector = Icons.Default.Inbox,
+                                contentDescription = LocalizedStrings.get("cd_inbox"),
+                                tint = topChrome.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
-                    },
-                    modifier = Modifier.clickable { onNavigateToInbox() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .shadow(
-                                elevation = shadowElevation,
-                                shape = CircleShape,
-                                ambientColor = shadowColor,
-                                spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
-                            )
-                            .clip(CircleShape)
-                            .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), CircleShape)
-                            .background(topBarGlassBrush),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .blur(AppColors.TaskCardBlurRadius)
-                                .background(AppColors.TopBarGrayMist)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .blur(AppColors.TaskCardBlurRadius)
-                                .background(topBarInnerGlowBrush)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(AppColors.GlassFill.copy(alpha = 0.07f))
-                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    GlassTopBarChip(onClick = onNavigateToSearch) {
                         Icon(
-                            imageVector = Icons.Default.Inbox,
-                            contentDescription = LocalizedStrings.get("cd_inbox"),
+                            imageVector = Icons.Default.Search,
+                            contentDescription = LocalizedStrings.get("cd_search"),
                             tint = topChrome.primary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                     }
-                }
-                
-                Spacer(Modifier.width(8.dp))
-                
-                // Right: Search button with glass effect
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .shadow(
-                            elevation = shadowElevation,
-                            shape = CircleShape,
-                            ambientColor = shadowColor,
-                            spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
-                        )
-                        .clip(CircleShape)
-                        .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), CircleShape)
-                        .background(topBarGlassBrush)
-                        .clickable { onNavigateToSearch() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .blur(AppColors.TaskCardBlurRadius)
-                            .background(AppColors.TopBarGrayMist)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .blur(AppColors.TaskCardBlurRadius)
-                            .background(topBarInnerGlowBrush)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(AppColors.GlassFill.copy(alpha = 0.07f))
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = LocalizedStrings.get("cd_search"),
-                        tint = topChrome.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                
-                Spacer(Modifier.width(8.dp))
-                
-                // More options button with glass effect
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .shadow(
-                                elevation = shadowElevation,
-                                shape = CircleShape,
-                                ambientColor = shadowColor,
-                                spotColor = Color(0xFF1A2850).copy(alpha = 0.10f)
+                    Spacer(Modifier.width(8.dp))
+                    Box {
+                        GlassTopBarChip(onClick = { menuOpen = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = LocalizedStrings.get("cd_more_options"),
+                                tint = topChrome.primary,
+                                modifier = Modifier.size(22.dp),
                             )
-                            .clip(CircleShape)
-                            .border(BorderStroke(1.1.dp, AppColors.TopBarGlassHairline), CircleShape)
-                            .background(topBarGlassBrush)
-                            .clickable { menuOpen = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .blur(AppColors.TaskCardBlurRadius)
-                                .background(AppColors.TopBarGrayMist)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .blur(AppColors.TaskCardBlurRadius)
-                                .background(topBarInnerGlowBrush)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(AppColors.GlassFill.copy(alpha = 0.07f))
-                        )
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = LocalizedStrings.get("cd_more_options"),
-                            tint = topChrome.primary,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-                    GlassDropdownMenu(
-                        expanded = menuOpen,
-                        onDismissRequest = { menuOpen = false },
-                    ) {
+                        }
+                        GlassDropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false },
+                        ) {
                             DropdownMenuItem(
                                 text = { Text(LocalizedStrings.get("topic_manage"), color = topChrome.primary) },
                                 onClick = {
@@ -558,13 +399,13 @@ fun EssayMainScreen(
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = null,
-                                        tint = topChrome.secondary
+                                        tint = topChrome.secondary,
                                     )
                                 },
                                 onClick = {
                                     menuOpen = false
                                     onNavigateToTrash()
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(LocalizedStrings.get("essay_menu_layout_card"), color = topChrome.primary) },
@@ -573,7 +414,7 @@ fun EssayMainScreen(
                                         Icon(
                                             imageVector = Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = topChrome.secondary
+                                            tint = topChrome.secondary,
                                         )
                                     }
                                 } else {
@@ -582,7 +423,7 @@ fun EssayMainScreen(
                                 onClick = {
                                     menuOpen = false
                                     scope.launch { dataStore.setEssayTimelineLayout("card") }
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(LocalizedStrings.get("essay_menu_layout_integrated"), color = topChrome.primary) },
@@ -591,7 +432,7 @@ fun EssayMainScreen(
                                         Icon(
                                             imageVector = Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = topChrome.secondary
+                                            tint = topChrome.secondary,
                                         )
                                     }
                                 } else {
@@ -600,12 +441,12 @@ fun EssayMainScreen(
                                 onClick = {
                                     menuOpen = false
                                     scope.launch { dataStore.setEssayTimelineLayout("integrated") }
-                                }
+                                },
                             )
                         }
                     }
                 }
-            }
+                }
 
             },
             containerColor = Color.Transparent,
@@ -676,7 +517,11 @@ fun EssayMainScreen(
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = AppSpacing.PageHorizontal),
                     thickness = 0.5.dp,
-                    color = atmosphere.quoteDividerColor(),
+                    color = if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+                        AppColors.Divider
+                    } else {
+                        atmosphere.quoteDividerColor()
+                    },
                 )
 
                 AnimatedContent(
@@ -862,7 +707,7 @@ private fun TimelineTabContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 88.dp),
         ) {
-            groupedNoteDays.forEach { (date, notes) ->
+            groupedNoteDays.forEachIndexed { dayIndex, (date, notes) ->
                 item(key = "integrated_day_$date") {
                     TimelineIntegratedDayBlock(
                         date = date,
@@ -873,6 +718,7 @@ private fun TimelineTabContent(
                         onToggleExpand = onToggleExpand,
                         projectsById = projectsById,
                         publishedNoteActions = publishedNoteActions,
+                        connectRailBelowLastNote = dayIndex < groupedNoteDays.lastIndex,
                     )
                 }
             }
@@ -883,7 +729,7 @@ private fun TimelineTabContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 88.dp),
         ) {
-            groupedNoteDays.forEach { (date, notes) ->
+            groupedNoteDays.forEachIndexed { dayIndex, (date, notes) ->
                 item(key = "card_day_$date") {
                     TimelineCardDayBlock(
                         date = date,
@@ -894,6 +740,7 @@ private fun TimelineTabContent(
                         onToggleExpand = onToggleExpand,
                         projectsById = projectsById,
                         publishedNoteActions = publishedNoteActions,
+                        connectRailBelowLastNote = dayIndex < groupedNoteDays.lastIndex,
                     )
                 }
             }
@@ -1352,6 +1199,11 @@ private fun EssayProjectTabPane(
     publishedNoteActions: (Note) -> PublishedNoteCardActions,
 ) {
     val scrollText = LocalGlassTextColors.current
+    val projectNameColor = if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+        AppColors.PrimaryText
+    } else {
+        scrollText.primary
+    }
     val projectNoteCounts = remember(notes) { projectNoteCountsByProject(notes) }
     if (projects.isEmpty()) {
         EmptyProjectState(modifier = Modifier.fillMaxSize())
@@ -1362,7 +1214,8 @@ private fun EssayProjectTabPane(
         ProjectTabContent(
             projects = projects,
             noteCounts = projectNoteCounts,
-            onProjectClick = onSelectProject
+            projectNameColor = projectNameColor,
+            onProjectClick = onSelectProject,
         )
     } else {
         Row(
@@ -1376,6 +1229,7 @@ private fun EssayProjectTabPane(
                 projects = projects,
                 noteCounts = projectNoteCounts,
                 selectedId = openId,
+                projectNameColor = projectNameColor,
                 onSelectProject = onSelectProject,
             )
             Box(
@@ -1411,6 +1265,7 @@ private fun ProjectSidebarRail(
     projects: List<Project>,
     noteCounts: Map<Long, Int>,
     selectedId: Long,
+    projectNameColor: Color,
     onSelectProject: (Long) -> Unit,
 ) {
     val accent = NoteCardConstants.categoryColor(NotePrimaryCategory.SELF_AWARENESS)
@@ -1442,7 +1297,7 @@ private fun ProjectSidebarRail(
                         text = project.name,
                         fontSize = 13.sp,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                        color = PrimaryTextColor,
+                        color = projectNameColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -1464,7 +1319,8 @@ private fun ProjectSidebarRail(
 private fun ProjectTabContent(
     projects: List<Project>,
     noteCounts: Map<Long, Int>,
-    onProjectClick: (Long) -> Unit
+    projectNameColor: Color,
+    onProjectClick: (Long) -> Unit,
 ) {
     if (projects.isEmpty()) {
         EmptyProjectState(modifier = Modifier.fillMaxSize())
@@ -1483,7 +1339,8 @@ private fun ProjectTabContent(
             ProjectSummaryCard(
                 project = project,
                 noteCount = noteCounts[project.id] ?: 0,
-                onClick = { onProjectClick(project.id) }
+                projectNameColor = projectNameColor,
+                onClick = { onProjectClick(project.id) },
             )
         }
     }
@@ -1493,7 +1350,8 @@ private fun ProjectTabContent(
 private fun ProjectSummaryCard(
     project: Project,
     noteCount: Int,
-    onClick: () -> Unit
+    projectNameColor: Color,
+    onClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val lang = LocalCurrentLanguage.current.value
@@ -1516,7 +1374,7 @@ private fun ProjectSummaryCard(
                     text = project.name,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = PrimaryTextColor,
+                    color = projectNameColor,
                 )
             }
             Column(horizontalAlignment = Alignment.End) {

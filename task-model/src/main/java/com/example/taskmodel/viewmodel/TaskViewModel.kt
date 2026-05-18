@@ -452,6 +452,21 @@ class TaskViewModel(
     /**
      * Continue flow: create project, attach note, then [onReadyNavigate] to editor with [setPendingNewNoteProjectIds].
      */
+    fun createNoteProject(projectName: String, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val pid = noteRepository.insertProject(projectName)
+                withContext(Dispatchers.Main) {
+                    onCreated(pid)
+                }
+            } catch (e: NoteValidationException) {
+                _noteValidationErrors.emit(e.message ?: "i18n|note_validation_failed")
+            } catch (e: IllegalArgumentException) {
+                _noteValidationErrors.emit(e.message ?: "i18n|project_create_failed")
+            }
+        }
+    }
+
     fun attachNewProjectToNoteAndPrepareEditor(
         noteId: Long,
         projectName: String,

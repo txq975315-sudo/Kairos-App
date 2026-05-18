@@ -57,10 +57,6 @@ class KairosWidgetProvider1x1 : KairosWidgetProviderBase() {
     override val boundSize = WidgetSize._1X1
 }
 
-class KairosWidgetProvider2x2 : KairosWidgetProviderBase() {
-    override val boundSize = WidgetSize._2X2
-}
-
 class KairosWidgetProvider3x1 : KairosWidgetProviderBase() {
     override val boundSize = WidgetSize._3X1
 }

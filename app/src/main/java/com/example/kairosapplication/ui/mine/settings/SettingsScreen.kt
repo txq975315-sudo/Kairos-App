@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.ui.mine.settings
+package com.example.kairosapplication.ui.mine.settings
 
 import android.content.Intent
 import android.net.Uri
@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
@@ -44,8 +43,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -53,14 +50,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.kairosapplication.core.ui.AppUiTheme
-import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizationManager
+import com.example.kairosapplication.core.ui.AppUiTheme
 import com.example.kairosapplication.i18n.LocalizedStrings
-import com.example.kairosapplication.ui.theme.BackgroundColor
-
-private val RowText = Color(0xFF1A1A1A)
+import com.example.kairosapplication.ui.glass.glassChromeTextStyle
 
 private const val FeedbackSurveyUrl = "https://wj.qq.com/s2/26694655/7143/"
 
@@ -89,53 +83,44 @@ fun SettingsScreen(
     val langKey by localizationManager.currentLanguage.collectAsState()
     val reminderTime by viewModel.dailyReminderTime.collectAsState()
     val reflectionTime by viewModel.dailyReflectionTime.collectAsState()
-    val dark by viewModel.darkMode.collectAsState()
-    val theme by viewModel.themeColor.collectAsState()
     val uiTheme by viewModel.uiTheme.collectAsState()
     val languageCode by viewModel.language.collectAsState()
+    val chrome = rememberSettingsChrome()
 
     fun toastSoon() {
         Toast.makeText(context, LocalizedStrings.stringFor(uiLanguage, "soon", context), Toast.LENGTH_SHORT).show()
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BackgroundColor)
-            .statusBarsPadding()
+            .background(chrome.pageBackground),
+    ) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .shadow(1.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(AppColors.GlassFill)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "‹",
-                    fontSize = 22.sp,
-                    color = RowText,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            SettingsBackButton(onClick = onBack)
             Spacer(Modifier.size(12.dp))
             Text(
                 text = LocalizedStrings.get("settings"),
-                color = RowText,
+                color = chrome.title,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.SemiBold,
-                fontFamily = FontFamily.Serif
+                fontFamily = FontFamily.Serif,
+                style = glassChromeTextStyle(
+                    androidx.compose.ui.text.TextStyle.Default,
+                    chrome.useLightChrome,
+                ),
             )
         }
-        HorizontalDivider(color = Color(0xFFECECEC), thickness = 1.dp)
+        HorizontalDivider(color = chrome.divider, thickness = 1.dp)
         key(langKey) {
             Column(
                 modifier = Modifier
@@ -153,15 +138,17 @@ fun SettingsScreen(
                 SettingsProtoRow(
                     icon = Icons.Outlined.Brightness6,
                     title = LocalizedStrings.get("theme_settings"),
-                    subtitle = "${uiThemeSummary(uiTheme)} · ${themeSummary(dark)} · ${colorSummary(theme)}",
+                    subtitle = uiThemeSummary(uiTheme),
                     onClick = onNavigateToTheme
                 )
-                SettingsProtoRow(
-                    icon = Icons.Outlined.Image,
-                    title = LocalizedStrings.get("atmosphere_background_row"),
-                    subtitle = null,
-                    onClick = onNavigateToAtmosphereBackground
-                )
+                if (uiTheme != AppUiTheme.STORAGE_GLASS) {
+                    SettingsProtoRow(
+                        icon = Icons.Outlined.Image,
+                        title = LocalizedStrings.get("atmosphere_background_row"),
+                        subtitle = null,
+                        onClick = onNavigateToAtmosphereBackground
+                    )
+                }
                 SettingsProtoRow(
                     icon = Icons.Outlined.Widgets,
                     title = LocalizedStrings.get("widget_settings"),
@@ -241,7 +228,7 @@ fun SettingsScreen(
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 12.dp, horizontal = 12.dp),
-                    color = Color(0xFFE8E8E8)
+                    color = chrome.divider,
                 )
                 SettingsProtoRow(
                     icon = Icons.Outlined.MenuBook,
@@ -259,6 +246,7 @@ fun SettingsScreen(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -268,6 +256,7 @@ private fun SettingsProtoRow(
     subtitle: String?,
     onClick: () -> Unit
 ) {
+    val chrome = rememberSettingsChrome()
     Column {
         Row(
             modifier = Modifier
@@ -279,34 +268,50 @@ private fun SettingsProtoRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = RowText,
+                tint = chrome.title,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.size(18.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    color = RowText,
+                    color = chrome.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Normal,
-                    fontFamily = FontFamily.SansSerif
+                    fontFamily = FontFamily.SansSerif,
+                    style = glassChromeTextStyle(
+                        androidx.compose.ui.text.TextStyle.Default,
+                        chrome.useLightChrome,
+                    ),
                 )
                 if (!subtitle.isNullOrEmpty()) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = subtitle,
-                        color = SettingsSubC,
+                        color = chrome.subtitle,
                         fontSize = 13.sp,
-                        fontFamily = FontFamily.SansSerif
+                        fontFamily = FontFamily.SansSerif,
+                        style = glassChromeTextStyle(
+                            androidx.compose.ui.text.TextStyle.Default,
+                            chrome.useLightChrome,
+                        ),
                     )
                 }
             }
-            Text("›", color = SettingsSubC, fontSize = 20.sp)
+            Text(
+                "›",
+                color = chrome.subtitle,
+                fontSize = 20.sp,
+                style = glassChromeTextStyle(
+                    androidx.compose.ui.text.TextStyle.Default,
+                    chrome.useLightChrome,
+                ),
+            )
         }
         HorizontalDivider(
             modifier = Modifier.padding(start = 54.dp),
             thickness = 0.5.dp,
-            color = Color(0xFFE8E8E8)
+            color = chrome.divider,
         )
     }
 }
@@ -315,21 +320,6 @@ private fun SettingsProtoRow(
 private fun uiThemeSummary(key: String): String = when (key) {
     AppUiTheme.STORAGE_CLASSIC -> LocalizedStrings.get("ui_theme_classic")
     else -> LocalizedStrings.get("ui_theme_glass")
-}
-
-@Composable
-private fun themeSummary(key: String): String = when (key) {
-    "light" -> LocalizedStrings.get("light_mode")
-    "dark" -> LocalizedStrings.get("dark_mode_option")
-    else -> LocalizedStrings.get("system_default")
-}
-
-@Composable
-private fun colorSummary(key: String): String = when (key) {
-    "green" -> LocalizedStrings.get("forest_green")
-    "pink" -> LocalizedStrings.get("soft_pink")
-    "orange" -> LocalizedStrings.get("warm_orange")
-    else -> LocalizedStrings.get("vitality_blue")
 }
 
 @Composable

@@ -101,6 +101,7 @@ import com.example.kairosapplication.core.text.rememberTaskTextProvider
 import com.example.kairosapplication.ui.TaskDetailBottomSheet
 import com.example.kairosapplication.ui.TaskItemCard
 import com.example.kairosapplication.core.ui.AppColors
+import com.example.kairosapplication.core.ui.AppUiTheme
 import com.example.kairosapplication.core.ui.AppInteraction
 import com.example.kairosapplication.core.ui.AppShapes
 import com.example.kairosapplication.core.ui.AppSpacing
@@ -147,30 +148,38 @@ fun TodayScreen(
 
     val anytimeTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
-            }
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_ANYTIME
+                },
+            )
         }
     }
     val morningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
-            }
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_MORNING
+                },
+            )
         }
     }
     val afternoonTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
-            }
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_AFTERNOON
+                },
+            )
         }
     }
     val eveningTasks by remember(currentDate, allTasks) {
         derivedStateOf {
-            allTasks.filter {
-                it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
-            }
+            TaskUtils.sortTasks(
+                allTasks.filter {
+                    it.taskDate == currentDate && it.timeBlock == TaskConstants.TIME_BLOCK_EVENING
+                },
+            )
         }
     }
     val onTaskCompleteToggle: (Task) -> Unit = { task -> taskViewModel.toggleTaskComplete(task) }
@@ -291,10 +300,17 @@ fun TodayScreen(
             onNext = { currentDate = currentDate.plusDays(1) }
         )
         Spacer(Modifier.height(10.dp))
-        com.example.kairosapplication.ui.glass.GlassQuoteSection(
-            quote = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default")),
-            onClick = onQuoteClick,
-        )
+        if (appUiTheme == AppUiTheme.Classic) {
+            QuoteSection(
+                quoteText = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default")),
+                onClick = onQuoteClick,
+            )
+        } else {
+            com.example.kairosapplication.ui.glass.GlassQuoteSection(
+                quote = taskViewModel.dailyQuoteDisplayText(LocalizedStrings.get("widget_quote_default")),
+                onClick = onQuoteClick,
+            )
+        }
         Spacer(Modifier.height(AppSpacing.SectionMedium))
 
         // First-run onboarding UI temporarily disabled (restore when product-ready).
@@ -312,7 +328,7 @@ fun TodayScreen(
             verticalArrangement = Arrangement.spacedBy(AppSpacing.BlockGap)
         ) {
 
-            com.example.kairosapplication.ui.glass.GlassTimeBlock(
+            TodayTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_ANYTIME,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_ANYTIME),
                 count = anytimeTasks.size,
@@ -330,7 +346,7 @@ fun TodayScreen(
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_ANYTIME) },
             )
 
-            com.example.kairosapplication.ui.glass.GlassTimeBlock(
+            TodayTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_MORNING,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_MORNING),
                 count = morningTasks.size,
@@ -348,7 +364,7 @@ fun TodayScreen(
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_MORNING) },
             )
 
-            com.example.kairosapplication.ui.glass.GlassTimeBlock(
+            TodayTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_AFTERNOON,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_AFTERNOON),
                 count = afternoonTasks.size,
@@ -366,7 +382,7 @@ fun TodayScreen(
                 onCreateClick = { showCreateSheet(TaskConstants.TIME_BLOCK_AFTERNOON) },
             )
 
-            com.example.kairosapplication.ui.glass.GlassTimeBlock(
+            TodayTimeBlock(
                 blockKey = TaskConstants.TIME_BLOCK_EVENING,
                 displayTitle = LocalizedStrings.timeBlockLabel(TaskConstants.TIME_BLOCK_EVENING),
                 count = eveningTasks.size,
@@ -894,7 +910,7 @@ private fun QuoteSection(onClick: () -> Unit, quoteText: String) {
             Text(
                 text = quoteText,
                 fontSize = 14.sp,
-                color = Color(0xFF2D4A2D)
+                color = AppColors.SecondaryText,
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -944,6 +960,80 @@ private fun Task.isSwipeDeletableByPolicy(today: LocalDate = LocalDate.now()): B
     return true
 }
 
+private fun timeBlockBackgroundColor(blockKey: String): Color = when (blockKey) {
+    TaskConstants.TIME_BLOCK_ANYTIME -> AppColors.AnytimeBackground
+    TaskConstants.TIME_BLOCK_MORNING -> AppColors.MorningBackground
+    TaskConstants.TIME_BLOCK_AFTERNOON -> AppColors.AfternoonBackground
+    TaskConstants.TIME_BLOCK_EVENING -> AppColors.EveningBackground
+    else -> AppColors.AnytimeBackground
+}
+
+private fun timeBlockTitleColor(blockKey: String): Color = when (blockKey) {
+    TaskConstants.TIME_BLOCK_ANYTIME -> AppColors.AnytimeTitle
+    TaskConstants.TIME_BLOCK_MORNING -> AppColors.MorningTitle
+    TaskConstants.TIME_BLOCK_AFTERNOON -> AppColors.AfternoonTitle
+    TaskConstants.TIME_BLOCK_EVENING -> AppColors.EveningTitle
+    else -> AppColors.PrimaryText
+}
+
+@Composable
+private fun TodayTimeBlock(
+    blockKey: String,
+    displayTitle: String,
+    count: Int,
+    icon: ImageVector,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    tasks: List<Task>,
+    viewDate: LocalDate,
+    onToggleComplete: (Task) -> Unit,
+    onOpenDetail: (Task) -> Unit,
+    onSwipeDelete: (Task) -> Unit,
+    onTaskDragEnd: (Task, Float) -> Unit,
+    onDragHandleY: (Int, Float) -> Unit,
+    onBlockBounds: (String, Rect) -> Unit,
+    onCreateClick: () -> Unit,
+) {
+    if (LocalAppUiTheme.current == AppUiTheme.Classic) {
+        TimeBlock(
+            blockKey = blockKey,
+            displayTitle = displayTitle,
+            count = count,
+            backgroundColor = timeBlockBackgroundColor(blockKey),
+            icon = icon,
+            expanded = expanded,
+            onToggle = onToggle,
+            tasks = tasks,
+            viewDate = viewDate,
+            onToggleComplete = onToggleComplete,
+            onOpenDetail = onOpenDetail,
+            onSwipeDelete = onSwipeDelete,
+            onTaskDragEnd = onTaskDragEnd,
+            onDragHandleY = onDragHandleY,
+            onBlockBounds = onBlockBounds,
+            onCreateClick = onCreateClick,
+        )
+    } else {
+        com.example.kairosapplication.ui.glass.GlassTimeBlock(
+            blockKey = blockKey,
+            displayTitle = displayTitle,
+            count = count,
+            icon = icon,
+            expanded = expanded,
+            onToggle = onToggle,
+            tasks = tasks,
+            viewDate = viewDate,
+            onToggleComplete = onToggleComplete,
+            onOpenDetail = onOpenDetail,
+            onSwipeDelete = onSwipeDelete,
+            onTaskDragEnd = onTaskDragEnd,
+            onDragHandleY = onDragHandleY,
+            onBlockBounds = onBlockBounds,
+            onCreateClick = onCreateClick,
+        )
+    }
+}
+
 @Composable
 private fun TimeBlock(
     blockKey: String,
@@ -965,6 +1055,8 @@ private fun TimeBlock(
 ) {
     val taskText = rememberTaskTextProvider()
     val hasTasks = count > 0
+    val isClassic = LocalAppUiTheme.current == AppUiTheme.Classic
+    val headerTitleColor = if (isClassic) timeBlockTitleColor(blockKey) else AppColors.PrimaryText
 
     Column(
         modifier = Modifier.onGloballyPositioned { coords ->
@@ -979,6 +1071,49 @@ private fun TimeBlock(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (isClassic) {
+                    Card(
+                        modifier = Modifier.clip(RoundedCornerShape(AppShapes.CardRadius)),
+                        shape = RoundedCornerShape(AppShapes.CardRadius),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .height(32.dp)
+                                .clickable(enabled = hasTasks) { if (hasTasks) onToggle() }
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = headerTitleColor,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = displayTitle.uppercase(),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = headerTitleColor,
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Text(
+                                text = "($count)",
+                                fontSize = 13.sp,
+                                color = AppColors.SecondaryText,
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Icon(
+                                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (expanded) "Collapse" else "Expand",
+                                tint = AppColors.SecondaryText,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    }
+                } else {
                 val timeBlockGlassBrush = Brush.verticalGradient(
                     colorStops = arrayOf(
                         0f to AppColors.TimeBlockGlassTop,
@@ -1064,6 +1199,7 @@ private fun TimeBlock(
                             )
                         }
                     }
+                }
                 }
 
                 Spacer(Modifier.weight(1f))
@@ -1160,9 +1296,11 @@ private fun TimeBlockAddTaskButton(
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
+    val size = com.example.kairosapplication.core.ui.TimeBlockQuickAddDimens.buttonSize
+    val iconSize = com.example.kairosapplication.core.ui.TimeBlockQuickAddDimens.iconSize
     Box(
         modifier = modifier
-            .size(24.dp)
+            .size(size)
             .clip(CircleShape)
             .background(Color.Black.copy(alpha = 0.05f))
             .clickable { onClick() },
@@ -1171,8 +1309,8 @@ private fun TimeBlockAddTaskButton(
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = contentDescription,
-            tint = Color.Black.copy(alpha = 0.18f),
-            modifier = Modifier.size(18.dp)
+            tint = Color.Black.copy(alpha = 0.28f),
+            modifier = Modifier.size(iconSize)
         )
     }
 }

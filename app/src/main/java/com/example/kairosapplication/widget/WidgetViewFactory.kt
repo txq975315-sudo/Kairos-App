@@ -165,88 +165,12 @@ object WidgetViewFactory {
         }
     }
 
-    fun build2x2CalendarExtras(
-        today: LocalDate,
-        language: LocalizationManager.Language
-    ): Pair<String, String> {
-        val locale =
-            if (language == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
-        val ym = YearMonth.from(today)
-        val title = if (language == LocalizationManager.Language.ZH) {
+    fun buildWidgetMonthTitle(today: LocalDate, language: LocalizationManager.Language): String =
+        if (language == LocalizationManager.Language.ZH) {
             DateTimeFormatter.ofPattern("yyyy年M月", Locale.CHINA).format(today)
         } else {
             DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH).format(today)
         }
-        return title to buildMiniMonthNumberGrid(ym, today)
-    }
-
-    private fun buildMiniMonthNumberGrid(ym: YearMonth, today: LocalDate): String {
-        val first = ym.atDay(1)
-        val len = ym.lengthOfMonth()
-        val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
-        val cells = MutableList(42) { "  " }
-        var idx = offset
-        for (day in 1..len) {
-            val d = ym.atDay(day)
-            val cell = when {
-                d == today -> "*$day".take(3).padEnd(3)
-                else -> day.toString().padStart(2, ' ')
-            }.take(3)
-            if (idx < 42) cells[idx] = cell
-            idx++
-        }
-        return cells.chunked(7).joinToString("\n") { row -> row.joinToString(" ") }
-    }
-
-    fun buildMiniMonthGridSpanned(ym: YearMonth, today: LocalDate): CharSequence {
-        val first = ym.atDay(1)
-        val offset = (first.dayOfWeek.value - DayOfWeek.MONDAY.value + 7) % 7
-        val startGrid = ym.atDay(1).minusDays(offset.toLong())
-        val primary = Color.parseColor("#1A1A1A")
-        val muted = Color.parseColor("#BDBDBD")
-        val ssb = SpannableStringBuilder()
-        for (week in 0 until 6) {
-            for (col in 0 until 7) {
-                val date = startGrid.plusDays((week * 7 + col).toLong())
-                val inMonth = YearMonth.from(date) == ym
-                val segStart = ssb.length
-                val num = date.dayOfMonth.toString().padStart(2, ' ')
-                ssb.append(num)
-                val segEnd = ssb.length
-                if (date == today && inMonth) {
-                    ssb.setSpan(
-                        BackgroundColorSpan(WidgetTaskStyle.CAL_TODAY_FILL_ARGB),
-                        segStart,
-                        segEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                    ssb.setSpan(
-                        ForegroundColorSpan(Color.WHITE),
-                        segStart,
-                        segEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                    ssb.setSpan(
-                        StyleSpan(android.graphics.Typeface.BOLD),
-                        segStart,
-                        segEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                } else {
-                    val color = if (inMonth) primary else muted
-                    ssb.setSpan(
-                        ForegroundColorSpan(color),
-                        segStart,
-                        segEnd,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                }
-                if (col < 6) ssb.append(' ')
-            }
-            if (week < 5) ssb.append('\n')
-        }
-        return ssb
-    }
 
     suspend fun createRemoteViewsWithData(
         context: Context,
@@ -271,8 +195,6 @@ object WidgetViewFactory {
                         else ->
                             createRemoteViews1x1WithData(context, config, dataRepository, language, appWidgetId)
                     }
-                WidgetSize._2X2 ->
-                    createRemoteViews2x2WithData(context, config, dataRepository, language, appWidgetId)
                 WidgetSize._3X1 -> {
                     val tasks = dataRepository.getAllTasks()
                     when (config.layoutKind) {
@@ -449,29 +371,6 @@ object WidgetViewFactory {
         return views
     }
 
-    fun createRemoteViews2x2(
-        context: Context,
-        config: WidgetConfig,
-        display: Widget2x2DisplayState,
-        appWidgetId: Int
-    ): RemoteViews {
-        val today = LocalDate.now()
-        return build2x2RemoteViews(
-            context,
-            config,
-            appWidgetId,
-            display.dateLine,
-            display.statsLine,
-            display.quoteLine,
-            display.tasks,
-            display.showTasks,
-            display.showQuote,
-            display.language,
-            display.monthTitle,
-            today
-        )
-    }
-
     private suspend fun quoteCombined(
         context: Context,
         config: WidgetConfig,
@@ -644,121 +543,6 @@ object WidgetViewFactory {
             66
         )
         bindCreateButton(context, views, appWidgetId, 67)
-        return views
-    }
-
-    private fun createRemoteViews2x2WithData(
-        context: Context,
-        config: WidgetConfig,
-        dataRepository: WidgetDataRepository,
-        language: LocalizationManager.Language,
-        appWidgetId: Int
-    ): RemoteViews {
-        val today = LocalDate.now()
-        val locale =
-            if (language == LocalizationManager.Language.ZH) Locale.CHINA else Locale.ENGLISH
-        val dateLine = today.dayOfWeek.getDisplayName(
-            java.time.format.TextStyle.FULL,
-            locale
-        )
-        val showTasks = config.displayConfig.showTasks
-        val taskData = dataRepository.getTodayTaskData()
-        val completed = if (showTasks) taskData.completedCount else 0
-        val total = if (showTasks) taskData.totalCount else 0
-        val statsLine = formatStatsLine(context, language, completed, total, showTasks)
-        val quotePrefix = LocalizedStrings.stringFor(language, "widget_quote_prefix", context)
-        val defaultQuote = LocalizedStrings.stringFor(language, "widget_quote_default", context)
-        val quoteBody = dataRepository.getDailyQuote(defaultQuote)
-        val quoteCombined = if (config.displayConfig.showDailyQuote) {
-            if (quotePrefix.isNotEmpty()) quotePrefix + quoteBody else quoteBody
-        } else {
-            ""
-        }
-        val quoteDisplay = when {
-            quoteCombined.length <= 120 -> quoteCombined
-            else -> quoteCombined.take(117) + "…"
-        }
-        val rows =
-            if (showTasks) {
-                TaskUtils.sortTasks(
-                    dataRepository.getAllTasks().filter { it.taskDate == today }
-                ).map {
-                    WidgetTaskRow(
-                        it.title.ifBlank { "—" },
-                        it.isCompleted,
-                        it.id,
-                        it.urgency
-                    )
-                }.take(10)
-            } else {
-                emptyList()
-            }
-        val (monthTitle, _) = build2x2CalendarExtras(today, language)
-        return build2x2RemoteViews(
-            context,
-            config,
-            appWidgetId,
-            dateLine,
-            statsLine,
-            quoteDisplay,
-            rows,
-            showTasks,
-            config.displayConfig.showDailyQuote,
-            language,
-            monthTitle,
-            today
-        )
-    }
-
-    private fun build2x2RemoteViews(
-        context: Context,
-        config: WidgetConfig,
-        appWidgetId: Int,
-        dateLine: String,
-        statsLine: String,
-        quoteDisplay: String,
-        rows: List<WidgetTaskRow>,
-        showTasks: Boolean,
-        showQuote: Boolean,
-        language: LocalizationManager.Language,
-        monthTitle: String,
-        calendarDay: LocalDate
-    ): RemoteViews {
-        WidgetTaskListStore.save(context, appWidgetId, rows)
-        val views = RemoteViews(context.packageName, R.layout.widget_2x2_2a)
-        views.setTextViewText(R.id.widget_date, dateLine)
-        views.setTextViewText(R.id.widget_task_count, statsLine)
-        views.setTextViewText(R.id.widget_2x2_month_title, monthTitle)
-        val ym = YearMonth.from(calendarDay)
-        views.setTextViewText(R.id.widget_2x2_month_grid, buildMiniMonthGridSpanned(ym, calendarDay))
-        views.setTextViewText(
-            R.id.widget_task_list_empty,
-            LocalizedStrings.stringFor(language, "widget_task_list_empty", context)
-        )
-        bindTaskList(context, views, appWidgetId, showTasks)
-        if (showQuote) {
-            views.setViewVisibility(R.id.widget_daily_quote, View.VISIBLE)
-            views.setTextViewText(R.id.widget_daily_quote, quoteDisplay)
-            WidgetClickHandler.setClick(
-                context,
-                views,
-                appWidgetId,
-                R.id.widget_daily_quote,
-                WidgetClickHandler.TARGET_ESSAY,
-                17
-            )
-        } else {
-            views.setViewVisibility(R.id.widget_daily_quote, View.GONE)
-        }
-        WidgetClickHandler.setClick(
-            context,
-            views,
-            appWidgetId,
-            R.id.widget_root,
-            WidgetClickHandler.TARGET_HOME,
-            19
-        )
-        bindCreateButton(context, views, appWidgetId, 68)
         return views
     }
 
@@ -1353,22 +1137,6 @@ object WidgetViewFactory {
             views.setViewVisibility(R.id.widget_task_list, View.GONE)
             views.setViewVisibility(R.id.widget_task_list_empty, View.GONE)
         }
-    }
-
-    private fun formatStatsLine(
-        context: Context,
-        language: LocalizationManager.Language,
-        completed: Int,
-        total: Int,
-        showTasks: Boolean,
-    ): String {
-        if (!showTasks) return "—"
-        return String.format(
-            Locale.US,
-            LocalizedStrings.stringFor(language, "widget_2x2_stats", context),
-            completed,
-            total
-        )
     }
 
     suspend fun applyBackgroundToRemoteViews(

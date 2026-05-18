@@ -54,6 +54,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kairosapplication.core.ui.AppColors
 import com.example.kairosapplication.core.ui.AppShapes
+import com.example.kairosapplication.core.ui.AppUiTheme
+import com.example.kairosapplication.core.ui.LocalAppUiTheme
+import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.i18n.LocalCurrentLanguage
 import com.example.kairosapplication.i18n.LocalizedStrings
 import com.example.kairosapplication.i18n.weekShortHeadersMondayFirst
@@ -65,9 +68,6 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-private val CardStroke = Color(0xFFE8E8EC)
-private val TitleColor = Color(0xFF1A1A1A)
-private val SubGray = Color(0xFF9E9E9E)
 private val Green = Color(0xFF4CAF50)
 private val LinkBlue = Color(0xFF2196F3)
 private val RingGray = Color(0xFFE0E0E0)
@@ -101,27 +101,35 @@ fun MoodCard(
     val monday = remember { MineViewModel.mondayOfWeekContaining(LocalDate.now()) }
     val weekDates = remember(monday) { (0..6).map { monday.plusDays(it.toLong()) } }
     val today = LocalDate.now()
+    val cardText = LocalGlassTextColors.current
+    val isGlass = LocalAppUiTheme.current == AppUiTheme.Glass
 
     fun rectContainsPad(r: Rect, p: Offset, pad: Float): Boolean {
         return p.x >= r.left - pad && p.x <= r.right + pad &&
             p.y >= r.top - pad && p.y <= r.bottom + pad
     }
 
-    fun hitHoverDate(p: Offset): LocalDate? {
+    /** Among columns containing [p], pick nearest center (fixes overlap mis-picks). */
+    fun hitDateAt(p: Offset, pad: Float): LocalDate? {
+        var best: LocalDate? = null
+        var bestDist = Float.MAX_VALUE
         for (d in weekDates) {
             val r = dayBounds[d] ?: continue
-            if (rectContainsPad(r, p, hoverPadPx)) return d
+            if (!rectContainsPad(r, p, pad)) continue
+            val cx = (r.left + r.right) * 0.5f
+            val cy = (r.top + r.bottom) * 0.5f
+            val dist = hypot(p.x - cx, p.y - cy)
+            if (dist < bestDist) {
+                bestDist = dist
+                best = d
+            }
         }
-        return null
+        return best
     }
 
-    fun hitDropDate(p: Offset): LocalDate? {
-        for (d in weekDates) {
-            val r = dayBounds[d] ?: continue
-            if (rectContainsPad(r, p, dropPadPx)) return d
-        }
-        return null
-    }
+    fun hitHoverDate(p: Offset): LocalDate? = hitDateAt(p, hoverPadPx)
+
+    fun hitDropDate(p: Offset): LocalDate? = hitDateAt(p, dropPadPx)
 
     fun performConfirm() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -138,22 +146,15 @@ fun MoodCard(
                 cardRoot = coords.positionInRoot()
             }
     ) {
+        MineCardShell(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(
-                    elevation = 5.dp,
-                    shape = RoundedCornerShape(AppShapes.FeaturePanelRadius),
-                    ambientColor = Color.Black.copy(alpha = 0.06f),
-                    spotColor = Color.Black.copy(alpha = 0.08f)
-                )
-                .background(AppColors.GlassFill, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-                .border(1.dp, CardStroke, RoundedCornerShape(AppShapes.FeaturePanelRadius))
-                .padding(horizontal = 18.dp, vertical = 18.dp)
+                .padding(horizontal = 18.dp, vertical = 18.dp),
         ) {
             Text(
                 text = LocalizedStrings.get("mine_mood_card_title"),
-                color = TitleColor,
+                color = cardText.primary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.Serif,
@@ -250,8 +251,8 @@ fun MoodCard(
                     val has = record != null
                     val isToday = date == today
                     val isFuture = date.isAfter(today)
-                    val labelColor = if (isFuture) SubGray.copy(alpha = 0.45f) else SubGray
-                    val slotColor = if (isFuture) SubGray.copy(alpha = 0.4f) else SubGray
+                    val labelColor = if (isFuture) cardText.muted.copy(alpha = 0.45f) else cardText.muted
+                    val slotColor = if (isFuture) cardText.muted.copy(alpha = 0.4f) else cardText.muted
                     MoodDragTarget(
                         targetDate = date,
                         onDragEnter = {},
@@ -292,7 +293,9 @@ fun MoodCard(
                                         .clip(CircleShape)
                                         .then(
                                             if (todayEmpty) {
-                                                Modifier.background(Color(0xFF1A1A1A))
+                                                Modifier.background(
+                                                    if (isGlass) cardText.primary else Color(0xFF1A1A1A),
+                                                )
                                             } else {
                                                 Modifier
                                                     .background(EmptyDayFill)
@@ -303,7 +306,11 @@ fun MoodCard(
                                 ) {
                                     Text(
                                         text = "+",
-                                        color = if (todayEmpty) Color.White else slotColor,
+                                        color = if (todayEmpty) {
+                                            if (isGlass) Color(0xFF1A1A1A) else Color.White
+                                        } else {
+                                            slotColor
+                                        },
                                         fontSize = if (todayEmpty) 17.sp else 15.sp,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -323,6 +330,7 @@ fun MoodCard(
                     .clickable { onViewHistory() }
                     .padding(vertical = 3.dp)
             )
+        }
         }
         if (draggingIcon != null) {
             val rel = dragFingerRoot - cardRoot

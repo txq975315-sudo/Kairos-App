@@ -1,4 +1,4 @@
-﻿package com.example.kairosapplication.ui.components
+package com.example.kairosapplication.ui.components
 
 import android.content.Intent
 import android.widget.Toast
@@ -18,7 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,14 +40,10 @@ import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -87,11 +84,11 @@ import com.example.taskmodel.util.ColorUtils.parseHexToArgb
 import com.example.kairosapplication.core.ui.LocalUrgencyConfig
 import com.example.kairosapplication.core.ui.constants.GlassConstants
 import com.example.kairosapplication.ui.glass.GlassSurface
+import com.example.kairosapplication.ui.glass.KairosDatePickerDialog
 import com.example.kairosapplication.core.ui.LocalAppUiTheme
 import com.example.kairosapplication.ui.glass.LocalGlassTextColors
 import com.example.kairosapplication.ui.glass.glassBubbleBackdrop
 import kotlinx.coroutines.delay
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -308,6 +305,7 @@ internal fun CreateTaskBottomSheet(
         bottomEnd = 0.dp,
     )
     val palette = rememberCreateTaskSheetPalette(config)
+    val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     ModalBottomSheet(
         onDismissRequest = {
@@ -323,17 +321,29 @@ internal fun CreateTaskBottomSheet(
         contentColor = Color.Black,
         dragHandle = null,
         shape = sheetShape,
+        contentWindowInsets = { WindowInsets(0) },
     ) {
         // Bottom sheet window may not inherit composition locals; re-attach app language for i18n.
         CompositionLocalProvider(LocalCurrentLanguage provides LocalCurrentLanguage.current) {
         val sheetLang = LocalCurrentLanguage.current.value
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .clip(sheetShape)
+                .then(
+                    if (config.theme == CreateTaskSheetVisualTheme.Glass) {
+                        Modifier.glassBubbleBackdrop()
+                    } else {
+                        Modifier
+                    },
+                )
+                .background(config.backgroundColor),
+        ) {
         CreateTaskSheetChrome(
             config = config,
             shape = sheetShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding(),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
                 text = LocalizedStrings.timeBlockLabel(config.timeBlock),
@@ -685,52 +695,26 @@ internal fun CreateTaskBottomSheet(
                 }
             }
 
+            if (navigationBarBottom > 0.dp) {
+                Spacer(Modifier.height(navigationBarBottom))
+            }
+
+        }
         }
         }
     }
 
     if (showTaskDatePicker && onSheetTaskDateChange != null) {
-        val millis = sheetTaskDate.atStartOfDay(zone).toInstant().toEpochMilli()
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = millis)
-        DatePickerDialog(
+        KairosDatePickerDialog(
             onDismissRequest = { showTaskDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let { m ->
-                            val picked = Instant.ofEpochMilli(m).atZone(zone).toLocalDate()
-                            onSheetTaskDateChange.invoke(picked)
-                            hasSelectedTaskDate = true
-                        }
-                        showTaskDatePicker = false
-                    }
-                ) {
-                    Text(
-                        LocalizedStrings.get("confirm"),
-                        color = AppColors.PrimaryText,
-                    )
-                }
+            onDateConfirmed = { picked ->
+                onSheetTaskDateChange.invoke(picked)
+                hasSelectedTaskDate = true
+                showTaskDatePicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showTaskDatePicker = false }) {
-                    Text(
-                        LocalizedStrings.get("cancel"),
-                        color = AppColors.SecondaryText,
-                    )
-                }
-            },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.task_sheet_pick_task_date),
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                    color = AppColors.PrimaryText,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                DatePicker(state = datePickerState)
-            }
-        }
+            initialDate = sheetTaskDate,
+            zone = zone,
+        )
     }
 
     if (showReminderDialog) {
@@ -800,12 +784,7 @@ private fun CreateTaskSheetChrome(
             )
         }
         CreateTaskSheetVisualTheme.Glass -> {
-            Column(
-                modifier = modifier
-                    .clip(shape)
-                    .glassBubbleBackdrop()
-                    .background(config.backgroundColor),
-            ) {
+            Column(modifier = modifier.fillMaxWidth()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
